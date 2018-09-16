@@ -32,13 +32,13 @@ It's tested to work on Debian 9 GNU/Linux with Lua versions:
 
 # Examples
 
-Checkout tests in `tests/spec/mqtt-client.lua`
+Checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
 
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
 
     busted -e 'package.path="./?/init.lua;"..package.path;' tests/spec/*.lua
 
-Also you can learn MQTT protocol using `tests/spec/protocol-*.lua` tests
+Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
 
 # MQTT version
 
