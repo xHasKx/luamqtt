@@ -36,7 +36,7 @@ Checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
 
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
 
-    busted -e 'package.path="./?/init.lua;"..package.path;' tests/spec/*.lua
+    busted tests/spec/*.lua
 
 Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
 
@@ -49,6 +49,7 @@ The MQTT 5.0 protocol version is planned to implement in the future.
 # TODO
 
 * deploy on luarocks
+* example in README.md
 * will message test
 * SSL (by luasec)
 * QoS 2
