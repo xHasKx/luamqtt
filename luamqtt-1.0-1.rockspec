@@ -1,7 +1,7 @@
 package = "luamqtt"
 version = "1.0-1"
 source = {
-	url = "git://https://github.com/xHasKx/luamqtt",
+	url = "git://github.com/xHasKx/luamqtt",
 	tag = "v1.0",
 }
 description = {
