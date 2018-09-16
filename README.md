@@ -48,7 +48,6 @@ The MQTT 5.0 protocol version is planned to implement in the future.
 
 # TODO
 
-* deploy on luarocks
 * example in README.md
 * will message test
 * SSL (by luasec)
