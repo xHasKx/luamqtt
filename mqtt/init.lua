@@ -62,6 +62,10 @@ local client_mt = {
 		if self.auth ~= nil then
 			assert(type(self.auth) == "table", "expecting .auth to be a table")
 		end
+		self.will = args.will
+		if self.will ~= nil then
+			assert(type(self.will) == "table", "expecting .will to be a table")
+		end
 		self.debug = args.debug
 		self.connector = args.connector
 		if not self.connector then
@@ -223,11 +227,19 @@ local client_mt = {
 			local args = {
 				type = packet_type.CONNECT,
 				id = self.id,
-				clean = self.clean
+				clean = self.clean,
 			}
 			if self.auth then
 				args.username = self.auth.username
 				args.password = self.auth.password
+			end
+			if self.will then
+				args.will = {}
+				for k, v in pairs(self.will) do
+					args.will[k] = v
+				end
+				args.will.qos = args.will.qos or 0
+				args.will.retain = args.will.retain or false
 			end
 			local sok, serr = self:_send_packet(args)
 			if not sok then

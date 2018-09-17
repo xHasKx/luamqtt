@@ -1,14 +1,15 @@
 package = "luamqtt"
-version = "1.0-1"
+version = "1.1-1"
 source = {
 	url = "git://github.com/xHasKx/luamqtt",
-	tag = "v1.0",
+	tag = "v1.1",
 }
 description = {
 	summary = "luamqtt - Pure-lua MQTT client",
 	detailed = [[
-		luamqtt - it's a pure-lua implementation of MQTT client.
-	]],
+luamqtt - MQTT client library written in pure-lua.
+The only dependency is luasocket to establish network connection to MQTT broker.
+]],
 	homepage = "https://github.com/xHasKx/luamqtt",
 	license = "MIT"
 }
