@@ -28,7 +28,7 @@ describe("MQTT protocol: making packets", function()
 
 				0009 636C69656E742D6964 	client id == "client-id"
 				0007 6F66666C696E65 		will topic == "offline"
-				0014 636C69656E742D6964206973206F66666C696E65 	will message == "client-id is offline"
+				0014 636C69656E742D6964206973206F66666C696E65 	will payload == "client-id is offline"
 				0007 54686555736572 		username == "TheUser"
 				0009 546F70536563726574 	password == "TopSecret"
 		]]
@@ -39,7 +39,7 @@ describe("MQTT protocol: making packets", function()
 				id = "client-id",
 				clean = true,
 				will = {
-					message = "client-id is offline",
+					payload = "client-id is offline",
 					topic = "offline",
 					qos = 1,
 					retain = true,

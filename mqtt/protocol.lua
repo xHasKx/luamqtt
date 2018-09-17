@@ -195,7 +195,7 @@ local function make_connect_flags(args)
 	if args.will ~= nil then
 		-- check required args are presented
 		assert(type(args.will) == "table", "expecting .will to be a table")
-		assert(type(args.will.message) == "string", "expecting .will.message to be a string")
+		assert(type(args.will.payload) == "string", "expecting .will.payload to be a string")
 		assert(type(args.will.topic) == "string", "expecting .will.topic to be a string")
 		assert(type(args.will.qos) == "number", "expecting .will.qos to be a number")
 		assert(check_qos(args.will.qos), "expecting .will.qos to be a valid QoS value")
@@ -285,7 +285,7 @@ local function make_packet_connect(args)
 		-- DOC: 3.1.3.2 Will Topic
 		payload:append(make_string(args.will.topic))
 		-- DOC: 3.1.3.3 Will Message
-		payload:append(make_string(args.will.message))
+		payload:append(make_string(args.will.payload))
 	end
 	if args.username then
 		-- DOC: 3.1.3.4 User Name
