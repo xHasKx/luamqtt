@@ -30,6 +30,8 @@ It's tested to work on Debian 9 GNU/Linux with Lua versions:
 
     luarocks install luamqtt
 
+[LuaRocks page](http://luarocks.org/modules/xhaskx/luamqtt)
+
 # Examples
 
 Checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
