@@ -19,6 +19,7 @@ describe("MQTT client", function()
 		-- test servers
 		local cases = {
 			{
+				name = "mqtt.flespi.io no SSL",
 				id = "luamqtt-test-flespi",
 				debug = client_debug,
 				uri = "mqtt.flespi.io",
@@ -26,13 +27,35 @@ describe("MQTT client", function()
 				auth = {username = "tdFzK216XmzUA5sxLIOyJl62fDVQiI7CLC1juRff3C0syiP9PtwoCqeGUZm0xks7"},
 			},
 			{
+				name = "test.mosquitto.org no SSL",
 				id = "luamqtt-test-mosquitto",
 				debug = client_debug,
 				uri = "test.mosquitto.org",
 				clean = true,
 			},
+			{
+				name = "mqtt.flespi.io SSL",
+				id = "luamqtt-test-flespi-ssl",
+				debug = client_debug,
+				uri = "mqtt.flespi.io",
+				ssl = true,
+				clean = true,
+				auth = {username = "tdFzK216XmzUA5sxLIOyJl62fDVQiI7CLC1juRff3C0syiP9PtwoCqeGUZm0xks7"},
+			},
+			{
+				name = "test.mosquitto.org SSL",
+				id = "luamqtt-test-mosquitto",
+				debug = client_debug,
+				uri = "test.mosquitto.org",
+				ssl = true,
+				clean = true,
+			},
 		}
 		for _, case in ipairs(cases) do
+			print("=====")
+			print("=====", case.name)
+			print("=====")
+
 			-- create client
 			local client = mqtt.client(case)
 

@@ -6,12 +6,12 @@ local luasocket = {}
 local socket = require("socket")
 
 -- Open network connection to .host and .port in conn table
--- Store opened luasocket to conn table
+-- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function luasocket.connect(conn)
 	local sock, err = socket.connect(conn.host, conn.port)
 	if not sock then
-		return false, err
+		return false, "socket.connect failed: "..err
 	end
 	conn.sock = sock
 	return true

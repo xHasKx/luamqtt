@@ -19,6 +19,13 @@ It's not listed in package dependencies, please install it manually like this:
 
     luarocks install luabitop
 
+## luasec (SSL/TLS)
+
+To establish secure network connection (SSL/TSL) to MQTT broker
+you also need [**luasec**](https://github.com/brunoos/luasec) module, please install it manually like this:
+
+    luarocks install luasec
+
 # Lua versions
 
 It's tested to work on Debian 9 GNU/Linux with Lua versions:
@@ -54,7 +61,6 @@ The MQTT 5.0 protocol version is planned to implement in the future.
 * more permissive args for some methods
 * example in README.md
 * examples files
-* SSL (by luasec)
 * QoS 2
 * coroutines and other asyncronous approaches based on some event loop
 * several clients in one process

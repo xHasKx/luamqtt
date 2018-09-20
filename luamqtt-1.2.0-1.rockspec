@@ -1,8 +1,8 @@
 package = "luamqtt"
-version = "1.1-1"
+version = "1.2.0-1"
 source = {
 	url = "git://github.com/xHasKx/luamqtt",
-	tag = "v1.1",
+	tag = "v1.2",
 }
 description = {
 	summary = "luamqtt - Pure-lua MQTT client",
@@ -24,6 +24,7 @@ build = {
 		["mqtt.bit53"] = "mqtt/bit53.lua",
 		["mqtt.bit"] = "mqtt/bit.lua",
 		["mqtt.luasocket"] = "mqtt/luasocket.lua",
+		["mqtt.luasocket_ssl"] = "mqtt/luasocket_ssl.lua",
 		["mqtt.protocol"] = "mqtt/protocol.lua",
 		["mqtt.tools"] = "mqtt/tools.lua",
 	},

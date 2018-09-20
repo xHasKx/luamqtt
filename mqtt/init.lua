@@ -13,7 +13,14 @@ CONVENTIONS:
 ]]
 
 -- module table
-local mqtt = {}
+local mqtt = {
+	-- supported MQTT protocol versions
+	protocol_version = {
+		"3.1.1",
+	},
+	-- mqtt library version
+	library_versoin = "1.2.0",
+}
 
 
 -- required modules
@@ -45,6 +52,7 @@ local client_mt = {
 	-- args: table with keys:
 	-- 		id 			-- [mandatory] client id value for connecting to MQTT broker.
 	-- 		uri 		-- [mandatory] MQTT broker URI to connect in format "host:port" or "host" (default port is 1883)
+	-- 		ssl 		-- [optional] true to open SSL network connection
 	-- 		clean 		-- [mandatory] clean session flag (true/false)
 	-- 		auth 		-- [optional] table with username and password keys to authorize on MQTT broker
 	-- 		debug 		-- [optional] debug function like print, will be called with mqtt client and message to show, default is nil (no debug output).
@@ -56,6 +64,10 @@ local client_mt = {
 		assert(type(self.id) == "string", "expecting .id to be a string")
 		self.uri = args.uri
 		assert(type(self.uri) == "string", "expecting .uri to be a string")
+		self.ssl = args.ssl
+		if self.ssl ~= nil then
+			assert(type(self.ssl) == "boolean" or type(self.ssl) == "table", "expecting .uri to be a boolean or table")
+		end
 		self.clean = args.clean
 		assert(type(self.clean) == "boolean", "expecting .clean to be a boolean")
 		self.auth = args.auth
@@ -70,7 +82,11 @@ local client_mt = {
 		self.connector = args.connector
 		if not self.connector then
 			-- fallback to default connector (built-in based on luasocket)
-			self.connector = require("mqtt.luasocket")
+			if self.ssl then
+				self.connector = require("mqtt.luasocket_ssl")
+			else
+				self.connector = require("mqtt.luasocket")
+			end
 		end
 		-- available events of this client
 		self.handlers = {
@@ -292,6 +308,7 @@ local client_mt = {
 			queue = {},
 		}
 		self:_parse_uri(conn)
+		self:_set_ssl_params(conn)
 		-- open TCP connection
 		self:_debug("open_connection to %s", conn.uri)
 		local ok, err = self.connector.connect(conn)
@@ -382,16 +399,36 @@ local client_mt = {
 	end,
 
 	-- Parse conn.uri to conn.host and conn.port to connect
-	_parse_uri = function(_, conn)
+	_parse_uri = function(self, conn)
 		local host, port = str_match(conn.uri, "^([%w%.%-]+):(%d+)$")
 		if not host then
 			-- trying pattern without port
 			host = assert(str_match(conn.uri, "^([%w%.%-]+)$"), "invalid uri format: expecting at least host/ip in .uri")
 		end
 		if not port then
-			port = 1883 -- default MQTT connection port
+			if self.ssl then
+				port = 8883 -- default MQTT secure connection port
+			else
+				port = 1883 -- default MQTT connection port
+			end
 		end
 		conn.host, conn.port = host, port
+		self:_debug("host: %s, port: %s", host, port)
+	end,
+
+	-- Setup ssl params into connection
+	_set_ssl_params = function(self, conn)
+		if type(self.ssl) == "table" then
+			conn.ssl_params = self.ssl
+		else
+			-- default ssl params
+			conn.ssl_params = {
+				mode = "client",
+				protocol = "tlsv1_2",
+				verify = "none",
+				options = "all",
+			}
+		end
 	end,
 
 	-- Assign next packet ID to the args
