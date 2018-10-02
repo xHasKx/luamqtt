@@ -35,7 +35,7 @@ describe("MQTT client", function()
 			},
 			{
 				name = "mqtt.flespi.io SSL",
-				id = "luamqtt-test-flespi-ssl",
+				-- id = "luamqtt-test-flespi-ssl", -- testing randomly generated client id
 				debug = client_debug,
 				uri = "mqtt.flespi.io",
 				ssl = true,

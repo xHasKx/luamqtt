@@ -23,6 +23,8 @@ local mqtt = {
 }
 
 
+local require = require
+
 -- required modules
 local string = require("string")
 local protocol = require("mqtt.protocol")
@@ -32,7 +34,11 @@ local protocol = require("mqtt.protocol")
 local setmetatable = setmetatable
 local str_match = string.match
 local str_format = string.format
+local str_gsub = string.gsub
 local tbl_remove = table.remove
+local math_random = math.random
+local math_randomseed = math.randomseed
+local os_time = os.time
 local packet_type = protocol.packet_type
 local make_packet = protocol.make_packet
 local parse_packet = protocol.parse_packet
@@ -46,11 +52,15 @@ local packet_tostring = protocol.packet_tostring
 local empty_func = function() end
 
 
+-- pseudo-random generator initialized flag
+local random_initialized = false
+
+
 -- MQTT Client metatable
 local client_mt = {
 	-- Initialize MQTT client with given args
 	-- args: table with keys:
-	-- 		id 			-- [mandatory] client id value for connecting to MQTT broker.
+	-- 		id 			-- [optional] client id value for connecting to MQTT broker. Will be generated, if not provided
 	-- 		uri 		-- [mandatory] MQTT broker URI to connect in format "host:port" or "host" (default port is 1883)
 	-- 		ssl 		-- [optional] true to open SSL network connection
 	-- 		clean 		-- [mandatory] clean session flag (true/false)
@@ -61,7 +71,17 @@ local client_mt = {
 	init = function(self, args)
 		-- assign properties
 		self.id = args.id
-		assert(type(self.id) == "string", "expecting .id to be a string")
+		if self.id ~= nil then
+			assert(type(self.id) == "string", "expecting .id to be a string")
+		else
+			-- auto-generate self.id
+			if not random_initialized then
+				-- initialize pseudo-random generator with current time seed
+				math_randomseed(os_time())
+				random_initialized = true
+			end
+			self.id = str_format("luamqtt-v%s-%07x", str_gsub(mqtt.library_versoin, "%.", "-"), math_random(1, 0xFFFFFFF))
+		end
 		self.uri = args.uri
 		assert(type(self.uri) == "string", "expecting .uri to be a string")
 		self.ssl = args.ssl
