@@ -19,7 +19,7 @@ local mqtt = {
 		"3.1.1",
 	},
 	-- mqtt library version
-	library_versoin = "1.2.1",
+	library_versoin = "1.3.0",
 }
 
 
@@ -248,9 +248,9 @@ local client_mt = {
 		end
 	end,
 
-	-- Connect to MQTT broker and run forever until network connection is available
-	-- Returns true on success when connection was closed gracefully or false and error message on failure
-	connect_and_run = function(self)
+	-- Connect to MQTT broker and wait for CONNACK
+	-- Returns true and CONNACK packet table on success or false, error message and received packet table on failure
+	connect = function(self)
 		-- open network connection to MQTT broker
 		local ok, err = self:_open_connection()
 		if not ok then
@@ -258,57 +258,73 @@ local client_mt = {
 			self.handlers.error(err)
 			return false, err
 		end
-		ok, err = (function()
-			-- send CONNECT packet
-			local args = {
-				type = packet_type.CONNECT,
-				id = self.id,
-				clean = self.clean,
-			}
-			if self.auth then
-				args.username = self.auth.username
-				args.password = self.auth.password
+		-- send CONNECT packet
+		ok, err = self:_send_connect()
+		if not ok then
+			err = "sending CONNECT failed: "..err
+			self.handlers.error(err)
+			return false, err
+		end
+		-- wait for CONNACK with return code == 0
+		local packet
+		self:_debug("waiting for CONNACK")
+		packet, err = self:_wait_packet()
+		if not packet then
+			err = "waiting for CONNACK failed: "..err
+			self.handlers.error(err)
+			return false, err
+		end
+		self:_debug("received: %s", tostring(packet))
+		-- check received packet type and return code
+		if packet.type ~= packet_type.CONNACK then
+			err = "expecting CONNACK packet but received: "..tostring(packet.type)
+			self.handlers.error(err)
+			return false, err
+		end
+		if packet.rc ~= 0 then
+			err = str_format("CONNECT failed with CONNACK rc=[%d] %s", packet.rc, tostring(connack_return_code[packet.rc]))
+			self.handlers.error(err)
+			return false, err
+		end
+		return true, packet
+	end,
+
+	-- Start packet receiving loop
+	receive_loop = function(self)
+		-- start packet receiving loop
+		while self.connection do
+			local packet, perr = self:_wait_packet_queue()
+			if not packet then
+				perr = "waiting for the next packet failed: "..perr
+				self.handlers.error(perr)
+				return false, perr
 			end
-			if self.will then
-				args.will = {}
-				for k, v in pairs(self.will) do
-					args.will[k] = v
-				end
-				args.will.qos = args.will.qos or 0
-				args.will.retain = args.will.retain or false
+			self:_debug("[receive_loop] received packet: %s", tostring(packet))
+			if packet.type == packet_type.PUBLISH then
+				self.handlers.message(packet)
+			-- elseif packet.type == packet_type.PUBACK then
+				-- received acknowledge of some published packet
+			else
+				return false, "unexpected packet received: "..tostring(packet)
 			end
-			local sok, serr = self:_send_packet(args)
-			if not sok then
-				serr = "send CONNECT failed: "..serr
-				self.handlers.error(serr)
-				return false, serr
-			end
-			-- start packet receiving loop
-			while self.connection do
-				local packet, perr = self:_wait_packet_queue()
-				if not packet then
-					perr = "waiting for the next packet failed: "..perr
-					self.handlers.error(perr)
-					return false, perr
-				end
-				self:_debug("[run] received packet: %s", tostring(packet))
-				if packet.type == packet_type.CONNACK then
-					if packet.rc ~= 0 then
-						perr = str_format("CONNECT failed with CONNACK rc=[%d] %s", packet.rc, tostring(connack_return_code[packet.rc]))
-						self.handlers.error(perr)
-						return false, perr
-					end
-					self.handlers.connect(packet)
-				elseif packet.type == packet_type.PUBLISH then
-					self.handlers.message(packet)
-				-- elseif packet.type == packet_type.PUBACK then
-					-- received acknowledge of some published packet
-				else
-					return false, "unexpected packet received: "..tostring(packet)
-				end
-			end
-			return true
-		end)()
+		end
+		return true
+	end,
+
+	-- Connect to MQTT broker and run forever until network connection is available
+	-- Returns true on success when connection was closed gracefully or false and error message on failure
+	connect_and_run = function(self)
+		-- open network connection to MQTT broker and wait for CONNACK success
+		local ok, err = self:connect()
+		if not ok then
+			err = "connection failed: "..err
+			self.handlers.error(err)
+			return false, err
+		end
+		-- fire connect event
+		self.handlers.connect(err)
+		-- start packet receiving loop
+		ok, err = self:receive_loop()
 		-- ensure network connection is closed
 		self:close_connection()
 		if not ok then
@@ -337,6 +353,39 @@ local client_mt = {
 		end
 		self.connection = conn
 		self:_debug("network connection established")
+		return true
+	end,
+
+	-- Send CONNECT packet to opened connection
+	_send_connect = function(self)
+		if not self.connection then
+			return false, "network connection is not opened"
+		end
+		-- construct CONNECT packet table
+		local args = {
+			type = packet_type.CONNECT,
+			id = self.id,
+			clean = self.clean,
+		}
+		if self.auth then
+			args.username = self.auth.username
+			args.password = self.auth.password
+		end
+		if self.will then
+			args.will = {}
+			for k, v in pairs(self.will) do
+				args.will[k] = v
+			end
+			args.will.qos = args.will.qos or 0
+			args.will.retain = args.will.retain or false
+		end
+		-- send CONNECT packet
+		local ok, err = self:_send_packet(args)
+		if not ok then
+			err = "send CONNECT failed: "..err
+			self.handlers.error(err)
+			return false, err
+		end
 		return true
 	end,
 

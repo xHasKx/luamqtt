@@ -29,7 +29,7 @@ you also need [**luasec**](https://github.com/brunoos/luasec) module, please ins
 # Lua versions
 
 It's tested to work on Debian 9 GNU/Linux with Lua versions:
-* Lua 5.1 ... Lua 5.3
+* Lua 5.1 ... Lua 5.3 (**i.e. any modern Lua version**)
 * LuaJIT 2.0.0 ... LuaJIT 2.1.0 beta3
 * It may also work on other Lua versions without any guarantees
 
@@ -43,13 +43,39 @@ Also I've successfully run it under **Windows** and it was ok, but installing mo
 
 # Examples
 
-Checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
+Here is a short version of [`examples/simple.lua`](examples/simple.lua):
+
+```lua
+-- load mqtt library
+local mqtt = require("mqtt")
+
+-- create mqtt client
+local client = mqtt.client{ uri = "test.mosquitto.org", clean = true }
+
+-- connect to broker, using assert to raise error on failure
+assert(client:connect())
+
+-- subscribe to test topic
+assert(client:subscribe{ topic = "test/luamqtt" })
+
+-- publish
+assert(client:publish{ topic = "test/luamqtt", payload = "hello" })
+
+-- receive one message and disconnect
+client:on("message", function(msg)
+	print("received message", msg)
+	client:disconnect()
+end)
+assert(client:receive_loop())
+```
+
+More examples placed in [`examples/`](examples/) directory. Also checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
 
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
 
     busted tests/spec/*.lua
 
-To run tests using locally cloned git repo use this:
+To run tests using locally cloned git repo use this command:
 
     busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
 
