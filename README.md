@@ -49,6 +49,10 @@ To run tests in this git repo you need [**busted**](https://luarocks.org/modules
 
     busted tests/spec/*.lua
 
+To run tests using locally cloned git repo use this:
+
+    busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
+
 Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
 
 # MQTT version
