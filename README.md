@@ -89,10 +89,9 @@ The MQTT 5.0 protocol version is planned to implement in the future.
 
 # TODO
 
-* separate client:send_connect() method
 * more permissive args for some methods
-* example in README.md
-* examples files
+* more examples
+* check some packet sequences are right
 * QoS 2
 * coroutines and other asyncronous approaches based on some event loop
 * several clients in one process
