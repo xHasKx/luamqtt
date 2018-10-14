@@ -1,8 +1,8 @@
 package = "luamqtt"
-version = "1.3.0-1"
+version = "1.4.0-1"
 source = {
 	url = "git://github.com/xHasKx/luamqtt",
-	tag = "v1.3",
+	tag = "v1.4",
 }
 description = {
 	summary = "luamqtt - Pure-lua MQTT client",

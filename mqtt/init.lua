@@ -155,11 +155,34 @@ local client_mt = {
 			self.handlers.error(err)
 			return false, err
 		end
-		-- check we need to wait for PUBACK
-		if acopy.qos == 1 then -- TODO: QoS 2
+		-- check we need to wait for acknowledge packets
+		if acopy.qos == 1 then
 			local puback, perr = self:_wait_packet_exact{type=packet_type.PUBACK, packet_id=acopy.packet_id}
 			if not puback then
 				perr = "PUBLISH wait for PUBACK failed: "..perr
+				self.handlers.error(perr)
+				return false, perr
+			end
+		elseif acopy.qos == 2 then
+			-- DOC: 4.3.3 QoS 2: Exactly once delivery
+			-- wait for PUBREC
+			local ack, perr = self:_wait_packet_exact{type=packet_type.PUBREC, packet_id=acopy.packet_id}
+			if not ack then
+				perr = "PUBLISH wait for PUBREC failed: "..perr
+				self.handlers.error(perr)
+				return false, perr
+			end
+			-- send PUBREL
+			ok, err = self:_send_packet{type=packet_type.PUBREL, packet_id=acopy.packet_id}
+			if not ok then
+				err = "PUBLISH send PUBREL failed: "..err
+				self.handlers.error(err)
+				return false, err
+			end
+			-- wait for PUBCOMP
+			ack, perr = self:_wait_packet_exact{type=packet_type.PUBCOMP, packet_id=acopy.packet_id}
+			if not ack then
+				perr = "PUBLISH wait for PUBCOMP failed: "..perr
 				self.handlers.error(perr)
 				return false, perr
 			end
@@ -168,20 +191,42 @@ local client_mt = {
 	end,
 
 	-- Send PUBACK packet for given msg packet, if need
-	puback = function(self, msg)
+	acknowledge = function(self, msg)
 		assert(type(msg) == "table", "expecting msg to be a table")
 		if msg.qos == 0 then
 			return true
 		end
 		assert(type(msg.packet_id) == "number", "expecting .packet_id to be a number")
-		local ok, err = self:_send_packet{
-			type = packet_type.PUBACK,
-			packet_id = msg.packet_id,
-		}
-		if not ok then
-			err = "PUBACK send failed: "..err
-			self.handlers.error(err)
-			return false, err
+		if msg.qos == 1 then
+			local ok, err = self:_send_packet{type = packet_type.PUBACK, packet_id = msg.packet_id}
+			if not ok then
+				err = "acknowledge PUBACK send failed: "..err
+				self.handlers.error(err)
+				return false, err
+			end
+		elseif msg.qos == 2 then
+			-- DOC: 4.3.3 QoS 2: Exactly once delivery
+			-- send PUBREC
+			local ok, err = self:_send_packet{type = packet_type.PUBREC, packet_id = msg.packet_id}
+			if not ok then
+				err = "acknowledge PUBREC send failed: "..err
+				self.handlers.error(err)
+				return false, err
+			end
+			-- wait for PUBREL
+			local ack, perr = self:_wait_packet_exact{type=packet_type.PUBREL, packet_id=msg.packet_id} -- TODO: now publish with same packet_id should be acknowledged by PUBREC and removed from queue
+			if not ack then
+				perr = "acknowledge wait for PUBREL failed: "..perr
+				self.handlers.error(perr)
+				return false, perr
+			end
+			-- send PUBCOMP
+			ok, err = self:_send_packet{type = packet_type.PUBCOMP, packet_id = msg.packet_id}
+			if not ok then
+				err = "acknowledge PUBCOMP send failed: "..err
+				self.handlers.error(err)
+				return false, err
+			end
 		end
 		return true
 	end,
@@ -530,6 +575,10 @@ local client_mt = {
 		end
 	end,
 }
+
+-- acknowledge method alias
+-- NOTE: this method name is deprecated now and will be removed in the next major version
+client_mt.puback = client_mt.acknowledge
 
 -- Make client_mt table works like a class
 client_mt.__index = function(_, key)

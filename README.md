@@ -92,7 +92,6 @@ The MQTT 5.0 protocol version is planned to implement in the future.
 * more permissive args for some methods
 * more examples
 * check some packet sequences are right
-* QoS 2
 * coroutines and other asyncronous approaches based on some event loop
 * several clients in one process
 * MQTT 5.0

@@ -63,46 +63,43 @@ describe("MQTT client", function()
 			client:on("connect", function(connack)
 				print("--- on connect", connack)
 
-				local cnt = 0
-
-				client:on("message", function(msg)
-					print("--- on message", msg)
-					client:puback(msg)
-
-					if msg.topic == "luamqtt/test1" then
-						cnt = cnt + 1
-						if cnt > 3 then
-							client:unsubscribe("luamqtt/test1")
-							client:subscribe{
-								topic = "luamqtt/#",
-								qos = 1,
-							}
-							client:publish{
-								topic = "luamqtt/test2",
-								payload = "finish"
-							}
-						else
-							client:publish{
-								topic = "luamqtt/test1",
-								payload = "important:"..cnt,
-								qos = 1,
-							}
-						end
-					else
-						client:disconnect()
-					end
-				end)
-
 				client:subscribe{
-					topic = "luamqtt/test1",
-					qos = 1,
+					topic = "luamqtt/0/test",
 				}
 
 				client:publish{
-					topic = "luamqtt/test1",
+					topic = "luamqtt/0/test",
 					payload = "initial",
-					qos = 1,
 				}
+
+				client:on("message", function(msg)
+					print("--- on message", msg)
+					client:acknowledge(msg)
+
+					if msg.topic == "luamqtt/0/test" then
+						-- re-subscribe test
+						client:unsubscribe("luamqtt/0/test")
+						client:subscribe{
+							topic = "luamqtt/#",
+							qos = 2,
+						}
+
+						client:publish{
+							topic = "luamqtt/1/test",
+							payload = "testing QoS 1",
+							qos = 1,
+						}
+					elseif msg.topic == "luamqtt/1/test" then
+						client:publish{
+							topic = "luamqtt/2/test",
+							payload = "testing QoS 2",
+							qos = 2,
+						}
+					elseif msg.topic == "luamqtt/2/test" then
+						-- done
+						client:disconnect()
+					end
+				end)
 			end)
 
 			client:on("close", function()
