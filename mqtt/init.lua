@@ -19,7 +19,7 @@ local mqtt = {
 		"3.1.1",
 	},
 	-- mqtt library version
-	library_version = "1.3.0",
+	library_version = "1.4.1",
 }
 
 
