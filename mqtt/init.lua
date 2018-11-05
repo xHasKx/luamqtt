@@ -19,7 +19,7 @@ local mqtt = {
 		"3.1.1",
 	},
 	-- mqtt library version
-	library_versoin = "1.3.0",
+	library_version = "1.3.0",
 }
 
 
@@ -80,7 +80,7 @@ local client_mt = {
 				math_randomseed(os_time())
 				random_initialized = true
 			end
-			self.id = str_format("luamqtt-v%s-%07x", str_gsub(mqtt.library_versoin, "%.", "-"), math_random(1, 0xFFFFFFF))
+			self.id = str_format("luamqtt-v%s-%07x", str_gsub(mqtt.library_version, "%.", "-"), math_random(1, 0xFFFFFFF))
 		end
 		self.uri = args.uri
 		assert(type(self.uri) == "string", "expecting .uri to be a string")
