@@ -26,6 +26,8 @@ you also need [**luasec**](https://github.com/brunoos/luasec) module, please ins
 
     luarocks install luasec
 
+This stage is optional and may be skipped if you don't need the secure network connection (e.g. broker is located in your local network).
+
 # Lua versions
 
 It's tested to work on Debian 9 GNU/Linux with Lua versions:
@@ -33,7 +35,7 @@ It's tested to work on Debian 9 GNU/Linux with Lua versions:
 * LuaJIT 2.0.0 ... LuaJIT 2.1.0 beta3
 * It may also work on other Lua versions without any guarantees
 
-Also I've successfully run it under **Windows** and it was ok, but installing modules was a non-trivial task on this OS.
+Also I've successfully run it under **Windows** and it was ok, but installing luarock-modules was a non-trivial task on this OS.
 
 # Installation
 
@@ -80,6 +82,16 @@ To run tests using locally cloned git repo use this command:
     busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
 
 Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
+
+# Connectors
+
+Connector is a network connection layer for luamqtt. There is a two standard connectors included - [`luasocket`](mqtt/luasocket.lua) and [`luasocket_ssl`](mqtt/luasocket_ssl.lua).
+
+In simple terms, connector is a set of functions to establish a network stream (TCP connection usually) and send/receive data through it.
+Every MQTT client instance may have their own connector.
+
+And it's very simple to implement your own connector to make luamqtt works in your environment.
+For example, it may be the [`cosocket implementation for OpenResty`](https://github.com/openresty/lua-nginx-module).
 
 # MQTT version
 
