@@ -93,6 +93,8 @@ Every MQTT client instance may have their own connector.
 And it's very simple to implement your own connector to make luamqtt works in your environment.
 For example, it may be the [`cosocket implementation for OpenResty`](https://github.com/openresty/lua-nginx-module).
 
+For more details - see the [`source code of MQTT client initializer`](https://github.com/xHasKx/luamqtt/blob/master/mqtt/init.lua#L69).
+
 # MQTT version
 
 Currently supported is [MQTT v3.1.1 protocol](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html) version.
