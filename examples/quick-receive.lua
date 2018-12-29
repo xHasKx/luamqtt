@@ -1,9 +1,11 @@
+-- NOTE: use in pair with examples/quick-receive.lua
+
 -- load mqtt library
 local mqtt = require("mqtt")
 
 -- create mqtt client
 local client = mqtt.client{
-	uri = "test.mosquitto.org",
+	uri = "test.mosquitto.org", -- NOTE: this broker is not working sometimes
 	clean = true,
 }
 print(client)

@@ -24,14 +24,7 @@ describe("MQTT client", function()
 				debug = client_debug,
 				uri = "mqtt.flespi.io",
 				clean = true,
-				auth = {username = "tdFzK216XmzUA5sxLIOyJl62fDVQiI7CLC1juRff3C0syiP9PtwoCqeGUZm0xks7"},
-			},
-			{
-				name = "test.mosquitto.org no SSL",
-				id = "luamqtt-test-mosquitto",
-				debug = client_debug,
-				uri = "test.mosquitto.org",
-				clean = true,
+				auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
 			},
 			{
 				name = "mqtt.flespi.io SSL",
@@ -40,7 +33,14 @@ describe("MQTT client", function()
 				uri = "mqtt.flespi.io",
 				ssl = true,
 				clean = true,
-				auth = {username = "tdFzK216XmzUA5sxLIOyJl62fDVQiI7CLC1juRff3C0syiP9PtwoCqeGUZm0xks7"},
+				auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
+			},
+			{
+				name = "test.mosquitto.org no SSL",
+				id = "luamqtt-test-mosquitto",
+				debug = client_debug,
+				uri = "test.mosquitto.org", -- NOTE: this broker is not working sometimes
+				clean = true,
 			},
 			{
 				name = "test.mosquitto.org SSL",

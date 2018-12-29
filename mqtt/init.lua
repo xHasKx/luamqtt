@@ -19,7 +19,7 @@ local mqtt = {
 		"3.1.1",
 	},
 	-- mqtt library version
-	library_version = "1.4.1",
+	library_version = "1.4.2",
 }
 
 
@@ -334,24 +334,31 @@ local client_mt = {
 		return true, packet
 	end,
 
+	-- Receive one packet, suitable for calling in a loop
+	receive_iteration = function(self)
+		local packet, perr = self:_wait_packet_queue()
+		if not packet then
+			perr = "waiting for the next packet failed: "..perr
+			self.handlers.error(perr)
+			return false, perr
+		end
+		self:_debug("[receive_iteration] received packet: %s", tostring(packet))
+		if packet.type == packet_type.PUBLISH then
+			self.handlers.message(packet)
+		-- elseif packet.type == packet_type.PUBACK then
+			-- received acknowledge of some published packet
+		else
+			return false, "unexpected packet received: "..tostring(packet)
+		end
+		return true
+	end,
+
 	-- Start packet receiving loop
 	receive_loop = function(self)
 		-- start packet receiving loop
 		while self.connection do
-			local packet, perr = self:_wait_packet_queue()
-			if not packet then
-				perr = "waiting for the next packet failed: "..perr
-				self.handlers.error(perr)
-				return false, perr
-			end
-			self:_debug("[receive_loop] received packet: %s", tostring(packet))
-			if packet.type == packet_type.PUBLISH then
-				self.handlers.message(packet)
-			-- elseif packet.type == packet_type.PUBACK then
-				-- received acknowledge of some published packet
-			else
-				return false, "unexpected packet received: "..tostring(packet)
-			end
+			-- just receive one packet on each iteration
+			self:receive_iteration()
 		end
 		return true
 	end,

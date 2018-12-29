@@ -3,7 +3,9 @@ local mqtt = require("mqtt")
 
 -- create mqtt client
 local client = mqtt.client{
-	uri = "test.mosquitto.org",
+	-- uri = "test.mosquitto.org", -- NOTE: this broker is not working sometimes
+	uri = "mqtt.flespi.io",
+	auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
 	clean = true,
 }
 print(client)
@@ -14,14 +16,14 @@ print("connected")
 
 -- subscribe to test topic
 assert(client:subscribe{
-	topic = "test/luamqtt",
+	topic = "luamqtt/#",
 	qos = 1
 })
 print("subscribed")
 
 -- publish
 assert(client:publish{
-	topic = "test/luamqtt",
+	topic = "luamqtt/simpletest",
 	payload = "hello",
 	qos = 1
 })
@@ -32,6 +34,10 @@ client:on("message", function(msg)
 	print("received message", msg)
 	client:disconnect()
 end)
-assert(client:receive_loop())
+
+-- start receive loop
+while client.connection do -- or just assert(client:receive_loop())
+	assert(client:receive_iteration())
+end
 
 print("done")
