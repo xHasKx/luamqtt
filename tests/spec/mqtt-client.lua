@@ -14,8 +14,7 @@ describe("MQTT client", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
 
-	it("main test", function()
-		local client_debug = nil -- print
+	local client_debug = nil -- print
 		-- test servers
 		local cases = {
 			{
@@ -51,17 +50,16 @@ describe("MQTT client", function()
 				clean = true,
 			},
 		}
-		for _, case in ipairs(cases) do
-			print("=====")
-			print("=====", case.name)
-			print("=====")
+
+	for _, case in ipairs(cases) do
+		it("complex test - "..case.name, function()	
 
 			-- create client
 			local client = mqtt.client(case)
 
 			-- set on-connect handler
 			client:on("connect", function(connack)
-				print("--- on connect", connack)
+				if client_debug then client_debug("--- on connect", case.name, connack) end
 
 				client:subscribe{
 					topic = "luamqtt/0/test",
@@ -73,7 +71,7 @@ describe("MQTT client", function()
 				}
 
 				client:on("message", function(msg)
-					print("--- on message", msg)
+					if client_debug then client_debug("--- on message", case.name, msg) end
 					client:acknowledge(msg)
 
 					if msg.topic == "luamqtt/0/test" then
@@ -103,19 +101,18 @@ describe("MQTT client", function()
 			end)
 
 			client:on("close", function()
-				print("--- on close", client)
+				if client_debug then client_debug("--- on close", case.name, client) end
 			end)
 
 			-- set on-error handler
 			client:on("error", function(err)
-				print("--- on error", err)
+				if client_debug then client_debug("--- on error", case.name, err) end
 			end)
 
 			-- and wait for connection to broker is closed
 			assert(client:connect_and_run())
-		end
-	end)
-
+		end)
+	end
 end)
 
 -- vim: ts=4 sts=4 sw=4 noet ft=lua
