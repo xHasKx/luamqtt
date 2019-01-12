@@ -49,6 +49,21 @@ describe("MQTT client", function()
 				ssl = true,
 				clean = true,
 			},
+			{
+				name = "mqtt.fluux.io no SSL",
+				id = "luamqtt-test-fluux",
+				debug = client_debug,
+				uri = "mqtt.fluux.io",
+				clean = true,
+			},
+			{
+				name = "mqtt.fluux.io SSL",
+				-- id = "luamqtt-test-fluux", -- testing randomly generated client id
+				debug = client_debug,
+				uri = "mqtt.fluux.io",
+				ssl = true,
+				clean = true,
+			},
 		}
 
 	for _, case in ipairs(cases) do
