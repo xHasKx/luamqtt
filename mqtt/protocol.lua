@@ -12,7 +12,7 @@ CONVENTIONS:
 
 	* read_func - function to read data from some stream-like object (like network connection).
 		We are calling it with one argument: number of bytes to read.
-		Use currying to pass other arguments to this function.
+		Use currying/closures to pass other arguments to this function.
 		This function should return string of given size on success.
 		On failure it should return false/nil and an error message.
 
@@ -47,13 +47,12 @@ local unpack = unpack or table.unpack
 
 
 -- Create uint8 value data
-local function make_uint8(val)
+function protocol.make_uint8(val)
 	if val < 0 or val > 0xFF then
 		error("value is out of range to encode as uint8: "..tostring(val))
 	end
 	return str_char(val)
 end
-protocol.make_uint8 = make_uint8
 
 -- Create uint16 value data
 local function make_uint16(val)
@@ -67,10 +66,9 @@ protocol.make_uint16 = make_uint16
 -- Create UTF-8 string data
 -- DOCv3.1.1: 1.5.3 UTF-8 encoded strings
 -- DOCv5.0: 1.5.4 UTF-8 Encoded String
-local function make_string(str)
+function protocol.make_string(str)
 	return make_uint16(str:len())..str
 end
-protocol.make_string = make_string
 
 -- Returns bytes of given integer value encoded as variable length field
 -- DOCv3.1.1: 2.2.3 Remaining Length
@@ -92,30 +90,27 @@ local function make_var_length(len)
 	until len <= 0
 	return unpack(bytes)
 end
-protocol.make_var_length = make_var_length -- TODO: maybe remove local
+protocol.make_var_length = make_var_length
 
 -- Create fixed packet header data
 -- DOCv3.1.1: 2.2 Fixed header
 -- DOCv5.0: 2.1.1 Fixed Header
-local function make_header(ptype, flags, len)
+function protocol.make_header(ptype, flags, len)
 	local byte1 = bor(lshift(ptype, 4), band(flags, 0x0F))
 	return str_char(byte1, make_var_length(len))
 end
-protocol.make_header = make_header
 
 -- Returns true if given value is a valid QoS
-local function check_qos(val)
+function protocol.check_qos(val)
 	return (val == 0) or (val == 1) or (val == 2)
 end
-protocol.check_qos = check_qos
 
 -- Returns true if given value is a valid Packet Identifier
 -- DOCv3.1.1: 2.3.1 Packet Identifier
 -- DOCv5.0: 2.2.1 Packet Identifier
-local function check_packet_id(val)
+function protocol.check_packet_id(val)
 	return val >= 1 and val <= 0xFFFF
 end
-protocol.check_packet_id = check_packet_id
 
 -- Returns the next Packet Identifier value relative to given current value
 -- DOCv3.1.1: 2.3.1 Packet Identifier
@@ -165,16 +160,15 @@ combined_packet_mt.__index = function(_, key)
 end
 
 -- Combine several data parts into one
-local function combine(...)
+function protocol.combine(...)
 	return setmetatable({...}, combined_packet_mt)
 end
-protocol.combine = combine
 
 -- Max variable length integer value
 local max_mult = 128 * 128 * 128
 
 -- Returns variable length field value calling read_func function read data, DOC: 2.2.3 Remaining Length
-local function parse_var_length(read_func)
+function protocol.parse_var_length(read_func)
 	assert(type(read_func) == "function", "expecting read_func to be a function")
 	local mult = 1
 	local val = 0
@@ -192,7 +186,6 @@ local function parse_var_length(read_func)
 	until band(byte, 128) == 0
 	return val
 end
-protocol.parse_var_length = parse_var_length
 
 -- MQTT protocol fixed header packet types
 -- DOCv3.1.1: 2.2.1 MQTT Control Packet type
@@ -242,10 +235,9 @@ end
 protocol.packet_tostring = packet_tostring
 
 -- Parsed packet metatable
-local packet_mt = {
+protocol.packet_mt = {
 	__tostring = packet_tostring,
 }
-protocol.packet_mt = packet_mt
 
 -- export module table
 return protocol
