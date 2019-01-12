@@ -1,9 +1,10 @@
 -- busted -e 'package.path="./?/init.lua;"..package.path;' spec/*.lua
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
-describe("MQTT protocol: making packets", function()
+describe("MQTT v3.1.1 protocol: making packets", function()
 	local tools = require("mqtt.tools")
 	local protocol = require("mqtt.protocol")
+	local protocol4 = require("mqtt.protocol4")
 
 	it("CONNECT with full properties", function()
 		--[[
@@ -34,7 +35,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"104800044D51545404EE001E0009636C69656E742D696400076F66666C696E650014636C69656E742D6964206973206F66666C696E650007546865557365720009546F70536563726574",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.CONNECT,
 				id = "client-id",
 				clean = true,
@@ -63,7 +64,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"3B0F0004736F6D6500017061796C6F6164",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBLISH,
 				topic = "some",
 				payload = "payload",
@@ -84,7 +85,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"3B080004736F6D650001",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBLISH,
 				topic = "some",
 				qos = 1,
@@ -103,7 +104,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"30060004736F6D65",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBLISH,
 				topic = "some",
 				qos = 0,
@@ -121,34 +122,34 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"40020001",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBACK,
 				packet_id = 1,
 			}))
 		)
 		assert.are.equal(
 			"40020002",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBACK,
 				packet_id = 2,
 			}))
 		)
 		assert.are.equal(
 			"4002FFFF",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBACK,
 				packet_id = 0xFFFF,
 			}))
 		)
 		-- invalid Packet Identifier's:
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBACK,
 				packet_id = 0,
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBACK,
 				packet_id = 0xFFFF + 1,
 			}
@@ -163,34 +164,34 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"50020001",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBREC,
 				packet_id = 1,
 			}))
 		)
 		assert.are.equal(
 			"50020002",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBREC,
 				packet_id = 2,
 			}))
 		)
 		assert.are.equal(
 			"5002FFFF",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBREC,
 				packet_id = 0xFFFF,
 			}))
 		)
 		-- invalid Packet Identifier's:
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBREC,
 				packet_id = 0,
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBREC,
 				packet_id = 0xFFFF + 1,
 			}
@@ -205,34 +206,34 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"62020001",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBREL,
 				packet_id = 1,
 			}))
 		)
 		assert.are.equal(
 			"62020002",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBREL,
 				packet_id = 2,
 			}))
 		)
 		assert.are.equal(
 			"6202FFFF",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBREL,
 				packet_id = 0xFFFF,
 			}))
 		)
 		-- invalid Packet Identifier's:
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBREL,
 				packet_id = 0,
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBREL,
 				packet_id = 0xFFFF + 1,
 			}
@@ -247,34 +248,34 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"70020001",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBCOMP,
 				packet_id = 1,
 			}))
 		)
 		assert.are.equal(
 			"70020002",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBCOMP,
 				packet_id = 2,
 			}))
 		)
 		assert.are.equal(
 			"7002FFFF",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PUBCOMP,
 				packet_id = 0xFFFF,
 			}))
 		)
 		-- invalid Packet Identifier's:
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBCOMP,
 				packet_id = 0,
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.PUBCOMP,
 				packet_id = 0xFFFF + 1,
 			}
@@ -291,7 +292,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"820900010004736F6D6500",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {
@@ -315,7 +316,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"822100020006736F6D652F2300000F6F746865722F2B2F746F7069632F230100012302",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 2,
 				subscriptions = {
@@ -336,25 +337,25 @@ describe("MQTT protocol: making packets", function()
 		)
 		-- invalid calls:
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 0,
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {},
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {
@@ -363,7 +364,7 @@ describe("MQTT protocol: making packets", function()
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {
@@ -372,7 +373,7 @@ describe("MQTT protocol: making packets", function()
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {
@@ -383,7 +384,7 @@ describe("MQTT protocol: making packets", function()
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {
@@ -395,7 +396,7 @@ describe("MQTT protocol: making packets", function()
 			}
 		end)
 		assert.has.errors(function()
-			protocol.make_packet{
+			protocol4.make_packet{
 				type = protocol.packet_type.SUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {
@@ -418,7 +419,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"A20800010004736F6D65",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.UNSUBSCRIBE,
 				packet_id = 1,
 				subscriptions = {
@@ -436,7 +437,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"A21E12340006736F6D652F23000F6F746865722F2B2F746F7069632F23000123",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.UNSUBSCRIBE,
 				packet_id = 0x1234,
 				subscriptions = {
@@ -455,7 +456,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"C000",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PINGREQ
 			}))
 		)
@@ -468,7 +469,7 @@ describe("MQTT protocol: making packets", function()
 		]]
 		assert.are.equal(
 			"E000",
-			tools.hex(tostring(protocol.make_packet{
+			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.DISCONNECT
 			}))
 		)

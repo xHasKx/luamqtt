@@ -1,8 +1,9 @@
 -- busted -e 'package.path="./?/init.lua;"..package.path;' spec/*.lua
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
-describe("MQTT protocol: parsing packets", function()
+describe("MQTT v3.1.1 protocol: parsing packets", function()
 	local protocol = require("mqtt.protocol")
+	local protocol4 = require("mqtt.protocol4")
 
 	it("protocol.parse_var_length", function()
 		-- returns read_func-compatible function
@@ -61,16 +62,16 @@ describe("MQTT protocol: parsing packets", function()
 	end
 
 	it("failures", function()
-		assert.is_false(protocol.parse_packet(make_read_func_hex("")))
-		assert.is_false(protocol.parse_packet(make_read_func_hex("01")))
-		assert.is_false(protocol.parse_packet(make_read_func_hex("02")))
-		assert.is_false(protocol.parse_packet(make_read_func_hex("0304")))
-		assert.is_false(protocol.parse_packet(make_read_func_hex("20")))
-		assert.is_false(protocol.parse_packet(make_read_func_hex("20030000"))) -- CONNACK with invalid length
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("")))
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("01")))
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("02")))
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("0304")))
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("20")))
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("20030000"))) -- CONNACK with invalid length
 	end)
 
 	it("CONNACK", function()
-		assert.is_false(protocol.parse_packet(make_read_func_hex("")))
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("")))
 		--[[
 			20 					packet type == 2 (CONNACK), flags == 0
 			02 					variable length == 2 bytes
@@ -81,7 +82,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.CONNACK, sp=false, rc=0
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"20020000"
 			))
 		)
@@ -89,7 +90,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.CONNACK, sp=true, rc=0
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"20020100"
 			))
 		)
@@ -97,7 +98,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.CONNACK, sp=false, rc=1
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"20020001"
 			))
 		)
@@ -121,7 +122,7 @@ describe("MQTT protocol: parsing packets", function()
 				topic = "some",
 				payload = "qos == 1, ok!",
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"3B150004736F6D650001716F73203D3D20312C206F6B21"
 			))
 		)
@@ -140,7 +141,7 @@ describe("MQTT protocol: parsing packets", function()
 				topic = "some",
 				payload = "qos == 1, ok!",
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"30130004736F6D65716F73203D3D20312C206F6B21"
 			))
 		)
@@ -156,7 +157,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.PUBACK, packet_id=1
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"40020001"
 			))
 		)
@@ -169,7 +170,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.PUBACK, packet_id=0x7FF7
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"40027FF7"
 			))
 		)
@@ -185,7 +186,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.PUBREC, packet_id=1
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"50020001"
 			))
 		)
@@ -198,7 +199,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.PUBREC, packet_id=0x4567
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"50024567"
 			))
 		)
@@ -214,7 +215,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.PUBREL, packet_id=1
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"62020001"
 			))
 		)
@@ -227,7 +228,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.PUBREL, packet_id=0x1234
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"62021234"
 			))
 		)
@@ -244,7 +245,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.SUBACK, packet_id=1, rc=0, failure=false,
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"9003000100"
 			))
 		)
@@ -258,7 +259,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.SUBACK, packet_id=0x1234, rc=0, failure=false,
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"9003123400"
 			))
 		)
@@ -274,7 +275,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.UNSUBACK, packet_id=1,
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"B0020001"
 			))
 		)
@@ -287,7 +288,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.UNSUBACK, packet_id=0x1234,
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"B0021234"
 			))
 		)
@@ -302,7 +303,7 @@ describe("MQTT protocol: parsing packets", function()
 			{
 				type=protocol.packet_type.PINGRESP,
 			},
-			protocol.parse_packet(make_read_func_hex(
+			protocol4.parse_packet(make_read_func_hex(
 				"D000"
 			))
 		)

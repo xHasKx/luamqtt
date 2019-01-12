@@ -28,6 +28,7 @@ local require = require
 -- required modules
 local string = require("string")
 local protocol = require("mqtt.protocol")
+local protocol4 = require("mqtt.protocol4")
 
 
 -- cache to locals
@@ -40,11 +41,11 @@ local math_random = math.random
 local math_randomseed = math.randomseed
 local os_time = os.time
 local packet_type = protocol.packet_type
-local make_packet = protocol.make_packet
-local parse_packet = protocol.parse_packet
+local make_packet4 = protocol4.make_packet
+local parse_packet4 = protocol4.parse_packet
 local connack_return_code = protocol.connack_return_code
 local next_packet_id = protocol.next_packet_id
-local packet_id_required = protocol.packet_id_required
+local packet_id_required4 = protocol4.packet_id_required
 local packet_tostring = protocol.packet_tostring
 
 
@@ -451,7 +452,7 @@ local client_mt = {
 		self:_assign_packet_id(args)
 		self:_debug("send_packet: %s", packet_tostring(args))
 		-- create binary packet
-		local packet = make_packet(args)
+		local packet = make_packet4(args)
 		local data = tostring(packet)
 		local len = data:len()
 		if len <= 0 then
@@ -512,7 +513,7 @@ local client_mt = {
 			return self.connector.receive(self.connection, size)
 		end
 		-- parse packet
-		local packet, err = parse_packet(recv_func)
+		local packet, err = parse_packet4(recv_func)
 		if not packet then
 			return false, err
 		end
@@ -555,7 +556,7 @@ local client_mt = {
 	-- Assign next packet ID to the args
 	_assign_packet_id = function(self, args)
 		if not args.packet_id then
-			if packet_id_required(args) then
+			if packet_id_required4(args) then
 				self._last_packet_id = next_packet_id(self._last_packet_id)
 				args.packet_id = self._last_packet_id
 			end

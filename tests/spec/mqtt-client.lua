@@ -18,7 +18,7 @@ describe("MQTT client", function()
 		-- test servers
 		local cases = {
 			{
-				name = "mqtt.flespi.io no SSL",
+				name = "mqtt.flespi.io no SSL, MQTTv3.1.1",
 				id = "luamqtt-test-flespi",
 				debug = client_debug,
 				uri = "mqtt.flespi.io",
@@ -26,7 +26,7 @@ describe("MQTT client", function()
 				auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
 			},
 			{
-				name = "mqtt.flespi.io SSL",
+				name = "mqtt.flespi.io SSL, MQTTv3.1.1",
 				-- id = "luamqtt-test-flespi-ssl", -- testing randomly generated client id
 				debug = client_debug,
 				uri = "mqtt.flespi.io",
@@ -43,7 +43,7 @@ describe("MQTT client", function()
 			},
 			{
 				name = "test.mosquitto.org SSL",
-				id = "luamqtt-test-mosquitto",
+				-- id = "luamqtt-test-mosquitto", -- testing randomly generated client id
 				debug = client_debug,
 				uri = "test.mosquitto.org",
 				ssl = true,
@@ -52,7 +52,7 @@ describe("MQTT client", function()
 		}
 
 	for _, case in ipairs(cases) do
-		it("complex test - "..case.name, function()	
+		it("complex test - "..case.name, function()
 
 			-- create client
 			local client = mqtt.client(case)
@@ -106,7 +106,7 @@ describe("MQTT client", function()
 
 			-- set on-error handler
 			client:on("error", function(err)
-				if client_debug then client_debug("--- on error", case.name, err) end
+				print("--- on error", case.name, err)
 			end)
 
 			-- and wait for connection to broker is closed
