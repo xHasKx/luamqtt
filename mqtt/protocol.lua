@@ -128,6 +128,68 @@ function protocol.next_packet_id(curr)
 	return curr
 end
 
+-- MQTT protocol fixed header packet types
+-- DOCv3.1.1: 2.2.1 MQTT Control Packet type
+-- DOCv5.0: 2.1.2 MQTT Control Packet type
+local packet_type = {
+	CONNECT = 			1,
+	CONNACK = 			2,
+	PUBLISH = 			3,
+	PUBACK = 			4,
+	PUBREC = 			5,
+	PUBREL = 			6,
+	PUBCOMP = 			7,
+	SUBSCRIBE = 		8,
+	SUBACK = 			9,
+	UNSUBSCRIBE = 		10,
+	UNSUBACK = 			11,
+	PINGREQ = 			12,
+	PINGRESP = 			13,
+	DISCONNECT = 		14,
+	AUTH =				15, -- NOTE: new in MQTTv5.0
+	[1] = 				"CONNECT",
+	[2] = 				"CONNACK",
+	[3] = 				"PUBLISH",
+	[4] = 				"PUBACK",
+	[5] = 				"PUBREC",
+	[6] = 				"PUBREL",
+	[7] = 				"PUBCOMP",
+	[8] = 				"SUBSCRIBE",
+	[9] = 				"SUBACK",
+	[10] = 				"UNSUBSCRIBE",
+	[11] = 				"UNSUBACK",
+	[12] = 				"PINGREQ",
+	[13] = 				"PINGRESP",
+	[14] = 				"DISCONNECT",
+	[15] =				"AUTH", -- NOTE: new in MQTTv5.0
+}
+protocol.packet_type = packet_type
+
+-- Packet types requiring packet identifier field
+-- DOCv3.1.1: 2.3.1 Packet Identifier
+-- DOCv5.0: 2.2.1 Packet Identifier
+local packets_requiring_packet_id = {
+	[packet_type.PUBACK] 		= true,
+	[packet_type.PUBREC] 		= true,
+	[packet_type.PUBREL] 		= true,
+	[packet_type.PUBCOMP] 		= true,
+	[packet_type.SUBSCRIBE] 	= true,
+	[packet_type.SUBACK] 		= true,
+	[packet_type.UNSUBSCRIBE] 	= true,
+	[packet_type.UNSUBACK] 		= true,
+}
+
+-- Returns true if Packet Identifier field are required for given packet
+function protocol.packet_id_required(args)
+	assert(type(args) == "table", "expecting args to be a table")
+	assert(type(args.type) == "number", "expecting .type to be a number")
+	local ptype = args.type
+	if ptype == packet_type.PUBLISH and args.qos and args.qos > 0 then
+		return true
+	end
+	return packets_requiring_packet_id[ptype]
+end
+
 -- Metatable for combined data packet, should looks like a string
 local combined_packet_mt = {
 	-- Convert combined data packet to string
@@ -186,43 +248,6 @@ function protocol.parse_var_length(read_func)
 	until band(byte, 128) == 0
 	return val
 end
-
--- MQTT protocol fixed header packet types
--- DOCv3.1.1: 2.2.1 MQTT Control Packet type
--- DOCv5.0: 2.1.2 MQTT Control Packet type
-local packet_type = {
-	CONNECT = 			1,
-	CONNACK = 			2,
-	PUBLISH = 			3,
-	PUBACK = 			4,
-	PUBREC = 			5,
-	PUBREL = 			6,
-	PUBCOMP = 			7,
-	SUBSCRIBE = 		8,
-	SUBACK = 			9,
-	UNSUBSCRIBE = 		10,
-	UNSUBACK = 			11,
-	PINGREQ = 			12,
-	PINGRESP = 			13,
-	DISCONNECT = 		14,
-	AUTH =				15, -- NOTE: new in MQTTv5.0
-	[1] = 				"CONNECT",
-	[2] = 				"CONNACK",
-	[3] = 				"PUBLISH",
-	[4] = 				"PUBACK",
-	[5] = 				"PUBREC",
-	[6] = 				"PUBREL",
-	[7] = 				"PUBCOMP",
-	[8] = 				"SUBSCRIBE",
-	[9] = 				"SUBACK",
-	[10] = 				"UNSUBSCRIBE",
-	[11] = 				"UNSUBACK",
-	[12] = 				"PINGREQ",
-	[13] = 				"PINGRESP",
-	[14] = 				"DISCONNECT",
-	[15] =				"AUTH", -- NOTE: new in MQTTv5.0
-}
-protocol.packet_type = packet_type
 
 -- Convert packet to string representation
 local function packet_tostring(packet)

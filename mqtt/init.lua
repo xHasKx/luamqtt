@@ -45,7 +45,7 @@ local make_packet4 = protocol4.make_packet
 local parse_packet4 = protocol4.parse_packet
 local connack_return_code = protocol.connack_return_code
 local next_packet_id = protocol.next_packet_id
-local packet_id_required4 = protocol4.packet_id_required
+local packet_id_required = protocol.packet_id_required
 local packet_tostring = protocol.packet_tostring
 
 
@@ -556,7 +556,7 @@ local client_mt = {
 	-- Assign next packet ID to the args
 	_assign_packet_id = function(self, args)
 		if not args.packet_id then
-			if packet_id_required4(args) then
+			if packet_id_required(args) then
 				self._last_packet_id = next_packet_id(self._last_packet_id)
 				args.packet_id = self._last_packet_id
 			end

@@ -40,18 +40,6 @@ local packet_type = protocol.packet_type
 local packet_mt = protocol.packet_mt
 
 
--- Packet types requiring packet identifier field, DOC: 2.3.1 Packet Identifier
-local packets_requiring_packet_id = {
-	[packet_type.PUBACK] 		= true,
-	[packet_type.PUBREC] 		= true,
-	[packet_type.PUBREL] 		= true,
-	[packet_type.PUBCOMP] 		= true,
-	[packet_type.SUBSCRIBE] 	= true,
-	[packet_type.SUBACK] 		= true,
-	[packet_type.UNSUBSCRIBE] 	= true,
-	[packet_type.UNSUBACK] 		= true,
-}
-
 -- CONNACK return code strings
 protocol4.connack_return_code = {
 	[0] = "Connection Accepted",
@@ -61,17 +49,6 @@ protocol4.connack_return_code = {
 	[4] = "Connection Refused, bad user name or password",
 	[5] = "Connection Refused, not authorized",
 }
-
--- Returns true if Packet Identifier field are required for given packet
-function protocol4.packet_id_required(args)
-	assert(type(args) == "table", "expecting args to be a table")
-	assert(type(args.type) == "number", "expecting .type to be a number")
-	local ptype = args.type
-	if ptype == packet_type.PUBLISH and args.qos and args.qos > 0 then
-		return true
-	end
-	return packets_requiring_packet_id[ptype]
-end
 
 -- Create Connect Flags data, DOC: 3.1.2.3 Connect Flags
 local function make_connect_flags(args)
