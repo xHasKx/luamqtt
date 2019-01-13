@@ -2,8 +2,9 @@ language: lua
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install -y luarocks
+  - sudo apt-get install -y luarocks libssl-dev
   - sudo luarocks install busted
+  - sudo luarocks install luasocket
   - sudo luarocks install luabitop
   - sudo luarocks install luasec
 
