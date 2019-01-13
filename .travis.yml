@@ -4,5 +4,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install -y luarocks
   - sudo luarocks install busted
+  - sudo luarocks install luabitop
+  - sudo luarocks install luasec
 
 script: busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
