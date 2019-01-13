@@ -1,5 +1,7 @@
 # luamqtt - Pure-lua MQTT client
 
+[![Build Status](https://travis-ci.org/xHasKx/luamqtt.svg?branch=master)](https://travis-ci.org/xHasKx/luamqtt)
+
 MQTT ( http://mqtt.org/ ) client library for Lua.
 **MQTT** is a popular network communication protocol working by **"publish/subscribe"** model.
 
