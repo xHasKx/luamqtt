@@ -87,7 +87,7 @@ local client_mt = {
 		assert(type(self.uri) == "string", "expecting .uri to be a string")
 		self.ssl = args.ssl
 		if self.ssl ~= nil then
-			assert(type(self.ssl) == "boolean" or type(self.ssl) == "table", "expecting .uri to be a boolean or table")
+			assert(type(self.ssl) == "boolean" or type(self.ssl) == "table", "expecting .ssl to be a boolean or table")
 		end
 		self.clean = args.clean
 		assert(type(self.clean) == "boolean", "expecting .clean to be a boolean")
