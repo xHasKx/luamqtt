@@ -27,5 +27,6 @@ build = {
 		["mqtt.luasocket_ssl"] = "mqtt/luasocket_ssl.lua",
 		["mqtt.protocol"] = "mqtt/protocol.lua",
 		["mqtt.tools"] = "mqtt/tools.lua",
+		["mqtt.protocol4"] = "mqtt/protocol4.lua",
 	},
 }
