@@ -11,3 +11,8 @@ before_install:
   - sudo luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu
 
 script: busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
+
+# testing installing from luarocks
+after_script:
+  - sudo luarocks install luamqtt
+  - busted tests/spec/*.lua
