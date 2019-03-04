@@ -34,7 +34,7 @@ define Package/luamqtt/install
   $(INSTALL_DIR) $(1)/usr/lib/lua/mqtt
   $(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/init.lua $(1)/usr/lib/lua/mqtt
   $(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/bit53.lua $(1)/usr/lib/lua/mqtt
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/bit.lua $(1)/usr/lib/lua/mqtt
+  $(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/bitwrap.lua $(1)/usr/lib/lua/mqtt
   $(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/luasocket.lua $(1)/usr/lib/lua/mqtt
   $(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/luasocket_ssl.lua $(1)/usr/lib/lua/mqtt
   $(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/protocol.lua $(1)/usr/lib/lua/mqtt
