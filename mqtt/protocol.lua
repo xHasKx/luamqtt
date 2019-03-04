@@ -25,7 +25,7 @@ local protocol = {}
 -- required modules
 local table = require("table")
 local string = require("string")
-local bit = require("mqtt.bit")
+local bit = require("mqtt.bitwrap")
 local tools = require("mqtt.tools")
 
 

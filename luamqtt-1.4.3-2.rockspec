@@ -1,5 +1,5 @@
 package = "luamqtt"
-version = "1.4.3-1"
+version = "1.4.3-2"
 source = {
 	url = "git://github.com/xHasKx/luamqtt",
 	tag = "v1.4",
@@ -22,10 +22,11 @@ build = {
 	modules = {
 		mqtt = "mqtt/init.lua",
 		["mqtt.bit53"] = "mqtt/bit53.lua",
-		["mqtt.bit"] = "mqtt/bit.lua",
+		["mqtt.bitwrap"] = "mqtt/bitwrap.lua",
 		["mqtt.luasocket"] = "mqtt/luasocket.lua",
 		["mqtt.luasocket_ssl"] = "mqtt/luasocket_ssl.lua",
 		["mqtt.protocol"] = "mqtt/protocol.lua",
+		["mqtt.protocol4"] = "mqtt/protocol4.lua",
 		["mqtt.tools"] = "mqtt/tools.lua",
 	},
 }
