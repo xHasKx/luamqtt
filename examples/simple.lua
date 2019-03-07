@@ -36,8 +36,6 @@ client:on("message", function(msg)
 end)
 
 -- start receive loop
-while client.connection do -- or just assert(client:receive_loop())
-	assert(client:receive_iteration())
-end
+assert(client:receive_loop())
 
 print("done")

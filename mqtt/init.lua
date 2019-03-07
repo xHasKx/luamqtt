@@ -340,6 +340,7 @@ local client_mt = {
 		local packet, perr = self:_wait_packet_queue()
 		if not packet then
 			perr = "waiting for the next packet failed: "..perr
+			self:close_connection()
 			self.handlers.error(perr)
 			return false, perr
 		end
@@ -359,7 +360,10 @@ local client_mt = {
 		-- start packet receiving loop
 		while self.connection do
 			-- just receive one packet on each iteration
-			self:receive_iteration()
+			local ok, err = self:receive_iteration()
+			if not ok then
+				return false, err
+			end
 		end
 		return true
 	end,
@@ -497,7 +501,7 @@ local client_mt = {
 
 	-- Return and remove first packet in received queue or wait and receive the next packet
 	_wait_packet_queue = function(self)
-		if self.connection.queue[1] then
+		if self.connection and self.connection.queue[1] then
 			-- remove already received packet from queue and return it
 			return tbl_remove(self.connection.queue, 1)
 		end
