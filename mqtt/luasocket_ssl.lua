@@ -3,7 +3,6 @@
 -- module table
 local luasocket_ssl = {}
 
-local ssl = require("ssl")
 local luasocket = require("mqtt.luasocket")
 
 -- Open network connection to .host and .port in conn table
@@ -17,6 +16,8 @@ function luasocket_ssl.connect(conn)
 		return false, "luasocket connect failed: "..err
 	end
 	local wrapped
+	-- load right ssl module
+	local ssl = require(conn.ssl_module or "ssl")
 	-- TLS/SSL initialization
 	wrapped, err = ssl.wrap(conn.sock, conn.ssl_params)
 	if not wrapped then

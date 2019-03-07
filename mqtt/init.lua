@@ -89,6 +89,10 @@ local client_mt = {
 		if self.ssl ~= nil then
 			assert(type(self.ssl) == "boolean" or type(self.ssl) == "table", "expecting .ssl to be a boolean or table")
 		end
+		self.ssl_module = args.ssl_module
+		if self.ssl_module ~= nil then
+			assert(type(self.ssl_module) == "string", "expecting .ssl_module to be a string")
+		end
 		self.clean = args.clean
 		assert(type(self.clean) == "boolean", "expecting .clean to be a boolean")
 		self.auth = args.auth
@@ -555,6 +559,7 @@ local client_mt = {
 				options = "all",
 			}
 		end
+		conn.ssl_module = self.ssl_module
 	end,
 
 	-- Assign next packet ID to the args
