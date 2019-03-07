@@ -23,6 +23,7 @@ describe("MQTT client", function()
 				debug = client_debug,
 				uri = "mqtt.flespi.io",
 				clean = true,
+				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
 				auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
 			},
 			{
@@ -32,6 +33,7 @@ describe("MQTT client", function()
 				uri = "mqtt.flespi.io",
 				ssl = true,
 				clean = true,
+				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
 				auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
 			},
 			{
