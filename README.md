@@ -3,7 +3,7 @@
 [![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](https://github.com/xHasKx/luamqtt/blob/master/LICENSE)
 [![Build Status](https://travis-ci.org/xHasKx/luamqtt.svg?branch=master)](https://travis-ci.org/xHasKx/luamqtt)
 
-MQTT ( http://mqtt.org/ ) client library for Lua.
+MQTT ( [http://mqtt.org/](http://mqtt.org/) ) client library for Lua.
 **MQTT** is a popular network communication protocol working by **"publish/subscribe"** model.
 
 This library is written in **pure-lua** to provide maximum portability.
@@ -16,6 +16,10 @@ This library is written in **pure-lua** to provide maximum portability.
 # Documentation
 
 See [https://xhaskx.github.io/luamqtt/index.html](https://xhaskx.github.io/luamqtt/index.html)
+
+# Source Code
+
+[https://github.com/xHasKx/luamqtt](https://github.com/xHasKx/luamqtt)
 
 # Dependencies
 
