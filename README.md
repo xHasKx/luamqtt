@@ -13,6 +13,10 @@ This library is written in **pure-lua** to provide maximum portability.
 * Full MQTT v3.1.1 support
 * Several long-living MQTT clients in one script thanks to ioloop
 
+# Documentation
+
+See https://xhaskx.github.io/luamqtt/index.html
+
 # Dependencies
 
 The only main dependency is a [**luasocket**](https://luarocks.org/modules/luarocks/luasocket) to establishing TCP connection to the MQTT broker.
