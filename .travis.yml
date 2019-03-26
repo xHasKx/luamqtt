@@ -1,20 +1,28 @@
 language: lua
 
+env:
+  - LUA="lua 5.1"
+  - LUA="lua 5.2"
+  - LUA="lua 5.3"
+  - LUA="luajit 2.0"
+  - LUA="luajit 2.1"
+
 before_install:
   - sudo apt-get update
-  # libssl-dev is used to build luasec
-  # git is used to install luabitop
-  - sudo apt-get install -y luarocks libssl-dev git
-  - sudo luarocks install luabitop
-  - sudo luarocks install busted
-  # luasec depends on luasocket but it's breaking luarocks on trusty, so it should be placed last
-  - sudo luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu
+  - sudo apt-get install -y libssl-dev git
+  - sudo pip install hererocks
+  - hererocks env --$LUA -rlatest    # Use latest LuaRocks, install into 'env' directory.
+  - source env/bin/activate          # Add directory with all installed binaries to PATH.
+  - luarocks install luabitop
+  - luarocks install busted
+  - luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu
 
-script: busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
+script:
+  busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
 
 # testing installing from luarocks
 after_script:
-  - sudo luarocks install luamqtt
+  - luarocks install luamqtt
   - busted tests/spec/*.lua
 
 notifications:
