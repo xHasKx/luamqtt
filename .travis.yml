@@ -1,29 +1,12 @@
 language: lua
 
-env:
-  - LUA="lua 5.1"
-  - LUA="lua 5.2"
-  - LUA="lua 5.3"
-  - LUA="luajit 2.0"
-  - LUA="luajit 2.1"
-
 before_install:
   - sudo apt-get update
   - sudo apt-get install -y libssl-dev git
   - sudo pip install hererocks
-  - hererocks env --$LUA -rlatest    # Use latest LuaRocks, install into 'env' directory.
-  - source env/bin/activate          # Add directory with all installed binaries to PATH.
-  - luarocks install luabitop
-  - luarocks install busted
-  - luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu
 
 script:
-  busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
-
-# testing installing from luarocks
-after_script:
-  - luarocks install luamqtt
-  - busted tests/spec/*.lua
+  ./tests/run-for-all-lua-versions.sh
 
 notifications:
   email:
