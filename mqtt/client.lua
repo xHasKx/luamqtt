@@ -210,116 +210,6 @@ function client_mt:__init(args)
 	end
 end
 
---- Set or rest ioloop for MQTT client
---- @tparam ioloop_mt loop The ioloop to set for MQTT client, or nil to reset
-function client_mt:set_ioloop(loop)
-	self.ioloop = loop
-	self:_apply_network_timeout()
-end
-
---- Open network connection to the broker
--- @return true on success or false and error message on failure
-function client_mt:open_connection()
-	if self.connection then
-		return true
-	end
-
-	local args = self.args
-	assert(args.connector, "no connector configured in MQTT client")
-
-	-- create connection table
-	local conn = {
-		uri = args.uri,
-		wait_for_pubrec = {},	-- a table with packet_id of parially acknowledged sent packets in QoS 2 exchange process
-		wait_for_pubrel = {},	-- a table with packet_id of parially acknowledged received packets in QoS 2 exchange process
-	}
-	client_mt._parse_uri(args, conn)
-	client_mt._apply_secure(args, conn)
-
-	-- perform connect
-	local ok, err = args.connector.connect(conn)
-	if not ok then
-		err = "failed to open network connection: "..err
-		self:handle("error", err, self)
-		return false, err
-	end
-
-	-- assign connection
-	self.connection = conn
-
-	-- create receive function
-	local receive = args.connector.receive
-	self.connection.recv_func = function(size)
-		return receive(conn, size)
-	end
-
-	self:_apply_network_timeout()
-
-	return true
-end
-
---- Send CONNECT packet into opened network connection
--- @return true on success or false and error message on failure
-function client_mt:send_connect()
-	-- check connection is alive
-	if not self.connection then
-		return false, "network connection is not opened"
-	end
-
-	local args = self.args
-
-	-- create CONNECT packet
-	local connect = make_packet4{
-		type=packet_type.CONNECT,
-		id=args.id,
-		clean = args.clean,
-		username = args.username,
-		password = args.password,
-		will = args.will,
-		keep_alive = args.keep_alive
-	}
-
-	-- send CONNECT packet
-	local ok, err = self:_send_packet(connect)
-	if not ok then
-		err = "failed to send CONNECT: "..err
-		self:handle("error", err, self)
-		self:close_connection("error")
-		return false, err
-	end
-
-	-- reset last packet id
-	self._last_packet_id = nil
-
-	return true
-end
-
---- Send DISCONNECT packet to the broker and close the connection
--- @return true on success or false and error message on failure
-function client_mt:disconnect()
-	-- check connection is alive
-	if not self.connection then
-		return false, "network connection is not opened"
-	end
-
-	-- create DISCONNECT packet
-	local disconnect = make_packet4{type=packet_type.DISCONNECT}
-
-	-- send DISCONNECT packet
-	local ok, err = self:_send_packet(disconnect)
-	if not ok then
-		err = "failed to send DISCONNECT: "..err
-		self:handle("error", err, self)
-		self:close_connection("error")
-		return false, err
-	end
-
-	-- now close connection
-	self:close_connection("client")
-
-	return true
-end
-
 --- Add functions as handlers of given events
 -- @param ... (event_name, function) or { event1 = func1, event2 = func2 } table
 function client_mt:on(...)
@@ -589,6 +479,32 @@ function client_mt:acknowledge(msg)
 	return true
 end
 
+--- Send DISCONNECT packet to the broker and close the connection
+-- @return true on success or false and error message on failure
+function client_mt:disconnect()
+	-- check connection is alive
+	if not self.connection then
+		return false, "network connection is not opened"
+	end
+
+	-- create DISCONNECT packet
+	local disconnect = make_packet4{type=packet_type.DISCONNECT}
+
+	-- send DISCONNECT packet
+	local ok, err = self:_send_packet(disconnect)
+	if not ok then
+		err = "failed to send DISCONNECT: "..err
+		self:handle("error", err, self)
+		self:close_connection("error")
+		return false, err
+	end
+
+	-- now close connection
+	self:close_connection("client")
+
+	return true
+end
+
 --- Immediately close established network connection, without graceful session finishing with DISCONNECT packet
 -- @tparam[opt] string reason the reasong string of connection close
 function client_mt:close_connection(reason)
@@ -635,6 +551,9 @@ function client_mt:start_connecting()
 	return true
 end
 
+--- Low-level methods
+-- @section low-level
+
 --- Send PINGREQ packet
 -- @return true on success or false and error message on failure
 function client_mt:send_pingreq()
@@ -660,7 +579,90 @@ function client_mt:send_pingreq()
 	return true
 end
 
+--- Open network connection to the broker
+-- @return true on success or false and error message on failure
+function client_mt:open_connection()
+	if self.connection then
+		return true
+	end
+
+	local args = self.args
+	assert(args.connector, "no connector configured in MQTT client")
+
+	-- create connection table
+	local conn = {
+		uri = args.uri,
+		wait_for_pubrec = {},	-- a table with packet_id of parially acknowledged sent packets in QoS 2 exchange process
+		wait_for_pubrel = {},	-- a table with packet_id of parially acknowledged received packets in QoS 2 exchange process
+	}
+	client_mt._parse_uri(args, conn)
+	client_mt._apply_secure(args, conn)
+
+	-- perform connect
+	local ok, err = args.connector.connect(conn)
+	if not ok then
+		err = "failed to open network connection: "..err
+		self:handle("error", err, self)
+		return false, err
+	end
+
+	-- assign connection
+	self.connection = conn
+
+	-- create receive function
+	local receive = args.connector.receive
+	self.connection.recv_func = function(size)
+		return receive(conn, size)
+	end
+
+	self:_apply_network_timeout()
+
+	return true
+end
+
+--- Send CONNECT packet into opened network connection
+-- @return true on success or false and error message on failure
+function client_mt:send_connect()
+	-- check connection is alive
+	if not self.connection then
+		return false, "network connection is not opened"
+	end
+
+	local args = self.args
+
+	-- create CONNECT packet
+	local connect = make_packet4{
+		type=packet_type.CONNECT,
+		id=args.id,
+		clean = args.clean,
+		username = args.username,
+		password = args.password,
+		will = args.will,
+		keep_alive = args.keep_alive
+	}
+
+	-- send CONNECT packet
+	local ok, err = self:_send_packet(connect)
+	if not ok then
+		err = "failed to send CONNECT: "..err
+		self:handle("error", err, self)
+		self:close_connection("error")
+		return false, err
+	end
+
+	-- reset last packet id
+	self._last_packet_id = nil
+
+	return true
+end
+
 -- Internal methods
+
+-- Set or rest ioloop for MQTT client
+function client_mt:set_ioloop(loop)
+	self.ioloop = loop
+	self:_apply_network_timeout()
+end
 
 -- Send PUBREL acknowledge packet - second phase of QoS 2 exchange
 -- Returns true on success or false and error message on failure

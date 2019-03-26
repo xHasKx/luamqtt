@@ -8,6 +8,8 @@ dir = "."
 
 description = "luamqtt - Pure-lua MQTT client"
 
+full_description = "Source code: https://github.com/xHasKx/luamqtt"
+
 examples = {
 	"../examples/simple.lua"
 }
