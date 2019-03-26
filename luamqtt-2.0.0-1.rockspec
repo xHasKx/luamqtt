@@ -1,8 +1,8 @@
 package = "luamqtt"
-version = "1.4.6-1"
+version = "2.0.0-1"
 source = {
 	url = "git://github.com/xHasKx/luamqtt",
-	tag = "v1.4",
+	tag = "v2.0",
 }
 description = {
 	summary = "luamqtt - Pure-lua MQTT client",
@@ -11,7 +11,7 @@ luamqtt - MQTT client library written in pure-lua.
 The only dependency is luasocket to establish network connection to MQTT broker.
 ]],
 	homepage = "https://github.com/xHasKx/luamqtt",
-	license = "MIT"
+	license = "MIT",
 }
 dependencies = {
 	"lua >= 5.1, < 5.4",
@@ -21,6 +21,8 @@ build = {
 	type = "builtin",
 	modules = {
 		mqtt = "mqtt/init.lua",
+		["mqtt.client"] = "mqtt/client.lua",
+		["mqtt.ioloop"] = "mqtt/ioloop.lua",
 		["mqtt.bit53"] = "mqtt/bit53.lua",
 		["mqtt.bitwrap"] = "mqtt/bitwrap.lua",
 		["mqtt.luasocket"] = "mqtt/luasocket.lua",

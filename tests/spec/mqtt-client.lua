@@ -14,120 +14,123 @@ describe("MQTT client", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
 
-	local client_debug = nil -- print
-		-- test servers
-		local cases = {
-			{
-				name = "mqtt.flespi.io no SSL, MQTTv3.1.1",
+	-- test servers
+	local cases = {
+		{
+			name = "mqtt.flespi.io PLAIN, MQTTv3.1.1",
+			args = {
 				id = "luamqtt-test-flespi",
-				debug = client_debug,
 				uri = "mqtt.flespi.io",
 				clean = true,
 				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
-				auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
-			},
-			{
-				name = "mqtt.flespi.io SSL, MQTTv3.1.1",
+				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
+			}
+		},
+		{
+			name = "mqtt.flespi.io SECURE, MQTTv3.1.1",
+			args = {
 				-- id = "luamqtt-test-flespi-ssl", -- testing randomly generated client id
-				debug = client_debug,
 				uri = "mqtt.flespi.io",
-				ssl = true,
+				secure = true,
 				clean = true,
 				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
-				auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
-			},
-			{
-				name = "test.mosquitto.org no SSL",
+				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
+			}
+		},
+		{
+			name = "test.mosquitto.org PLAIN",
+			args = {
 				id = "luamqtt-test-mosquitto",
-				debug = client_debug,
 				uri = "test.mosquitto.org", -- NOTE: this broker is not working sometimes
 				clean = true,
-			},
-			{
-				name = "test.mosquitto.org SSL",
+			}
+		},
+		{
+			name = "test.mosquitto.org SECURE",
+			args = {
 				-- id = "luamqtt-test-mosquitto", -- testing randomly generated client id
-				debug = client_debug,
 				uri = "test.mosquitto.org",
-				ssl = true,
+				secure = true,
 				clean = true,
-			},
-			{
-				name = "mqtt.fluux.io no SSL",
+			}
+		},
+		{
+			name = "mqtt.fluux.io PLAIN, MQTTv3.1.1",
+			args = {
 				id = "luamqtt-test-fluux",
-				debug = client_debug,
 				uri = "mqtt.fluux.io",
 				clean = true,
-			},
-			{
-				name = "mqtt.fluux.io SSL",
+			}
+		},
+		{
+			name = "mqtt.fluux.io SECURE, MQTTv3.1.1",
+			args = {
 				-- id = "luamqtt-test-fluux", -- testing randomly generated client id
-				debug = client_debug,
 				uri = "mqtt.fluux.io",
-				ssl = true,
+				secure = true,
 				clean = true,
-			},
-		}
+			}
+		},
+	}
 
 	for _, case in ipairs(cases) do
 		it("complex test - "..case.name, function()
+			local errors = {}
+			local acknowledges = {}
 
 			-- create client
-			local client = mqtt.client(case)
+			local client = mqtt.client(case.args)
 
 			-- set on-connect handler
-			client:on("connect", function(connack)
-				if client_debug then client_debug("--- on connect", case.name, connack) end
+			client:on{
+				connect = function()
+					assert(client:subscribe("luamqtt/0/test", 0, function()
+						assert(client:publish{
+							topic = "luamqtt/0/test",
+							payload = "initial",
+						})
+					end))
+				end,
 
-				client:subscribe{
-					topic = "luamqtt/0/test",
-				}
-
-				client:publish{
-					topic = "luamqtt/0/test",
-					payload = "initial",
-				}
-
-				client:on("message", function(msg)
-					if client_debug then client_debug("--- on message", case.name, msg) end
+				message = function(msg)
 					client:acknowledge(msg)
 
 					if msg.topic == "luamqtt/0/test" then
 						-- re-subscribe test
-						client:unsubscribe("luamqtt/0/test")
-						client:subscribe{
-							topic = "luamqtt/#",
-							qos = 2,
-						}
-
-						client:publish{
-							topic = "luamqtt/1/test",
-							payload = "testing QoS 1",
-							qos = 1,
-						}
+						assert(client:unsubscribe("luamqtt/0/test", function()
+							assert(client:subscribe("luamqtt/#", 2, function()
+								assert(client:publish{
+									topic = "luamqtt/1/test",
+									payload = "testing QoS 1",
+									qos = 1,
+									callback = function(ack)
+										acknowledges[#acknowledges + 1] = ack
+									end,
+								})
+							end))
+						end))
 					elseif msg.topic == "luamqtt/1/test" then
-						client:publish{
+						assert(client:publish{
 							topic = "luamqtt/2/test",
 							payload = "testing QoS 2",
 							qos = 2,
-						}
+						})
 					elseif msg.topic == "luamqtt/2/test" then
 						-- done
-						client:disconnect()
+						assert(client:disconnect())
 					end
-				end)
-			end)
+				end,
 
-			client:on("close", function()
-				if client_debug then client_debug("--- on close", case.name, client) end
-			end)
-
-			-- set on-error handler
-			client:on("error", function(err)
-				print("--- on error", case.name, err)
-			end)
+				error = function(err)
+					errors[#errors + 1] = err
+				end,
+			}
 
 			-- and wait for connection to broker is closed
-			assert(client:connect_and_run())
+			mqtt.run_ioloop(client)
+
+			assert.are.same({}, errors)
+			assert.is.equal(1, #acknowledges)
 		end)
 	end
 end)

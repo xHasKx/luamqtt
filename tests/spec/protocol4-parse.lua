@@ -235,6 +235,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 	end)
 
 	it("SUBACK", function()
+		-- TODO: SUBACK with multiple subscriptions
 		--[[
 			90 					packet type == 9 (SUBACK), flags == 0
 			03 					variable length == 3 bytes
@@ -243,7 +244,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		]]
 		assert.are.same(
 			{
-				type=protocol.packet_type.SUBACK, packet_id=1, rc=0, failure=false,
+				type=protocol.packet_type.SUBACK, packet_id=1, rc={0},
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				"9003000100"
@@ -257,7 +258,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		]]
 		assert.are.same(
 			{
-				type=protocol.packet_type.SUBACK, packet_id=0x1234, rc=0, failure=false,
+				type=protocol.packet_type.SUBACK, packet_id=0x1234, rc={0},
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				"9003123400"

@@ -66,13 +66,17 @@ local function make_connect_flags(args)
 		assert(type(args.will) == "table", "expecting .will to be a table")
 		assert(type(args.will.payload) == "string", "expecting .will.payload to be a string")
 		assert(type(args.will.topic) == "string", "expecting .will.topic to be a string")
-		assert(type(args.will.qos) == "number", "expecting .will.qos to be a number")
-		assert(check_qos(args.will.qos), "expecting .will.qos to be a valid QoS value")
-		assert(type(args.will.retain) == "boolean", "expecting .will.retain to be a boolean")
+		if args.will.qos ~= nil then
+			assert(type(args.will.qos) == "number", "expecting .will.qos to be a number")
+			assert(check_qos(args.will.qos), "expecting .will.qos to be a valid QoS value")
+		end
+		if args.will.retain ~= nil then
+			assert(type(args.will.retain) == "boolean", "expecting .will.retain to be a boolean")
+		end
 		-- will flag should be set to 1
 		byte = bor(byte, lshift(1, 2))
 		-- DOC: 3.1.2.6 Will QoS
-		byte = bor(byte, lshift(args.will.qos, 3))
+		byte = bor(byte, lshift(args.will.qos or 0, 3))
 		-- DOC: 3.1.2.7 Will Retain
 		if args.will.retain then
 			byte = bor(byte, lshift(1, 5))
@@ -140,10 +144,16 @@ local function make_packet_publish(args)
 	if args.payload ~= nil then
 		assert(type(args.payload) == "string", "expecting .payload to be a string")
 	end
-	assert(type(args.qos) == "number", "expecting .qos to be a number")
-	assert(check_qos(args.qos), "expecting .qos to be a valid QoS value")
-	assert(type(args.retain) == "boolean", "expecting .retain to be a boolean")
-	assert(type(args.dup) == "boolean", "expecting .dup to be a boolean")
+	if args.qos ~= nil then
+		assert(type(args.qos) == "number", "expecting .qos to be a number")
+		assert(check_qos(args.qos), "expecting .qos to be a valid QoS value")
+	end
+	if args.retain ~= nil then
+		assert(type(args.retain) == "boolean", "expecting .retain to be a boolean")
+	end
+	if args.dup ~= nil then
+		assert(type(args.dup) == "boolean", "expecting .dup to be a boolean")
+	end
 	-- DOC: 3.3.1 Fixed header
 	local flags = 0
 	-- 3.3.1.3 RETAIN
@@ -151,7 +161,7 @@ local function make_packet_publish(args)
 		flags = bor(flags, 0x1)
 	end
 	-- DOC: 3.3.1.2 QoS
-	flags = bor(flags, lshift(args.qos, 1))
+	flags = bor(flags, lshift(args.qos or 0, 1))
 	-- DOC: 3.3.1.1 DUP
 	if args.dup then
 		flags = bor(flags, lshift(1, 3))
@@ -161,7 +171,7 @@ local function make_packet_publish(args)
 		make_string(args.topic)
 	)
 	-- DOC: 3.3.2.2 Packet Identifier
-	if args.qos > 0 then
+	if args.qos and args.qos > 0 then
 		assert(type(args.packet_id) == "number", "expecting .packet_id to be a number")
 		assert(check_packet_id(args.packet_id), "expecting .packet_id to be a valid Packet Identifier")
 		variable_header:append(make_uint16(args.packet_id))
@@ -412,13 +422,14 @@ function protocol4.parse_packet(read_func)
 		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2)}, packet_mt)
 	elseif ptype == packet_type.SUBACK then
 		-- DOC: 3.9 SUBACK – Subscribe acknowledgement
-		if data_len ~= 3 then
-			return false, "expecting data of length 3 bytes"
+		if data_len < 3 then
+			return false, "expecting data of length at least 3 bytes"
 		end
 		-- DOC: 3.9.2 Variable header
 		-- DOC: 3.9.3 Payload
-		byte1, byte2, rc = str_byte(data, 1, 3)
-		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2), rc=rc, failure=(rc == 0x80)}, packet_mt)
+		byte1, byte2 = str_byte(data, 1, 2)
+		rc = {str_byte(data, 3, data_len)}
+		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2), rc=rc}, packet_mt)
 	elseif ptype == packet_type.UNSUBACK then
 		-- DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
 		if data_len ~= 2 then

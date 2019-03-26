@@ -1,5 +1,6 @@
 # luamqtt - Pure-lua MQTT client
 
+[![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](LICENSE)
 [![Build Status](https://travis-ci.org/xHasKx/luamqtt.svg?branch=master)](https://travis-ci.org/xHasKx/luamqtt)
 
 MQTT ( http://mqtt.org/ ) client library for Lua.
@@ -10,7 +11,7 @@ This library is written in **pure-lua** to provide maximum portability.
 ## Features
 
 * Full MQTT v3.1.1 support
-* More coming soon
+* Several long-living MQTT clients in one script thanks to ioloop
 
 # Dependencies
 
@@ -37,7 +38,7 @@ It's tested to work on Debian 9 GNU/Linux with Lua versions:
 * LuaJIT 2.0.0 ... LuaJIT 2.1.0 beta3
 * It may also work on other Lua versions without any guarantees
 
-Also I've successfully run it under **Windows** and it was ok, but installing luarock-modules was a non-trivial task on this OS.
+Also I've successfully run it under **Windows** and it was ok, but installing luarock-modules may be a non-trivial task on this OS.
 
 # Installation
 
@@ -53,33 +54,39 @@ Here is a short version of [`examples/simple.lua`](examples/simple.lua):
 -- load mqtt library
 local mqtt = require("mqtt")
 
--- create mqtt client
+-- create MQTT client
 local client = mqtt.client{ uri = "test.mosquitto.org", clean = true }
 
--- connect to broker, using assert to raise error on failure
-assert(client:connect())
+-- assign MQTT client event handlers
+client:on{
+    connect = function(connack)
+        if connack.rc ~= 0 then
+            print("connection failure:", connack)
+            return
+        end
 
--- subscribe to test topic
-assert(client:subscribe{ topic = "test/luamqtt" })
+        -- subscribe to test topic and publish message after it
+        assert(client:subscribe("luamqtt/#", 1, function()
+            assert(client:publish{ topic = "luamqtt/simpletest", payload = "hello" })
+        end))
+    end,
 
--- publish
-assert(client:publish{ topic = "test/luamqtt", payload = "hello" })
+    message = function(msg)
+        assert(client:acknowledge(msg))
 
--- receive one message and disconnect
-client:on("message", function(msg)
-	print("received message", msg)
-	client:disconnect()
-end)
-assert(client:receive_loop())
+        -- receive one message and disconnect
+        print("received message", msg)
+        client:disconnect()
+    end,
+}
+
+-- run ioloop for client
+mqtt.run_ioloop(client)
 ```
 
 More examples placed in [`examples/`](examples/) directory. Also checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
 
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
-
-    busted tests/spec/*.lua
-
-To run tests using locally cloned git repo use this command:
 
     busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
 
@@ -109,7 +116,7 @@ The MQTT 5.0 protocol version is planned to implement in the future.
 * more examples
 * check some packet sequences are right
 * coroutines and other asyncronous approaches based on some event loop
-* several clients in one process
+* [DONE] several clients in one process
 * MQTT 5.0
 
 # LICENSE

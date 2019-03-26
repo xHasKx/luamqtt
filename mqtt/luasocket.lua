@@ -24,17 +24,26 @@ end
 
 -- Send data to network connection
 function luasocket.send(conn, data, i, j)
-	-- print("send:", require("mqtt.tools").hex(data))
-	return conn.sock:send(data, i, j)
+	local ok, err = conn.sock:send(data, i, j)
+	-- print("    luasocket.send:", ok, err, require("mqtt.tools").hex(data))
+	return ok, err
 end
 
 -- Receive given amount of data from network connection
 function luasocket.receive(conn, size)
 	local ok, err = conn.sock:receive(size)
 	-- if ok then
-	-- 	print("receive:", size, require("mqtt.tools").hex(ok))
+	-- 	print("    luasocket.receive:", size, require("mqtt.tools").hex(ok))
+	-- elseif err ~= "timeout" then
+	-- 	print("    luasocket.receive:", ok, err)
 	-- end
 	return ok, err
+end
+
+-- Set connection's socket to non-blocking mode and set a timeout for it
+function luasocket.settimeout(conn, timeout)
+	conn.timeout = timeout
+	conn.sock:settimeout(timeout, "t")
 end
 
 -- export module table

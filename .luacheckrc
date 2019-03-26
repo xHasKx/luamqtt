@@ -14,7 +14,7 @@ files["mqtt/**"] = {
 	}
 }
 
-files["spec/**"] = {
+files["tests/spec/**"] = {
 	ignore = {
 		"113/describe",
 		"113/it",

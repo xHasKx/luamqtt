@@ -2,7 +2,7 @@
 
 This directory containing two files: `client-1.lua` and `client-2.lua`.
 
-Both are connecting to the same broker.
+Both are connecting to the **same broker**.
 
 First file is specifying a last-will message when connected to broker, then it waits for connection close command.
 
@@ -17,17 +17,17 @@ Here is an example output of both scripts:
 
 ```
 $ lua examples/last-will/client-1.lua
-connected
+connected:      CONNACK{rc=0, type=2, sp=false}
 subscribed to luamqtt/close, waiting for connection close command from client-2
-received message        PUBLISH{type=3, payload=Dear client-1, please close your connection, topic=luamqtt/close, packet_id=1, retain=false, dup=false, qos=1}
+received:       PUBLISH{qos=1, retain=false, topic="luamqtt/close", payload="Dear client-1, please close your connection", packet_id=1, type=3, dup=false}
 closing connection without DISCONNECT and stopping client-1
 ```
 
 ```
 $ lua examples/last-will/client-2.lua
-connected
+connected:      CONNACK{rc=0, sp=false, type=2}
 subscribed to luamqtt/lost
 published close command
-received last-will message      PUBLISH{payload=client-1 connection lost, type=3, packet_id=1, dup=false, topic=luamqtt/lost, retain=false, qos=1}
+received:       PUBLISH{topic="luamqtt/lost", qos=1, payload="client-1 connection lost last will message", dup=false, packet_id=1, retain=false, type=3}
 disconnecting and stopping client-2
 ```

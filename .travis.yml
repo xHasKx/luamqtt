@@ -16,3 +16,8 @@ script: busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spe
 after_script:
   - sudo luarocks install luamqtt
   - busted tests/spec/*.lua
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always

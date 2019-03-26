@@ -1,43 +1,54 @@
--- load mqtt library
+-- load mqtt module
 local mqtt = require("mqtt")
 
 -- create mqtt client
 local client = mqtt.client{
-	-- NOTE: this broker is not working sometimes; comment auth = {...} below if you still want to use it
+	-- NOTE: this broker is not working sometimes; comment username = "..." below if you still want to use it
 	-- uri = "test.mosquitto.org",
 	uri = "mqtt.flespi.io",
 	-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
-	auth = {username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"},
+	username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
 	clean = true,
 }
-print(client)
+print("created MQTT client", client)
 
--- connect to broker, using assert to raise error on failure
-assert(client:connect())
-print("connected")
+client:on{
+	connect = function(connack)
+		if connack.rc ~= 0 then
+			print("connection failure:", connack)
+			return
+		end
 
--- subscribe to test topic
-assert(client:subscribe{
-	topic = "luamqtt/#",
-	qos = 1
-})
-print("subscribed")
+		print("connected:", connack) -- successful connection
 
--- publish
-assert(client:publish{
-	topic = "luamqtt/simpletest",
-	payload = "hello",
-	qos = 1
-})
-print("published")
+		-- subscribe to test topic and publish message after it
+		assert(client:subscribe("luamqtt/#", 1, function(suback)
+			print("subscribed:", suback)
 
--- receive one message and disconnect
-client:on("message", function(msg)
-	print("received message", msg)
-	client:disconnect()
-end)
+			-- publish test message
+			print('publishing test message "hello" to "luamqtt/simpletest" topic...')
+			assert(client:publish{
+				topic = "luamqtt/simpletest",
+				payload = "hello",
+				qos = 1
+			})
+		end))
+	end,
 
--- start receive loop
-assert(client:receive_loop())
+	message = function(msg)
+		assert(client:acknowledge(msg))
 
-print("done")
+		print("received:", msg)
+		print("disconnecting...")
+		assert(client:disconnect())
+	end,
+
+	error = function(err)
+		print("MQTT client error:", err)
+	end,
+}
+
+print("running ioloop for it")
+mqtt.run_ioloop(client)
+
+print("done, ioloop is stopped")
