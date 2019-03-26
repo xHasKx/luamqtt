@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>luamqtt</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Features">Features </a></li>
+<li><a href="#luasec__SSL_TLS_">luasec (SSL/TLS) </a></li>
+</ul>
+
+
+<h2>Topics</h2>
+<ul class="">
+  <li><strong>README</strong></li>
+  <li><a href="../topics/LICENSE.html">LICENSE</a></li>
+</ul>
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/mqtt.html">mqtt</a></li>
+  <li><a href="../modules/mqtt.client.html">mqtt.client</a></li>
+  <li><a href="../modules/mqtt.ioloop.html">mqtt.ioloop</a></li>
+</ul>
+<h2>Examples</h2>
+<ul class="nowrap">
+  <li><a href="../examples/simple.lua.html">simple.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+
+<h1>luamqtt - Pure-lua MQTT client</h1>
+
+<p><a href="https://github.com/xHasKx/luamqtt/blob/master/LICENSE"><img src="http://img.shields.io/badge/Licence-MIT-brightgreen.svg" alt="License"/></a>
+<a href="https://travis-ci.org/xHasKx/luamqtt"><img src="https://travis-ci.org/xHasKx/luamqtt.svg?branch=master" alt="Build Status"/></a></p>
+
+<p>MQTT ( http://mqtt.org/ ) client library for Lua.
+<strong>MQTT</strong> is a popular network communication protocol working by <strong>"publish/subscribe"</strong> model.</p>
+
+<p>This library is written in <strong>pure-lua</strong> to provide maximum portability.</p>
+
+<p><a name="Features"></a></p>
+<h2>Features</h2>
+
+<ul>
+    <li>Full MQTT v3.1.1 support</li>
+    <li>Several long-living MQTT clients in one script thanks to ioloop</li>
+</ul>
+
+<h1>Dependencies</h1>
+
+<p>The only main dependency is a <a href="https://luarocks.org/modules/luarocks/luasocket"><strong>luasocket</strong></a> to establishing TCP connection to the MQTT broker.</p>
+
+<p>On Lua 5.1 and Lua 5.2 it also depends on <a href="http://bitop.luajit.org/"><strong>LuaBitOp</strong></a> (<strong>bit</strong>) library to perform bitwise operations.
+It's not listed in package dependencies, please install it manually like this:</p>
+
+
+<pre>
+luarocks install luabitop
+</pre>
+
+<p><a name="luasec__SSL_TLS_"></a></p>
+<h2>luasec (SSL/TLS)</h2>
+
+<p>To establish secure network connection (SSL/TSL) to MQTT broker
+you also need <a href="https://github.com/brunoos/luasec"><strong>luasec</strong></a> module, please install it manually like this:</p>
+
+
+<pre>
+luarocks install luasec
+</pre>
+
+<p>This stage is optional and may be skipped if you don't need the secure network connection (e.g. broker is located in your local network).</p>
+
+<h1>Lua versions</h1>
+
+<p>It's tested to work on Debian 9 GNU/Linux with Lua versions:
+<em> Lua 5.1 ... Lua 5.3 (<strong>i.e. any modern Lua version</strong>)
+</em> LuaJIT 2.0.0 ... LuaJIT 2.1.0 beta3
+* It may also work on other Lua versions without any guarantees</p>
+
+<p>Also I've successfully run it under <strong>Windows</strong> and it was ok, but installing luarock-modules may be a non-trivial task on this OS.</p>
+
+<h1>Installation</h1>
+
+
+<pre>
+luarocks install luamqtt
+</pre>
+
+<p><a href="http://luarocks.org/modules/xhaskx/luamqtt">LuaRocks page</a></p>
+
+<h1>Examples</h1>
+
+<p>Here is a short version of <a href="examples/simple.lua"><code>examples/simple.lua</code></a>:</p>
+
+
+<pre>
+<span class="comment">-- load mqtt library
+</span><span class="keyword">local</span> mqtt = <span class="global">require</span>(<span class="string">"mqtt"</span>)
+
+<span class="comment">-- create MQTT client
+</span><span class="keyword">local</span> client = mqtt.client{ uri = <span class="string">"test.mosquitto.org"</span>, clean = <span class="keyword">true</span> }
+
+<span class="comment">-- assign MQTT client event handlers
+</span>client:on{
+    connect = <span class="keyword">function</span>(connack)
+        <span class="keyword">if</span> connack.rc ~= <span class="number">0</span> <span class="keyword">then</span>
+            <span class="global">print</span>(<span class="string">"connection failure:"</span>, connack)
+            <span class="keyword">return</span>
+        <span class="keyword">end</span>
+
+        <span class="comment">-- subscribe to test topic and publish message after it
+</span>        <span class="global">assert</span>(client:subscribe(<span class="string">"luamqtt/#"</span>, <span class="number">1</span>, <span class="keyword">function</span>()
+            <span class="global">assert</span>(client:publish{ topic = <span class="string">"luamqtt/simpletest"</span>, payload = <span class="string">"hello"</span> })
+        <span class="keyword">end</span>))
+    <span class="keyword">end</span>,
+
+    message = <span class="keyword">function</span>(msg)
+        <span class="global">assert</span>(client:acknowledge(msg))
+
+        <span class="comment">-- receive one message and disconnect
+</span>        <span class="global">print</span>(<span class="string">"received message"</span>, msg)
+        client:disconnect()
+    <span class="keyword">end</span>,
+}
+
+<span class="comment">-- run ioloop for client
+</span>mqtt.run_ioloop(client)
+</pre>
+
+
+<p>More examples placed in <a href="examples/"><code>examples/</code></a> directory. Also checkout tests in <a href="tests/spec/mqtt-client.lua"><code>tests/spec/mqtt-client.lua</code></a></p>
+
+<p>To run tests in this git repo you need <a href="https://luarocks.org/modules/olivine-labs/busted"><strong>busted</strong></a>:</p>
+
+
+<pre>
+busted -e <span class="string">'package.path="./?/init.lua;./?.lua;"..package.path'</span> tests/spec/*.lua
+</pre>
+
+<p>Also you can learn MQTT protocol by reading <a href="tests/spec/protocol-make.lua"><code>tests/spec/protocol-make.lua</code></a> and <a href="tests/spec/protocol-parse.lua"><code>tests/spec/protocol-parse.lua</code></a> tests</p>
+
+<h1>Connectors</h1>
+
+<p>Connector is a network connection layer for luamqtt. There is a two standard connectors included - <a href="mqtt/luasocket.lua"><code>luasocket</code></a> and <a href="mqtt/luasocket_ssl.lua"><code>luasocket_ssl</code></a>.</p>
+
+<p>In simple terms, connector is a set of functions to establish a network stream (TCP connection usually) and send/receive data through it.
+Every MQTT client instance may have their own connector.</p>
+
+<p>And it's very simple to implement your own connector to make luamqtt works in your environment.
+For example, it may be the <a href="https://github.com/openresty/lua-nginx-module"><code>cosocket implementation for OpenResty</code></a>.</p>
+
+<p>For more details - see the <a href="https://github.com/xHasKx/luamqtt/blob/master/mqtt/init.lua#L69"><code>source code of MQTT client initializer</code></a>.</p>
+
+<h1>MQTT version</h1>
+
+<p>Currently supported is <a href="http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html">MQTT v3.1.1 protocol</a> version.</p>
+
+<p>The MQTT 5.0 protocol version is planned to implement in the future.</p>
+
+<h1>TODO</h1>
+
+<ul>
+    <li>more permissive args for some methods</li>
+    <li>more examples</li>
+    <li>check some packet sequences are right</li>
+    <li>coroutines and other asyncronous approaches based on some event loop</li>
+    <li>[DONE] several clients in one process</li>
+    <li>MQTT 5.0</li>
+</ul>
+
+<h1>LICENSE</h1>
+
+<p>Standard MIT License, see LICENSE file for full text</p>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2019-03-27 01:58:28 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

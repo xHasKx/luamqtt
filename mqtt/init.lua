@@ -1,7 +1,8 @@
--- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
-
+--- MQTT module
+-- @module mqtt
 
 --[[
+MQTT protocol DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
 CONVENTIONS:
 
@@ -12,7 +13,9 @@ CONVENTIONS:
 
 ]]
 
--- module table
+--- Module table
+-- @table mqtt
+-- @field _VERSION		library version
 local mqtt = {
 	-- supported MQTT protocol versions
 	protocol_version = {
@@ -22,7 +25,6 @@ local mqtt = {
 	_VERSION = "2.0.0",
 }
 
-
 -- load required stuff
 local require = require
 local client = require("mqtt.client")
@@ -30,14 +32,15 @@ local client_create = client.create
 local ioloop_get = require("mqtt.ioloop").get
 local select = select
 
--- Create new MQTT client instance
--- @see mqtt.client.client_mt.__init
+--- Create new MQTT client instance
+-- @param ... Same as for mqtt.client.create(...)
+-- @see mqtt.client.client_mt:__init
 function mqtt.client(...)
 	return client_create(...)
 end
 
--- Run default ioloop for given MQTT clients
--- @see mqtt.get_ioloop
+--- Run default ioloop for given MQTT clients
+-- @see mqtt.ioloop.get
 -- @see mqtt.ioloop.run_until_clients
 function mqtt.run_ioloop(...)
 	local loop = ioloop_get()

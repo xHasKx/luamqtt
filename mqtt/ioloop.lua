@@ -1,3 +1,7 @@
+--- ioloop module
+-- @module mqtt.ioloop
+-- @alias ioloop
+
 --[[
 	ioloop module
 
@@ -26,23 +30,30 @@ local ipairs = ipairs
 local require = require
 local tbl_remove = table.remove
 
--- ioloop instances metatable
+--- ioloop instances metatable
+-- @type ioloop_mt
 local ioloop_mt = {}
 ioloop_mt.__index = ioloop_mt
 
--- Initialize ioloop instance, opts described in ioloop.create(opts)
-function ioloop_mt:init(opts) -- TODO: opts ==> args
-	opts = opts or {}
-	opts.timeout = opts.timeout or 0.01
-	opts.sleep = opts.sleep or 0
-	opts.sleep_function = opts.sleep_function or require("socket").sleep
-	self.opts = opts
+--- Initialize ioloop instance
+-- @tparam table args							ioloop creation arguments table
+-- @tparam[opt=0.01] number args.timeout		network operations timeout in seconds
+-- @tparam[opt=0] number args.sleep				sleep interval after each iteration
+-- @tparam[opt] function args.sleep_function	custom sleep function to call after each iteration
+-- @treturn ioloop_mt ioloop instance
+function ioloop_mt:__init(args)
+	args = args or {}
+	args.timeout = args.timeout or 0.01
+	args.sleep = args.sleep or 0
+	args.sleep_function = args.sleep_function or require("socket").sleep
+	self.args = args
 	self.clients = {}
 	self.running = false
 end
 
--- Add mqtt client to the ioloop instance
--- Returns true on success, or false plus error message on failure (such client is already added to ioloop)
+--- Add MQTT client to the ioloop instance
+-- @tparam client_mt client		MQTT client to add to ioloop
+-- @return true on success or false and error message on failure
 function ioloop_mt:add(client)
 	local clients = self.clients
 	if clients[client] then
@@ -57,8 +68,9 @@ function ioloop_mt:add(client)
 	return true
 end
 
--- Remove mqtt client from the ioloop instance
--- Returns true on success, or false plus error message on failure (no such client was added to ioloop)
+--- Remove MQTT client from the ioloop instance
+-- @tparam client_mt client		MQTT client to remove from ioloop
+-- @return true on success or false and error message on failure
 function ioloop_mt:remove(client)
 	local clients = self.clients
 	local idx = clients[client]
@@ -70,30 +82,30 @@ function ioloop_mt:remove(client)
 	return true
 end
 
--- Perform one ioloop iteration
+--- Perform one ioloop iteration
 function ioloop_mt:iteration()
 	self.timeouted = false
 	for _, client in ipairs(self.clients) do
 		client:_ioloop_iteration()
 	end
 	-- sleep a bit
-	local opts = self.opts
-	local sleep = opts.sleep
+	local args = self.args
+	local sleep = args.sleep
 	if sleep > 0 then
-		opts.sleep_function(sleep)
+		args.sleep_function(sleep)
 	end
 end
 
--- Perform sleep if no one of the network operation in current iteration was not timeouted
+--- Perform sleep if no one of the network operation in current iteration was not timeouted
 function ioloop_mt:can_sleep()
 	if not self.timeouted then
-		local opts = self.opts
-		opts.sleep_function(opts.timeout)
+		local args = self.args
+		args.sleep_function(args.timeout)
 		self.timeouted = true
 	end
 end
 
--- Run ioloop until at least one client are in ioloop
+--- Run ioloop until at least one client are in ioloop
 function ioloop_mt:run_until_clients()
 	self.running = true
 	while next(self.clients) do
@@ -104,16 +116,12 @@ end
 
 -------
 
--- Create IO loop instance with given options
--- opts: a table with such fields
--- {
---		timeout = 0.01,								-- default timeout for socket blocking operations
---		sleep = 0, 									-- default sleep timeout when no socket operations was performed, to prevent high CPU usage on idle
---		sleep_function = require("socket").sleep	-- sleep function to be runned at the end of all ioloop iterations, if opts.sleep > 0
--- }
-local function ioloop_create(opts)
+--- Create IO loop instance with given options
+-- @see ioloop_mt:__init
+-- @treturn ioloop_mt ioloop instance
+local function ioloop_create(args)
 	local inst = setmetatable({}, ioloop_mt)
-	inst:init(opts)
+	inst:__init(args)
 	return inst
 end
 ioloop.create = ioloop_create
@@ -121,7 +129,8 @@ ioloop.create = ioloop_create
 -- Default ioloop instance
 local ioloop_instance
 
--- Returns default ioloop instance
+--- Returns default ioloop instance
+-- @treturn ioloop_mt ioloop instance
 function ioloop.get()
 	if not ioloop_instance then
 		ioloop_instance = ioloop_create()

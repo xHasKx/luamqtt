@@ -1,0 +1,272 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>luamqtt</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Class_ioloop_mt">Class ioloop_mt </a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/mqtt.html">mqtt</a></li>
+  <li><a href="../modules/mqtt.client.html">mqtt.client</a></li>
+  <li><strong>mqtt.ioloop</strong></li>
+</ul>
+<h2>Topics</h2>
+<ul class="">
+  <li><a href="../topics/README.md.html">README</a></li>
+  <li><a href="../topics/LICENSE.html">LICENSE</a></li>
+</ul>
+<h2>Examples</h2>
+<ul class="nowrap">
+  <li><a href="../examples/simple.lua.html">simple.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>mqtt.ioloop</code></h1>
+<p>ioloop module</p>
+<p></p>
+
+
+<h2><a href="#Class_ioloop_mt">Class ioloop_mt </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#ioloop_mt:__init">ioloop_mt:__init (args)</a></td>
+	<td class="summary">Initialize ioloop instance</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ioloop_mt:add">ioloop_mt:add (client)</a></td>
+	<td class="summary">Add MQTT client to the ioloop instance</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ioloop_mt:remove">ioloop_mt:remove (client)</a></td>
+	<td class="summary">Remove MQTT client from the ioloop instance</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ioloop_mt:iteration">ioloop_mt:iteration ()</a></td>
+	<td class="summary">Perform one ioloop iteration</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ioloop_mt:can_sleep">ioloop_mt:can_sleep ()</a></td>
+	<td class="summary">Perform sleep if no one of the network operation in current iteration was not timeouted</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ioloop_mt:run_until_clients">ioloop_mt:run_until_clients ()</a></td>
+	<td class="summary">Run ioloop until at least one client are in ioloop</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ioloop_mt:get">ioloop_mt:get ()</a></td>
+	<td class="summary">Returns default ioloop instance</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header has-description"><a name="Class_ioloop_mt"></a>Class ioloop_mt </h2>
+
+          <div class="section-description">
+          ioloop instances metatable
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "ioloop_mt:__init"></a>
+    <strong>ioloop_mt:__init (args)</strong>
+    </dt>
+    <dd>
+    Initialize ioloop instance
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">args</span>							ioloop creation arguments table
+        <ul>
+        <li><span class="parameter">timeout</span>
+            <span class="types"><span class="type">number</span></span>
+        		network operations timeout in seconds
+         (<em>default</em> 0.01)
+        </li>
+        <li><span class="parameter">sleep</span>
+            <span class="types"><span class="type">number</span></span>
+        				sleep interval after each iteration
+         (<em>default</em> 0)
+        </li>
+        <li><span class="parameter">sleep_function</span>
+            <span class="types"><span class="type">function</span></span>
+        	custom sleep function to call after each iteration
+         (<em>optional</em>)
+        </li>
+        </li></ul>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">ioloop_mt</span></span>
+        ioloop instance
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ioloop_mt:add"></a>
+    <strong>ioloop_mt:add (client)</strong>
+    </dt>
+    <dd>
+    Add MQTT client to the ioloop instance
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">client</span>
+            <span class="types"><a class="type" href="../modules/mqtt.html#client">client_mt</a></span>
+        		MQTT client to add to ioloop
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        true on success or false and error message on failure
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ioloop_mt:remove"></a>
+    <strong>ioloop_mt:remove (client)</strong>
+    </dt>
+    <dd>
+    Remove MQTT client from the ioloop instance
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">client</span>
+            <span class="types"><a class="type" href="../modules/mqtt.html#client">client_mt</a></span>
+        		MQTT client to remove from ioloop
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        true on success or false and error message on failure
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ioloop_mt:iteration"></a>
+    <strong>ioloop_mt:iteration ()</strong>
+    </dt>
+    <dd>
+    Perform one ioloop iteration
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ioloop_mt:can_sleep"></a>
+    <strong>ioloop_mt:can_sleep ()</strong>
+    </dt>
+    <dd>
+    Perform sleep if no one of the network operation in current iteration was not timeouted
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ioloop_mt:run_until_clients"></a>
+    <strong>ioloop_mt:run_until_clients ()</strong>
+    </dt>
+    <dd>
+    Run ioloop until at least one client are in ioloop
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ioloop_mt:get"></a>
+    <strong>ioloop_mt:get ()</strong>
+    </dt>
+    <dd>
+    Returns default ioloop instance
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">ioloop_mt</span></span>
+        ioloop instance
+    </ol>
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2019-03-27 01:58:28 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
