@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luamqtt
-PKG_VERSION:=1.4
+PKG_VERSION:=2.0
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Alexander <xhaskx@gmail.com>
 
@@ -33,6 +33,8 @@ define Package/luamqtt/install
 	$(INSTALL_DIR) $(1)/usr/lib/lua
 	$(INSTALL_DIR) $(1)/usr/lib/lua/mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/init.lua $(1)/usr/lib/lua/mqtt
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/client.lua $(1)/usr/lib/lua/mqtt
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/ioloop.lua $(1)/usr/lib/lua/mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/bit53.lua $(1)/usr/lib/lua/mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/bitwrap.lua $(1)/usr/lib/lua/mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/luasocket.lua $(1)/usr/lib/lua/mqtt
