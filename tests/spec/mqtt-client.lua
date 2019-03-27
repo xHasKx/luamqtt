@@ -76,7 +76,8 @@ describe("MQTT client", function()
 	for _, case in ipairs(cases) do
 		it("complex test - "..case.name, function()
 			local errors = {}
-			local acknowledges = {}
+			local acknowledge = false
+			local test_msg_2 = false
 
 			-- create client
 			local client = mqtt.client(case.args)
@@ -103,8 +104,12 @@ describe("MQTT client", function()
 									topic = "luamqtt/1/test",
 									payload = "testing QoS 1",
 									qos = 1,
-									callback = function(ack)
-										acknowledges[#acknowledges + 1] = ack
+									callback = function()
+										acknowledge = true
+										if acknowledge and test_msg_2 then
+											-- done
+											assert(client:disconnect())
+										end
 									end,
 								})
 							end))
@@ -116,8 +121,11 @@ describe("MQTT client", function()
 							qos = 2,
 						})
 					elseif msg.topic == "luamqtt/2/test" then
-						-- done
-						assert(client:disconnect())
+						test_msg_2 = true
+						if acknowledge and test_msg_2 then
+							-- done
+							assert(client:disconnect())
+						end
 					end
 				end,
 
@@ -130,7 +138,7 @@ describe("MQTT client", function()
 			mqtt.run_ioloop(client)
 
 			assert.are.same({}, errors)
-			assert.is.equal(1, #acknowledges)
+			assert.is_true(acknowledge)
 		end)
 	end
 end)
