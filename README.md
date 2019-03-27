@@ -15,7 +15,7 @@ This library is written in **pure-lua** to provide maximum portability.
 
 # Documentation
 
-See [https://xhaskx.github.io/luamqtt/index.html](https://xhaskx.github.io/luamqtt/index.html)
+See [https://xhaskx.github.io/luamqtt/](https://xhaskx.github.io/luamqtt/)
 
 # Source Code
 
