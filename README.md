@@ -98,6 +98,10 @@ To run tests in this git repo you need [**busted**](https://luarocks.org/modules
 
     busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
 
+There is a script to run all tests for all supported lua versions, using [hererocks](https://github.com/mpeterv/hererocks):
+
+    ./tests/run-for-all-lua-versions.sh
+
 Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
 
 # Connectors

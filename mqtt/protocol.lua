@@ -260,11 +260,10 @@ local function value_tostring(value)
 			if type(k) == "number" then
 				res[#res + 1] = value_tostring(v)
 			else
-				local k_str = str_format("%q", k)
-				if k_str:sub(2, -2) == k then
+				if k:match("^[a-zA-Z_][_%w]*$") then
 					res[#res + 1] = str_format("%s=%s", k, value_tostring(v))
 				else
-					res[#res + 1] = str_format("[%s]=%s", k_str, value_tostring(v))
+					res[#res + 1] = str_format("[%q]=%s", k, value_tostring(v))
 				end
 			end
 		end
