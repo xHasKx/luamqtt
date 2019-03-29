@@ -8,9 +8,9 @@ MQTT ( [http://mqtt.org/](http://mqtt.org/) ) client library for Lua.
 
 This library is written in **pure-lua** to provide maximum portability.
 
-## Features
+# Features
 
-* Full MQTT v3.1.1 support
+* Full MQTT v3.1.1 client-side support
 * Several long-living MQTT clients in one script thanks to ioloop
 
 # Documentation

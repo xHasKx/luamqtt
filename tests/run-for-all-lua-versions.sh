@@ -42,6 +42,6 @@ done
 ver="-l5.1"
 env="$ROOT/v$ver"
 source "$env/bin/activate"
-echo "testing 'luarocks install luamqtt' in $ver"
+echo "testing 'luarocks install luamqtt' for $ver"
 luarocks install luamqtt >/dev/null 2>&1
 busted tests/spec/*.lua
