@@ -14,10 +14,6 @@ local client = mqtt.client{
 
 client:on{
 	connect = function(connack)
-		if connack.rc ~= 0 then
-			print("connection failure:", connack)
-			return
-		end
 		print("connected:", connack)
 
 		-- subscribe to topic when we are expecting last-will message from client-1

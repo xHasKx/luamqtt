@@ -38,6 +38,29 @@ describe("MQTT client", function()
 			}
 		},
 		{
+			name = "mqtt.flespi.io PLAIN, MQTTv5.0",
+			args = {
+				id = "luamqtt-test-flespi",
+				uri = "mqtt.flespi.io",
+				clean = true,
+				version = mqtt.v50,
+				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
+			}
+		},
+		{
+			name = "mqtt.flespi.io SECURE, MQTTv5.0",
+			args = {
+				-- id = "luamqtt-test-flespi-ssl", -- testing randomly generated client id
+				uri = "mqtt.flespi.io",
+				version = mqtt.v50,
+				clean = true,
+				secure = true,
+				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
+			}
+		},
+		{
 			name = "test.mosquitto.org PLAIN",
 			args = {
 				id = "luamqtt-test-mosquitto",
@@ -69,6 +92,25 @@ describe("MQTT client", function()
 				uri = "mqtt.fluux.io",
 				secure = true,
 				clean = true,
+			}
+		},
+		{
+			name = "mqtt.fluux.io PLAIN, MQTTv5.0",
+			args = {
+				id = "luamqtt-test-fluux",
+				uri = "mqtt.fluux.io",
+				clean = true,
+				version = mqtt.v50,
+			}
+		},
+		{
+			name = "mqtt.fluux.io SECURE, MQTTv5.0",
+			args = {
+				-- id = "luamqtt-test-fluux", -- testing randomly generated client id
+				uri = "mqtt.fluux.io",
+				secure = true,
+				clean = true,
+				version = mqtt.v50,
 			}
 		},
 	}

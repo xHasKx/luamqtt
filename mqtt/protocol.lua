@@ -21,38 +21,41 @@ CONVENTIONS:
 -- module table
 local protocol = {}
 
-
--- required modules
-local table = require("table")
-local string = require("string")
-local bit = require("mqtt.bitwrap")
-local tools = require("mqtt.tools")
-
-
--- cache to locals
+-- load required stuff
+local error = error
 local assert = assert
+local require = require
+local _VERSION = _VERSION -- lua interpreter version, not a mqtt._VERSION
 local tostring = tostring
 local setmetatable = setmetatable
-local error = error
+
+
+local table = require("table")
 local tbl_concat = table.concat
+local unpack = unpack or table.unpack
+
+local string = require("string")
 local str_char = string.char
 local str_byte = string.byte
 local str_format = string.format
+
+local bit = require("mqtt.bitwrap")
 local bor = bit.bor
 local band = bit.band
 local lshift = bit.lshift
 local rshift = bit.rshift
-local div = tools.div
-local unpack = unpack or table.unpack
 
+local tools = require("mqtt.tools")
+local div = tools.div
 
 -- Create uint8 value data
-function protocol.make_uint8(val)
+local function make_uint8(val)
 	if val < 0 or val > 0xFF then
 		error("value is out of range to encode as uint8: "..tostring(val))
 	end
 	return str_char(val)
 end
+protocol.make_uint8 = make_uint8
 
 -- Create uint16 value data
 local function make_uint16(val)
@@ -62,6 +65,14 @@ local function make_uint16(val)
 	return str_char(rshift(val, 8), band(val, 0xFF))
 end
 protocol.make_uint16 = make_uint16
+
+-- Create uint32 value data
+function protocol.make_uint32(val)
+	if val < 0 or val > 0xFFFFFFFF then
+		error("value is out of range to encode as uint32: "..tostring(val))
+	end
+	return str_char(rshift(val, 24), band(rshift(val, 16), 0xFF), band(rshift(val, 8), 0xFF), band(val, 0xFF))
+end
 
 -- Create UTF-8 string data
 -- DOCv3.1.1: 1.5.3 UTF-8 encoded strings
@@ -91,6 +102,144 @@ local function make_var_length(len)
 	return unpack(bytes)
 end
 protocol.make_var_length = make_var_length
+
+-- Make data for 1-byte property with only 0 or 1 value
+function protocol.make_uint8_0_or_1(value)
+	if value ~= 0 and value ~= 1 then
+		error("expecting 0 or 1 as value")
+	end
+	return make_uint8(value)
+end
+
+-- Make data for 2-byte property with nonzero value check
+function protocol.make_uint16_nonzero(value)
+	if value == 0 then
+		error("expecting nonzero value")
+	end
+	return make_uint16(value)
+end
+
+-- Make data for variable length property with nonzero value check
+function protocol.make_var_length_nonzero(value)
+	if value == 0 then
+		error("expecting nonzero value")
+	end
+	return make_var_length(value)
+end
+
+-- Read string using given read_func function
+-- Returns false plus error message on failure
+-- Returns parsed string on success
+function protocol.parse_string(read_func)
+	assert(type(read_func) == "function", "expecting read_func to be a function")
+	local len, err = read_func(2)
+	if not len then
+		return false, "failed to read string length: "..err
+	end
+	-- convert len string from 2-byte integer
+	local byte1, byte2 = str_byte(len, 1, 2)
+	len = bor(lshift(byte1, 8), byte2)
+	-- and return string if parsed length
+	return read_func(len)
+end
+
+-- Parse uint8 value using given read_func
+local function parse_uint8(read_func)
+	assert(type(read_func) == "function", "expecting read_func to be a function")
+	local value, err = read_func(1)
+	if not value then
+		return false, "failed to read 1 byte for uint8: "..err
+	end
+	return str_byte(value, 1, 1)
+end
+protocol.parse_uint8 = parse_uint8
+
+-- Parse uint8 value with only 0 or 1 value
+function protocol.parse_uint8_0_or_1(read_func)
+	local value, err = parse_uint8(read_func)
+	if not value then
+		return false, err
+	end
+	if value ~= 0 and value ~= 1 then
+		return false, "expecting only 0 or 1 but got: "..value
+	end
+	return value
+end
+
+-- Parse uint16 value using given read_func
+local function parse_uint16(read_func)
+	assert(type(read_func) == "function", "expecting read_func to be a function")
+	local value, err = read_func(2)
+	if not value then
+		return false, "failed to read 2 byte for uint16: "..err
+	end
+	local byte1, byte2 = str_byte(value, 1, 2)
+	return lshift(byte1, 8) + byte2
+end
+protocol.parse_uint16 = parse_uint16
+
+-- Parse uint16 non-zero value using given read_func
+function protocol.parse_uint16_nonzero(read_func)
+	local value, err = parse_uint16(read_func)
+	if not value then
+		return false, err
+	end
+	if value == 0 then
+		return false, "expecting non-zero value"
+	end
+	return value
+end
+
+-- Parse uint32 value using given read_func
+function protocol.parse_uint32(read_func)
+	assert(type(read_func) == "function", "expecting read_func to be a function")
+	local value, err = read_func(4)
+	if not value then
+		return false, "failed to read 4 byte for uint32: "..err
+	end
+	local byte1, byte2, byte3, byte4 = str_byte(value, 1, 4)
+	if _VERSION < "Lua 5.3" then
+		return byte1 * (2 ^ 24) + lshift(byte2, 16) + lshift(byte3, 8) + byte4
+	else
+		return lshift(byte1, 24) + lshift(byte2, 16) + lshift(byte3, 8) + byte4
+	end
+end
+
+-- Max variable length integer value
+local max_mult = 128 * 128 * 128
+
+-- Returns variable length field value calling read_func function read data, DOC: 2.2.3 Remaining Length
+local function parse_var_length(read_func)
+	assert(type(read_func) == "function", "expecting read_func to be a function")
+	local mult = 1
+	local val = 0
+	repeat
+		local byte, err = read_func(1)
+		if not byte then
+			return false, err
+		end
+		byte = str_byte(byte, 1, 1)
+		val = val + band(byte, 127) * mult
+		if mult > max_mult then
+			return false, "malformed variable length field data"
+		end
+		mult = mult * 128
+	until band(byte, 128) == 0
+	return val
+end
+protocol.parse_var_length = parse_var_length
+
+-- Parse Variable Byte Integer with non-zero constraint
+function protocol.parse_var_length_nonzero(read_func)
+	local value, err = parse_var_length(read_func)
+	if not value then
+		return false, err
+	end
+	if value == 0 then
+		return false, "expecting non-zero value"
+	end
+	return value
+end
 
 -- Create fixed packet header data
 -- DOCv3.1.1: 2.2 Fixed header
@@ -179,6 +328,41 @@ local packets_requiring_packet_id = {
 	[packet_type.UNSUBACK] 		= true,
 }
 
+-- CONNACK return code/reason code strings
+local connack_rc = {
+	-- MQTT v3.1.1 Connect return codes, DOCv3.1.1: 3.2.2.3 Connect Return code
+	[0] = "Connection Accepted",
+	[1] = "Connection Refused, unacceptable protocol version",
+	[2] = "Connection Refused, identifier rejected",
+	[3] = "Connection Refused, Server unavailable",
+	[4] = "Connection Refused, bad user name or password",
+	[5] = "Connection Refused, not authorized",
+
+	-- MQTT v5.0 Connect reason codes, DOCv5.0: 3.2.2.2 Connect Reason Code
+	[0x80] = "Unspecified error",
+	[0x81] = "Malformed Packet",
+	[0x82] = "Protocol Error",
+	[0x83] = "Implementation specific error",
+	[0x84] = "Unsupported Protocol Version",
+	[0x85] = "Client Identifier not valid",
+	[0x86] = "Bad User Name or Password",
+	[0x87] = "Not authorized",
+	[0x88] = "Server unavailable",
+	[0x89] = "Server busy",
+	[0x8A] = "Banned",
+	[0x8C] = "Bad authentication method",
+	[0x90] = "Topic Name invalid",
+	[0x95] = "Packet too large",
+	[0x97] = "Quota exceeded",
+	[0x99] = "Payload format invalid",
+	[0x9A] = "Retain not supported",
+	[0x9B] = "QoS not supported",
+	[0x9C] = "Use another server",
+	[0x9D] = "Server moved",
+	[0x9F] = "Connection rate exceeded",
+}
+protocol.connack_rc = connack_rc
+
 -- Returns true if Packet Identifier field are required for given packet
 function protocol.packet_id_required(args)
 	assert(type(args) == "table", "expecting args to be a table")
@@ -226,29 +410,6 @@ function protocol.combine(...)
 	return setmetatable({...}, combined_packet_mt)
 end
 
--- Max variable length integer value
-local max_mult = 128 * 128 * 128
-
--- Returns variable length field value calling read_func function read data, DOC: 2.2.3 Remaining Length
-function protocol.parse_var_length(read_func)
-	assert(type(read_func) == "function", "expecting read_func to be a function")
-	local mult = 1
-	local val = 0
-	repeat
-		local byte, err = read_func(1)
-		if not byte then
-			return false, err
-		end
-		byte = str_byte(byte, 1, 1)
-		val = val + band(byte, 127) * mult
-		if mult > max_mult then
-			return false, "malformed variable length field data"
-		end
-		mult = mult * 128
-	until band(byte, 128) == 0
-	return val
-end
-
 -- Convert any value to string, respecting strings and tables
 local function value_tostring(value)
 	local t = type(value)
@@ -287,6 +448,18 @@ protocol.packet_tostring = packet_tostring
 protocol.packet_mt = {
 	__tostring = packet_tostring,
 }
+
+-- Parsed CONNACK packet metatable
+protocol.connack_packet_mt = {
+	__tostring = packet_tostring,
+}
+protocol.connack_packet_mt.__index = protocol.connack_packet_mt
+
+--- Returns reason string for CONNACK packet
+-- @treturn string Reason string according packet's rc field
+function protocol.connack_packet_mt:reason_string()
+	return connack_rc[self.rc]
+end
 
 -- export module table
 return protocol

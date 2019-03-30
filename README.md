@@ -68,12 +68,9 @@ local client = mqtt.client{ uri = "test.mosquitto.org", clean = true }
 -- assign MQTT client event handlers
 client:on{
     connect = function(connack)
-        if connack.rc ~= 0 then
-            print("connection failure:", connack)
-            return
-        end
+        -- called on successfull connect
 
-        -- subscribe to test topic and publish message after it
+        -- now subscribe to test topic and publish message after it
         assert(client:subscribe("luamqtt/#", 1, function()
             assert(client:publish{ topic = "luamqtt/simpletest", payload = "hello" })
         end))

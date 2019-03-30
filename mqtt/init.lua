@@ -14,23 +14,27 @@ CONVENTIONS:
 ]]
 
 --- Module table
+-- @field v311 MQTT v3.1.1 protocol version constant
+-- @field v50  MQTT v5.0   protocol version constant
+-- @field _VERSION luamqtt version string
 -- @table mqtt
--- @field _VERSION		library version
 local mqtt = {
 	-- supported MQTT protocol versions
-	protocol_version = {
-		"3.1.1",
-	},
+	v311 = 4,		-- supported protocol version, MQTT v3.1.1
+	v50 = 5,		-- supported protocol version, MQTT v5.0
+
 	-- mqtt library version
-	_VERSION = "2.0.0",
+	_VERSION = "2.1.0",
 }
 
 -- load required stuff
+local select = select
 local require = require
+
 local client = require("mqtt.client")
 local client_create = client.create
+
 local ioloop_get = require("mqtt.ioloop").get
-local select = select
 
 --- Create new MQTT client instance
 -- @param ... Same as for mqtt.client.create(...)

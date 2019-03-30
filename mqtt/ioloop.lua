@@ -28,6 +28,8 @@ local ioloop = {}
 -- load required stuff
 local ipairs = ipairs
 local require = require
+
+local table = require("table")
 local tbl_remove = table.remove
 
 --- ioloop instances metatable
@@ -37,13 +39,13 @@ ioloop_mt.__index = ioloop_mt
 
 --- Initialize ioloop instance
 -- @tparam table args							ioloop creation arguments table
--- @tparam[opt=0.01] number args.timeout		network operations timeout in seconds
+-- @tparam[opt=0.005] number args.timeout		network operations timeout in seconds
 -- @tparam[opt=0] number args.sleep				sleep interval after each iteration
 -- @tparam[opt] function args.sleep_function	custom sleep function to call after each iteration
 -- @treturn ioloop_mt ioloop instance
 function ioloop_mt:__init(args)
 	args = args or {}
-	args.timeout = args.timeout or 0.01
+	args.timeout = args.timeout or 0.005
 	args.sleep = args.sleep or 0
 	args.sleep_function = args.sleep_function or require("socket").sleep
 	self.args = args

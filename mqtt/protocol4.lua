@@ -10,24 +10,24 @@ MQTT v3.1.1 documentation (DOC):
 -- module table
 local protocol4 = {}
 
-
--- required modules
-local string = require("string")
-local bit = require("mqtt.bitwrap")
-local protocol = require("mqtt.protocol")
-
-
--- cache to locals
+-- load required stuff
+local error = error
 local assert = assert
+local require = require
 local tostring = tostring
 local setmetatable = setmetatable
-local error = error
+
+local string = require("string")
 local str_sub = string.sub
 local str_byte = string.byte
+
+local bit = require("mqtt.bitwrap")
 local bor = bit.bor
 local band = bit.band
 local lshift = bit.lshift
 local rshift = bit.rshift
+
+local protocol = require("mqtt.protocol")
 local make_uint8 = protocol.make_uint8
 local make_uint16 = protocol.make_uint16
 local make_string = protocol.make_string
@@ -38,17 +38,7 @@ local combine = protocol.combine
 local parse_var_length = protocol.parse_var_length
 local packet_type = protocol.packet_type
 local packet_mt = protocol.packet_mt
-
-
--- CONNACK return code strings
-protocol4.connack_return_code = {
-	[0] = "Connection Accepted",
-	[1] = "Connection Refused, unacceptable protocol version",
-	[2] = "Connection Refused, identifier rejected",
-	[3] = "Connection Refused, Server unavailable",
-	[4] = "Connection Refused, bad user name or password",
-	[5] = "Connection Refused, not authorized",
-}
+local connack_packet_mt = protocol.connack_packet_mt
 
 -- Create Connect Flags data, DOC: 3.1.2.3 Connect Flags
 local function make_connect_flags(args)
@@ -120,9 +110,11 @@ local function make_packet_connect(args)
 	)
 	if args.will then
 		-- DOC: 3.1.3.2 Will Topic
+		assert(type(args.will.topic) == "string", "expecting will.topic to be a string")
 		payload:append(make_string(args.will.topic))
 		-- DOC: 3.1.3.3 Will Message
-		payload:append(make_string(args.will.payload))
+		assert(args.will.payload == nil or type(args.will.payload) == "string", "expecting will.payload to be a string or nil")
+		payload:append(make_string(args.will.payload or ""))
 	end
 	if args.username then
 		-- DOC: 3.1.3.4 User Name
@@ -351,7 +343,7 @@ function protocol4.parse_packet(read_func)
 		end
 		byte1, byte2 = str_byte(data, 1, 2)
 		local sp = (band(byte1, 0x1) ~= 0)
-		return setmetatable({type=ptype, sp=sp, rc=byte2}, packet_mt)
+		return setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
 	elseif ptype == packet_type.PUBLISH then
 		-- DOC: 3.3 PUBLISH – Publish message
 		-- DOC: 3.3.1.1 DUP

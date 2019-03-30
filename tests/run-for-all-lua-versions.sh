@@ -39,9 +39,12 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 
 done
 
-ver="-l5.1"
-env="$ROOT/v$ver"
-source "$env/bin/activate"
-echo "testing 'luarocks install luamqtt' for $ver"
-luarocks install luamqtt >/dev/null 2>&1
-busted tests/spec/*.lua
+if [ "$1" != "no-download" ]; then
+	ver="-l5.1"
+	env="$ROOT/v$ver"
+	source "$env/bin/activate"
+	echo "testing 'luarocks install luamqtt' for $ver"
+	luarocks install luamqtt >/dev/null 2>&1
+	busted tests/spec/*.lua
+
+fi

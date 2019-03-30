@@ -14,11 +14,6 @@ print("created MQTT client", client)
 
 client:on{
 	connect = function(connack)
-		if connack.rc ~= 0 then
-			print("connection failure:", connack)
-			return
-		end
-
 		print("connected:", connack) -- successful connection
 
 		-- subscribe to test topic and publish message after it
