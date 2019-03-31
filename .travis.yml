@@ -5,15 +5,13 @@ before_install:
   - sudo apt-get install -y libssl-dev git
   - sudo pip install hererocks
 
-  # for code coverage test:
-  - sudo apt-get install luarocks
-  - sudo luarocks install luacov-coveralls
-
 script:
   ./tests/run-for-all-lua-versions.sh
 
 after_success:
-  # run code coverage test
+  # run code coverage test in hererocks lua 5.3 environment
+  - source "local/hererocks/v-l5.3/bin/activate"
+  - luarocks install luacov-coveralls
   - busted -v -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
   - luacov-coveralls
 
