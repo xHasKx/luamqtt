@@ -6,7 +6,7 @@ project = "luamqtt"
 package = "mqtt"
 dir = "."
 
-description = "luamqtt - Pure-lua MQTT client"
+description = "luamqtt - Pure-lua MQTT v3.1.1 and v5.0 client"
 
 full_description = "Source code: https://github.com/xHasKx/luamqtt"
 
