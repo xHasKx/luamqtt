@@ -95,6 +95,10 @@ mqtt.run_ioloop(client)
 
 More examples placed in [`examples/`](examples/) directory. Also checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
 
+Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
+
+# Tests
+
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
 
     busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
@@ -103,7 +107,17 @@ There is a script to run all tests for all supported lua versions, using [herero
 
     ./tests/run-for-all-lua-versions.sh
 
-Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
+# Code coverage
+
+Code coverage may be collected using [luacov](https://keplerproject.github.io/luacov/).
+
+To collect code coverage stats - install luacov using luarocks and then execute:
+
+    # collect stats during tests
+    busted -v -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
+
+    # generate report into luacov.report.out file
+    luacov
 
 # Connectors
 

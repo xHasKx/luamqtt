@@ -1,0 +1,13 @@
+-- luacov code coverage config
+-- collect stats command:
+--    busted -v -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
+-- then generate report:
+--    luacov
+-- and then checkout report file `luacov.report.out`
+
+modules = {
+   ["mqtt"] = "mqtt/init.lua",
+   ["mqtt.*"] = ".",
+}
+
+tick = true
