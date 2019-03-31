@@ -1,4 +1,4 @@
-# luamqtt - Pure-lua MQTT client
+# luamqtt - Pure-lua MQTT v3.1.1 and v5.0 client
 
 [![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](https://github.com/xHasKx/luamqtt/blob/master/LICENSE)
 [![Build Status](https://travis-ci.org/xHasKx/luamqtt.svg?tag=latest)](https://travis-ci.org/xHasKx/luamqtt)
