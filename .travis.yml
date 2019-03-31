@@ -6,6 +6,7 @@ before_install:
   - sudo pip install hererocks
 
   # for code coverage test:
+  - sudo apt-get install luarocks
   - sudo luarocks install luacov-coveralls
 
 script:
