@@ -62,7 +62,7 @@ function ioloop_mt:add(client)
 		return false, "such MQTT client is already added to this ioloop"
 	end
 	clients[#clients + 1] = client
-	clients[client] = #clients
+	clients[client] = true
 
 	-- associate ioloop with adding MQTT client
 	client:set_ioloop(self)
@@ -75,12 +75,17 @@ end
 -- @return true on success or false and error message on failure
 function ioloop_mt:remove(client)
 	local clients = self.clients
-	local idx = clients[client]
-	if not idx then
+	if not clients[client] then
 		return false, "no such MQTT client was added to ioloop"
 	end
 	clients[client] = nil
-	tbl_remove(clients, idx)
+	-- search an index of client to remove
+	for i, item in ipairs(clients) do
+		if item == client then
+			tbl_remove(clients, i)
+			break
+		end
+	end
 	return true
 end
 

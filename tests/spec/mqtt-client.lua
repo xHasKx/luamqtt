@@ -115,6 +115,13 @@ describe("MQTT client", function()
 		},
 	}
 
+	local properties = {
+		message_expiry_interval = 3600,
+	}
+	local user_properties = {
+		hello = "MQTT v5.0!",
+	}
+
 	for _, case in ipairs(cases) do
 		it("complex test - "..case.name, function()
 			local errors = {}
@@ -146,6 +153,8 @@ describe("MQTT client", function()
 									topic = "luamqtt/1/test",
 									payload = "testing QoS 1",
 									qos = 1,
+									properties = properties,
+									user_properties = user_properties,
 									callback = function()
 										acknowledge = true
 										if acknowledge and test_msg_2 then
@@ -157,6 +166,12 @@ describe("MQTT client", function()
 							end})
 						end})
 					elseif msg.topic == "luamqtt/1/test" then
+						if case.args.version == mqtt.v50 then
+							assert(type(msg.properties) == "table")
+							assert.are.same(properties.message_expiry_interval, msg.properties.message_expiry_interval)
+							assert(type(msg.user_properties) == "table")
+							assert.are.same(user_properties.hello, msg.user_properties.hello)
+						end
 						assert(client:publish{
 							topic = "luamqtt/2/test",
 							payload = "testing QoS 2",
