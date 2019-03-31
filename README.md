@@ -2,6 +2,7 @@
 
 [![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](https://github.com/xHasKx/luamqtt/blob/master/LICENSE)
 [![Build Status](https://travis-ci.org/xHasKx/luamqtt.svg?tag=latest)](https://travis-ci.org/xHasKx/luamqtt)
+[![Coverage Status](https://coveralls.io/repos/github/xHasKx/luamqtt/badge.svg?branch=master)](https://coveralls.io/github/xHasKx/luamqtt?branch=master)
 
 MQTT ( [http://mqtt.org/](http://mqtt.org/) ) client library for Lua.
 **MQTT** is a popular network communication protocol working by **"publish/subscribe"** model.
