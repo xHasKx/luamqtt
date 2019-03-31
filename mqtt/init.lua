@@ -24,7 +24,7 @@ local mqtt = {
 	v50 = 5,		-- supported protocol version, MQTT v5.0
 
 	-- mqtt library version
-	_VERSION = "2.1.0",
+	_VERSION = "3.0.0",
 }
 
 -- load required stuff
@@ -42,6 +42,10 @@ local ioloop_get = require("mqtt.ioloop").get
 function mqtt.client(...)
 	return client_create(...)
 end
+
+--- Returns default ioloop instance
+-- @function mqtt.get_ioloop
+mqtt.get_ioloop = ioloop_get
 
 --- Run default ioloop for given MQTT clients
 -- @param ... MQTT clients to add to ioloop

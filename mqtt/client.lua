@@ -130,6 +130,12 @@ function client_mt:__init(args)
 		elseif key == "keep_alive" then
 			assert(value_type == "number", "expecting keep_alive to be a number")
 			a.keep_alive = value
+		elseif key == "properties" then
+			assert(value_type == "table", "expecting properties to be a table")
+			a.properties = value
+		elseif key == "user_properties" then
+			assert(value_type == "table", "expecting user_properties to be a table")
+			a.user_properties = value
 		elseif key == "reconnect" then
 			assert(value_type == "boolean" or value_type == "number", "expecting reconnect to be a boolean or number")
 			a.reconnect = value
@@ -203,6 +209,7 @@ function client_mt:__init(args)
 		acknowledge = {},
 		error = {},
 		close = {},
+		auth = {},
 	}
 	self._handling = {}
 	self._to_remove_handlers = {}
@@ -285,14 +292,21 @@ function client_mt:off(event, func)
 end
 
 --- Subscribe to specified topic. Returns the SUBSCRIBE packet id and calls optional callback when subscription will be created on broker
--- @tparam string topic				subscription topic
--- @tparam[opt=0] number qos		QoS level for subscription
--- @tparam[opt] function callback	callback function to be called when subscription will be created
+-- @tparam table args						subscription arguments
+-- @tparam string args.topic				topic to subscribe
+-- @tparam[opt=0] number args.qos			QoS level for subscription
+-- @tparam[opt] table args.properties		properties for subscribe operation
+-- @tparam[opt] table args.user_properties	user properties for subscribe operation
+-- @tparam[opt] function args.callback		callback function to be called when subscription will be created
 -- @return packet id on success or false and error message on failure
-function client_mt:subscribe(topic, qos, callback)
+function client_mt:subscribe(args)
 	-- fetch and validate args
-	assert(type(topic) == "string", "expecting topic to be a string")
-	assert(qos == nil or (type(qos) == "number" and check_qos(qos)), "expecting valid qos value")
+	assert(type(args) == "table", "expecting args to be a table")
+	assert(type(args.topic) == "string", "expecting args.topic to be a string")
+	assert(args.qos == nil or (type(args.qos) == "number" and check_qos(args.qos)), "expecting valid args.qos value")
+	assert(args.properties == nil or type(args.properties) == "table", "expecting args.properties to be a table")
+	assert(args.user_properties == nil or type(args.user_properties) == "table", "expecting args.user_properties to be a table")
+	assert(args.callback == nil or type(args.callback) == "function", "expecting args.callback to be a function")
 
 	-- check connection is alive
 	if not self.connection then
@@ -304,10 +318,12 @@ function client_mt:subscribe(topic, qos, callback)
 		type = packet_type.SUBSCRIBE,
 		subscriptions = {
 			{
-				topic = topic,
-				qos = qos,
+				topic = args.topic,
+				qos = args.qos,
 			},
 		},
+		properties = args.properties,
+		user_properties = args.user_properties,
 	}
 	self:_assign_packet_id(pargs)
 	local packet_id = pargs.packet_id
@@ -323,6 +339,7 @@ function client_mt:subscribe(topic, qos, callback)
 	end
 
 	-- add subscribe callback
+	local callback = args.callback
 	if callback then
 		local function handler(suback, ...)
 			if suback.packet_id == packet_id then
@@ -338,12 +355,20 @@ function client_mt:subscribe(topic, qos, callback)
 end
 
 --- Unsubscribe from specified topic, and calls optional callback when subscription will be removed on broker
--- @tparam string topic				subscription topic to unsubscribe
--- @tparam[opt] function callback	callback function to be called when subscription will be created
+-- @tparam table args						subscription arguments
+-- @tparam string args.topic				topic to unsubscribe
+-- @tparam[opt] table args.properties		properties for unsubscribe operation
+-- @tparam[opt] table args.user_properties	user properties for unsubscribe operation
+-- @tparam[opt] function args.callback		callback function to be called when subscription will be removed on broker
 -- @return packet id on success or false and error message on failure
-function client_mt:unsubscribe(topic, callback)
+function client_mt:unsubscribe(args)
 	-- fetch and validate args
-	assert(type(topic) == "string", "expecting topic to be a string")
+	assert(type(args) == "table", "expecting args to be a table")
+	assert(type(args.topic) == "string", "expecting args.topic to be a string")
+	assert(args.properties == nil or type(args.properties) == "table", "expecting args.properties to be a table")
+	assert(args.user_properties == nil or type(args.user_properties) == "table", "expecting args.user_properties to be a table")
+	assert(args.callback == nil or type(args.callback) == "function", "expecting args.callback to be a function")
+
 
 	-- check connection is alive
 	if not self.connection then
@@ -353,7 +378,9 @@ function client_mt:unsubscribe(topic, callback)
 	-- create UNSUBSCRIBE packet
 	local  pargs = {
 		type = packet_type.UNSUBSCRIBE,
-		subscriptions = {topic},
+		subscriptions = {args.topic},
+		properties = args.properties,
+		user_properties = args.user_properties,
 	}
 	self:_assign_packet_id(pargs)
 	local packet_id = pargs.packet_id
@@ -369,6 +396,7 @@ function client_mt:unsubscribe(topic, callback)
 	end
 
 	-- add unsubscribe callback
+	local callback = args.callback
 	if callback then
 		local function handler(unsuback, ...)
 			if unsuback.packet_id == packet_id then
@@ -383,13 +411,15 @@ function client_mt:unsubscribe(topic, callback)
 	return packet_id
 end
 
---- Publish message to broker.
+--- Publish message to broker
 -- @tparam table args						publish operation arguments table
 -- @tparam string args.topic				topic to publish message
 -- @tparam[opt] string args.payload			publish message payload
 -- @tparam[opt=0] number args.qos			QoS level for message publication
 -- @tparam[opt=false] boolean args.retain	retain message publication flag
 -- @tparam[opt=false] boolean args.dup		dup message publication flag
+-- @tparam[opt] table args.properties		properties for publishing message
+-- @tparam[opt] table args.user_properties	user properties for publishing message
 -- @tparam[opt] function args.callback		callback to call when publihsed message will be acknowledged
 -- @return true or packet id on success or false and error message on failure
 function client_mt:publish(args)
@@ -403,6 +433,8 @@ function client_mt:publish(args)
 	end
 	assert(args.retain == nil or type(args.retain) == "boolean", "expecting args.retain to be a boolean")
 	assert(args.dup == nil or type(args.dup) == "boolean", "expecting args.dup to be a boolean")
+	assert(args.properties == nil or type(args.properties) == "table", "expecting args.properties to be a table")
+	assert(args.user_properties == nil or type(args.user_properties) == "table", "expecting args.user_properties to be a table")
 	assert(args.callback == nil or type(args.callback) == "function", "expecting args.callback to be a function")
 
 	-- check connection is alive
@@ -432,14 +464,19 @@ function client_mt:publish(args)
 	end
 
 	-- add acknowledge callback
-	if args.callback then
-		local function handler(ack, ...)
-			if ack.packet_id == packet_id then
-				self:off("acknowledge", handler)
-				args.callback(ack, ...)
+	local callback = args.callback
+	if callback then
+		if packet_id then
+			local function handler(ack, ...)
+				if ack.packet_id == packet_id then
+					self:off("acknowledge", handler)
+					callback(ack, ...)
+				end
 			end
+			self:on("acknowledge", handler)
+		else
+			callback("no ack for QoS 0 message", self)
 		end
-		self:on("acknowledge", handler)
 	end
 
 	-- returns assigned packet id
@@ -447,11 +484,16 @@ function client_mt:publish(args)
 end
 
 --- Acknowledge given received message
--- @tparam packet_mt msg	PUBLISH message to acknowledge
--- @tparam number rc		The reason code field of PUBACK packet in MQTT v5.0 protocol
+-- @tparam packet_mt msg				PUBLISH message to acknowledge
+-- @tparam[opt=0] number rc				The reason code field of PUBACK packet in MQTT v5.0 protocol
+-- @tparam[opt] table properties		properties for PUBACK/PUBREC packets
+-- @tparam[opt] table user_properties	user properties for PUBACK/PUBREC packets
 -- @return true on success or false and error message on failure
-function client_mt:acknowledge(msg, rc)
+function client_mt:acknowledge(msg, rc, properties, user_properties)
 	assert(type(msg) == "table" and msg.type == packet_type.PUBLISH, "expecting msg to be a publish packet")
+	assert(rc == nil or type(rc) == "number", "expecting rc to be a number")
+	assert(properties == nil or type(properties) == "table", "expecting properties to be a table")
+	assert(user_properties == nil or type(user_properties) == "table", "expecting user_properties to be a table")
 
 	-- check connection is alive
 	local conn = self.connection
@@ -469,7 +511,13 @@ function client_mt:acknowledge(msg, rc)
 		-- PUBACK should be sent
 
 		-- create PUBACK packet
-		local puback = self._make_packet{type=packet_type.PUBACK, packet_id=packet_id, rc=rc or 0}
+		local puback = self._make_packet{
+			type=packet_type.PUBACK,
+			packet_id=packet_id,
+			rc=rc or 0,
+			properties=properties,
+			user_properties=user_properties,
+		}
 
 		-- send PUBACK packet
 		local ok, err = self:_send_packet(puback)
@@ -483,7 +531,13 @@ function client_mt:acknowledge(msg, rc)
 		-- PUBREC should be sent and packet_id should be remembered for PUBREL+PUBCOMP sequence
 
 		-- create PUBREC packet
-		local pubrec = self._make_packet{type=packet_type.PUBREC, packet_id=packet_id, rc=rc or 0}
+		local pubrec = self._make_packet{
+			type=packet_type.PUBREC,
+			packet_id=packet_id,
+			rc=rc or 0,
+			properties=properties,
+			user_properties=user_properties,
+		}
 
 		-- send PUBREC packet
 		local ok, err = self:_send_packet(pubrec)
@@ -502,16 +556,28 @@ function client_mt:acknowledge(msg, rc)
 end
 
 --- Send DISCONNECT packet to the broker and close the connection
--- @tparam number rc	The Disconnect Reason Code value from MQTT v5.0 protocol
+-- @tparam[opt=0] number rc				The Disconnect Reason Code value from MQTT v5.0 protocol
+-- @tparam[opt] table properties		properties for PUBACK/PUBREC packets
+-- @tparam[opt] table user_properties	user properties for PUBACK/PUBREC packets
 -- @return true on success or false and error message on failure
-function client_mt:disconnect(rc)
+function client_mt:disconnect(rc, properties, user_properties)
+	-- validate args
+	assert(rc == nil or type(rc) == "number", "expecting rc to be a number")
+	assert(properties == nil or type(properties) == "table", "expecting properties to be a table")
+	assert(user_properties == nil or type(user_properties) == "table", "expecting user_properties to be a table")
+
 	-- check connection is alive
 	if not self.connection then
 		return false, "network connection is not opened"
 	end
 
 	-- create DISCONNECT packet
-	local disconnect = self._make_packet{type=packet_type.DISCONNECT, rc=rc or 0}
+	local disconnect = self._make_packet{
+		type=packet_type.DISCONNECT,
+		rc=rc or 0,
+		properties=properties,
+		user_properties=user_properties,
+	}
 
 	-- send DISCONNECT packet
 	local ok, err = self:_send_packet(disconnect)
@@ -523,7 +589,44 @@ function client_mt:disconnect(rc)
 	end
 
 	-- now close connection
-	self:close_connection("client")
+	self:close_connection("connection closed by client")
+
+	return true
+end
+
+--- Send AUTH packet to authenticate client on broker, in MQTT v5.0 protocol
+-- @tparam[opt=0] number rc				Authenticate Reason Code
+-- @tparam[opt] table properties		properties for PUBACK/PUBREC packets
+-- @tparam[opt] table user_properties	user properties for PUBACK/PUBREC packets
+-- @return true on success or false and error message on failure
+function client_mt:auth(rc, properties, user_properties)
+	-- validate args
+	assert(rc == nil or type(rc) == "number", "expecting rc to be a number")
+	assert(properties == nil or type(properties) == "table", "expecting properties to be a table")
+	assert(user_properties == nil or type(user_properties) == "table", "expecting user_properties to be a table")
+	assert(self.args.version == 5, "allowed only in MQTT v5.0 protocol")
+
+	-- check connection is alive
+	if not self.connection then
+		return false, "network connection is not opened"
+	end
+
+	-- create AUTH packet
+	local auth = self._make_packet{
+		type=packet_type.AUTH,
+		rc=rc or 0,
+		properties=properties,
+		user_properties=user_properties,
+	}
+
+	-- send AUTH packet
+	local ok, err = self:_send_packet(auth)
+	if not ok then
+		err = "failed to send AUTH: "..err
+		self:handle("error", err, self)
+		self:close_connection("error")
+		return false, err
+	end
 
 	return true
 end
@@ -654,16 +757,17 @@ function client_mt:send_connect()
 	local args = self.args
 
 	-- create CONNECT packet
-	local pargs = {
+	local connect = self._make_packet{
 		type=packet_type.CONNECT,
 		id=args.id,
 		clean = args.clean,
 		username = args.username,
 		password = args.password,
 		will = args.will,
-		keep_alive = args.keep_alive
+		keep_alive = args.keep_alive,
+		properties = args.properties,
+		user_properties = args.user_properties,
 	}
-	local connect = self._make_packet(pargs)
 
 	-- send CONNECT packet
 	local ok, err = self:_send_packet(connect)
@@ -756,7 +860,7 @@ function client_mt:handle(event, ...)
 	end
 end
 
----
+-- Internal methods
 
 -- Assign next packet id for given packet creation args
 function client_mt:_assign_packet_id(pargs)
@@ -795,7 +899,7 @@ function client_mt:_ioloop_iteration()
 		-- check for communication error
 		if packet == false then
 			if err == "closed" then
-				self:close_connection("broker")
+				self:close_connection("connection closed by broker")
 				return false, err
 			else
 				err = "failed to receive next packet: "..err
@@ -823,7 +927,8 @@ function client_mt:_ioloop_iteration()
 				if packet.rc ~= 0 then
 					err = str_format("CONNECT failed with CONNACK [rc=%d]: %s", packet.rc, packet:reason_string())
 					self:handle("error", err, self, packet)
-					self:close_connection("failed")
+					self:handle("connect", packet, self)
+					self:close_connection("connection failed")
 					return false, err
 				end
 
@@ -868,6 +973,10 @@ function client_mt:_ioloop_iteration()
 				elseif ptype == packet_type.PUBCOMP then
 					-- last phase of QoS 2 exchange
 					-- do nothing here
+				elseif ptype == packet_type.DISCONNECT then
+					self:close_connection("disconnect received from broker")
+				elseif ptype == packet_type.AUTH then
+					self:handle("auth", packet, self)
 				-- else
 				-- 	print("unhandled packet:", packet) -- debug
 				end

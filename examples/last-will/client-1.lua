@@ -19,12 +19,16 @@ local client = mqtt.client{
 
 client:on{
 	connect = function(connack)
+		if connack.rc ~= 0 then
+			print("connection to broker failed:", connack)
+			return
+		end
 		print("connected:", connack)
 
 		-- subscribe to topic when we are expecting connection close command from client-2
-		assert(client:subscribe("luamqtt/close", 1, function()
+		assert(client:subscribe{ topic="luamqtt/close", qos=1, callback=function()
 			print("subscribed to luamqtt/close, waiting for connection close command from client-2")
-		end))
+		end})
 	end,
 
 	message = function(msg)

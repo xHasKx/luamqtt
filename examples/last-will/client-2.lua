@@ -14,10 +14,14 @@ local client = mqtt.client{
 
 client:on{
 	connect = function(connack)
+		if connack.rc ~= 0 then
+			print("connection to broker failed:", connack)
+			return
+		end
 		print("connected:", connack)
 
 		-- subscribe to topic when we are expecting last-will message from client-1
-		assert(client:subscribe("luamqtt/lost", 1, function()
+		assert(client:subscribe{ topic="luamqtt/lost", qos=1, callback=function()
 			print("subscribed to luamqtt/lost")
 
 			-- publish close command to client-1
@@ -27,7 +31,7 @@ client:on{
 				qos = 1,
 			})
 			print("published close command")
-		end))
+		end})
 	end,
 
 	message = function(msg)

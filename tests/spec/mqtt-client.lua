@@ -127,12 +127,12 @@ describe("MQTT client", function()
 			-- set on-connect handler
 			client:on{
 				connect = function()
-					assert(client:subscribe("luamqtt/0/test", 0, function()
+					assert(client:subscribe{topic="luamqtt/0/test", callback=function()
 						assert(client:publish{
 							topic = "luamqtt/0/test",
 							payload = "initial",
 						})
-					end))
+					end})
 				end,
 
 				message = function(msg)
@@ -140,8 +140,8 @@ describe("MQTT client", function()
 
 					if msg.topic == "luamqtt/0/test" then
 						-- re-subscribe test
-						assert(client:unsubscribe("luamqtt/0/test", function()
-							assert(client:subscribe("luamqtt/#", 2, function()
+						assert(client:unsubscribe{topic="luamqtt/0/test", callback=function()
+							assert(client:subscribe{topic="luamqtt/#", qos=2, callback=function()
 								assert(client:publish{
 									topic = "luamqtt/1/test",
 									payload = "testing QoS 1",
@@ -154,8 +154,8 @@ describe("MQTT client", function()
 										end
 									end,
 								})
-							end))
-						end))
+							end})
+						end})
 					elseif msg.topic == "luamqtt/1/test" then
 						assert(client:publish{
 							topic = "luamqtt/2/test",

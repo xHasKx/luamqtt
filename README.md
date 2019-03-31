@@ -11,6 +11,7 @@ This library is written in **pure-lua** to provide maximum portability.
 # Features
 
 * Full MQTT v3.1.1 client-side support
+* Full MQTT v5.0 client-side support
 * Several long-living MQTT clients in one script thanks to ioloop
 
 # Documentation
@@ -68,12 +69,15 @@ local client = mqtt.client{ uri = "test.mosquitto.org", clean = true }
 -- assign MQTT client event handlers
 client:on{
     connect = function(connack)
-        -- called on successfull connect
+        if connack.rc ~= 0 then
+            print("connection to broker failed:", connack)
+            return
+        end
 
-        -- now subscribe to test topic and publish message after it
-        assert(client:subscribe("luamqtt/#", 1, function()
+        -- connection established, now subscribe to test topic and publish a message after
+        assert(client:subscribe{ topic="luamqtt/#", qos=1, callback=function()
             assert(client:publish{ topic = "luamqtt/simpletest", payload = "hello" })
-        end))
+        end})
     end,
 
     message = function(msg)
@@ -115,18 +119,21 @@ For more details - see the [`source code of MQTT client initializer`](https://gi
 
 # MQTT version
 
-Currently supported is [MQTT v3.1.1 protocol](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html) version.
+Currently supported is:
 
-The MQTT 5.0 protocol version is planned to implement in the future.
+* [MQTT v3.1.1 protocol](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html) version.
+* [MQTT v5.0 protocol](http://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html) version.
+
+Both protocols has full control packets support.
 
 # TODO
 
-* more permissive args for some methods
 * more examples
 * check some packet sequences are right
 * coroutines and other asyncronous approaches based on some event loop
+* [DONE] more permissive args for some methods
 * [DONE] several clients in one process
-* MQTT 5.0
+* [DONE] MQTT 5.0
 
 # LICENSE
 

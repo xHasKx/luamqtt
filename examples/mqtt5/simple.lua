@@ -1,16 +1,14 @@
--- load mqtt module
 local mqtt = require("mqtt")
 
 -- create mqtt client
 local client = mqtt.client{
-	-- NOTE: this broker is not working sometimes; comment username = "..." below if you still want to use it
-	-- uri = "test.mosquitto.org",
 	uri = "mqtt.flespi.io",
 	-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
 	username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
 	clean = true,
+	version = mqtt.v50,
 }
-print("created MQTT client", client)
+print("created MQTT v5.0 client:", client)
 
 client:on{
 	connect = function(connack)
@@ -29,7 +27,14 @@ client:on{
 			assert(client:publish{
 				topic = "luamqtt/simpletest",
 				payload = "hello",
-				qos = 1
+				qos = 1,
+				properties = {
+					payload_format_indicator = 1,
+					content_type = "text/plain",
+				},
+				user_properties = {
+					hello = "world",
+				},
 			})
 		end})
 	end,

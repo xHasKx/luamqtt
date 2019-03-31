@@ -1025,6 +1025,7 @@ function protocol5.parse_packet(read_func)
 			if not rc then
 				return false, "failed to parse rc: "..err
 			end
+			packet.rc = rc
 			-- DOC: 3.14.2.2 DISCONNECT Properties
 			ok, err = parse_properties(ptype, read_data, input, packet)
 			if not ok then
@@ -1034,15 +1035,18 @@ function protocol5.parse_packet(read_func)
 	elseif ptype == packet_type.AUTH then
 		-- DOC: 3.15 AUTH – Authentication exchange
 		-- DOC: 3.15.2.1 Authenticate Reason Code
-		rc, err = parse_uint8(read_data) -- TODO: table
-		if not rc then
-			return false, "failed to parse Authenticate Reason Code: "..err
-		end
-		-- DOC: 3.15.2.2 AUTH Properties
-		packet = setmetatable({type=ptype, rc=rc}, packet_mt)
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, "failed to parse packet properties: "..err
+		packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, packet_mt)
+		if input.available > 1 then
+			rc, err = parse_uint8(read_data)
+			if not rc then
+				return false, "failed to parse Authenticate Reason Code: "..err
+			end
+			packet.rc = rc
+			-- DOC: 3.15.2.2 AUTH Properties
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, "failed to parse packet properties: "..err
+			end
 		end
 	else
 		return false, "unexpected packet type received: "..tostring(ptype)
