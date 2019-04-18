@@ -99,6 +99,12 @@ More examples placed in [`examples/`](examples/) directory. Also checkout tests 
 
 Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
 
+# Bugs & contributing
+
+Please [file a GitHub issue](https://github.com/xHasKx/luamqtt/issues) if you found any bug.
+
+And of course, any contribution are welcome!
+
 # Tests
 
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
