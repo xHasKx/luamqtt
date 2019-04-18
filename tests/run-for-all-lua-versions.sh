@@ -28,7 +28,14 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 		luarocks install busted > /dev/null 2>&1
 		if [ -d /usr/lib/x86_64-linux-gnu ]; then
 			# debian-based OS
-			luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
+			[ -f /etc/lsb-release ] && . /etc/lsb-release
+			if [ "$DISTRIB_CODENAME" == "trusty" ]; then
+				# workaround for ubuntu trusty
+				echo "using non-latest luasec 0.7-1 on trusty"
+				luarocks install luasec 0.7-1 > /dev/null 2>&1
+			else
+				luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
+			fi
 		else
 			luarocks install luasec > /dev/null 2>&1
 		fi
