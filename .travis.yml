@@ -1,12 +1,13 @@
 language: lua
+dist: xenial
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install -y libssl-dev git
+  - sudo apt-get install -y git libssl-dev libreadline-dev libncurses-dev
   - sudo pip install hererocks
 
 script:
-  ./tests/run-for-all-lua-versions.sh
+  ./tests/run-for-all-lua-versions.sh download
 
 after_success:
   # run code coverage test in hererocks lua 5.3 environment

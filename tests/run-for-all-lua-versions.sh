@@ -39,7 +39,7 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 
 done
 
-if [ "$1" != "no-download" ]; then
+if [ "$1" == "download" ]; then
 	ver="-l5.1"
 	env="$ROOT/v$ver"
 	source "$env/bin/activate"
