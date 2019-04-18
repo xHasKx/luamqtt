@@ -1,5 +1,5 @@
-language: lua
-dist: xenial # why it's still trusty (`Description:	Ubuntu 14.04.5 LTS`) in travis job log ???
+language: generic
+dist: xenial
 
 before_install:
   - sudo apt-get update
@@ -19,4 +19,4 @@ after_success:
 notifications:
   email:
     on_success: change
-    on_failure: always
+    on_failure: change
