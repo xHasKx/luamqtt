@@ -34,8 +34,8 @@
 
 <h2>Examples</h2>
 <ul class="nowrap">
-  <li><strong>simple.lua</strong></li>
-  <li><a href="../examples/sync.lua.html">sync.lua</a></li>
+  <li><a href="../examples/simple.lua.html">simple.lua</a></li>
+  <li><strong>sync.lua</strong></li>
   <li><a href="../examples/mqtt5-simple.lua.html">mqtt5-simple.lua</a></li>
 </ul>
 <h2>Modules</h2>
@@ -54,7 +54,7 @@
 
 <div id="content">
 
-    <h2>simple.lua</h2>
+    <h2>sync.lua</h2>
 <pre>
 <span class="comment">-- load mqtt module
 </span><span class="keyword">local</span> mqtt = <span class="global">require</span>(<span class="string">"mqtt"</span>)
@@ -103,12 +103,18 @@ client:on{
 	<span class="global">error</span> = <span class="keyword">function</span>(err)
 		<span class="global">print</span>(<span class="string">"MQTT client error:"</span>, err)
 	<span class="keyword">end</span>,
+
+	close = <span class="keyword">function</span>()
+		<span class="global">print</span>(<span class="string">"MQTT conn closed"</span>)
+	<span class="keyword">end</span>
 }
 
-<span class="global">print</span>(<span class="string">"running ioloop for it"</span>)
-mqtt.run_ioloop(client)
+<span class="comment">-- run io loop for client until connection close
+</span><span class="comment">-- please note that in sync mode background PINGREQ's are not available, and automatic reconnects too
+</span><span class="global">print</span>(<span class="string">"running client in synchronous input/output loop"</span>)
+mqtt.run_sync(client)
 
-<span class="global">print</span>(<span class="string">"done, ioloop is stopped"</span>)</pre>
+<span class="global">print</span>(<span class="string">"done, synchronous input/output loop is stopped"</span>)</pre>
 
 
 </div> <!-- id="content" -->

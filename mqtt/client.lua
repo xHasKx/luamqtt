@@ -230,9 +230,9 @@ function client_mt:__init(args)
 		self._parse_packet = parse_packet5
 	end
 
-	-- automatically add client to default ioloop, if it's running, and start connecting
-	local loop = ioloop_get()
-	if loop.running then
+	-- automatically add client to default ioloop, if it's available and running, then start connecting
+	local loop = ioloop_get(false)
+	if loop and loop.running then
 		loop:add(self)
 		self:start_connecting()
 	end
@@ -872,128 +872,47 @@ function client_mt:_assign_packet_id(pargs)
 	end
 end
 
+-- Receive packet function in sync mode
+local function sync_recv(self)
+	return true, self:_receive_packet()
+end
+
+-- Perform one input/output iteration, called by sync receiving loop
+function client_mt:_sync_iteration()
+	return self:_io_iteration(sync_recv)
+end
+
+-- Receive packet function - from ioloop's coroutine
+local function ioloop_recv(self)
+	return coroutine_resume(self.connection.coro)
+end
+
 -- Perform one input/output iteration, called by ioloop
 function client_mt:_ioloop_iteration()
 	-- working according state
 	local loop = self.ioloop
 	local args = self.args
 
-	--require("local.debugger")()
-
 	local conn = self.connection
 	if conn then
 		-- network connection opened
+		-- perform packet receiving using ioloop receive function
+		local ok, err = self:_io_iteration(ioloop_recv)
 
-		-- first - try to receive packet
-		local ok, packet, err = coroutine_resume(conn.coro)
-		-- print("received packet", ok, packet, err)
-
-		-- check coroutine resume status
-		if not ok then
-			err = "failed to resume receive packet coroutine: "..tostring(packet)
-			self:handle("error", err, self)
-			self:close_connection("error")
-			return false, err
-		end
-
-		-- check for communication error
-		if packet == false then
-			if err == "closed" then
-				self:close_connection("connection closed by broker")
-				return false, err
-			else
-				err = "failed to receive next packet: "..err
-				self:handle("error", err, self)
-				self:close_connection("error")
-				return false, err
+		if ok then
+			-- send PINGREQ if keep_alive interval is reached
+			if os_time() - self.comm_time >= args.keep_alive then
+				self:send_pingreq()
 			end
 		end
 
-		-- check some packet received
-		if packet ~= "timeout" and packet ~= "wantread" then
-			if not conn.connack then
-				-- expecting only CONNACK packet here
-				if packet.type ~= packet_type.CONNACK then
-					err = "expecting CONNACK but received "..packet.type
-					self:handle("error", err, self)
-					self:close_connection("error")
-					return false, err
-				end
-
-				-- store connack packet in connection
-				conn.connack = packet
-
-				-- check CONNACK rc
-				if packet.rc ~= 0 then
-					err = str_format("CONNECT failed with CONNACK [rc=%d]: %s", packet.rc, packet:reason_string())
-					self:handle("error", err, self, packet)
-					self:handle("connect", packet, self)
-					self:close_connection("connection failed")
-					return false, err
-				end
-
-				-- fire connect event
-				self:handle("connect", packet, self)
-			else
-				-- connection authorized, so process usual packets
-
-				-- handle packet according its type
-				local ptype = packet.type
-				if ptype == packet_type.PINGRESP then
-					-- PINGREQ answer, nothing to do
-					-- TODO: break the connectin in absence of this packet in some timeout
-				elseif ptype == packet_type.SUBACK then
-					self:handle("subscribe", packet, self)
-				elseif ptype == packet_type.UNSUBACK then
-					self:handle("unsubscribe", packet, self)
-				elseif ptype == packet_type.PUBLISH then
-					-- check such packet is not waiting for pubrel acknowledge
-					self:handle("message", packet, self)
-				elseif ptype == packet_type.PUBACK then
-					self:handle("acknowledge", packet, self)
-				elseif ptype == packet_type.PUBREC then
-					local packet_id = packet.packet_id
-					if conn.wait_for_pubrec[packet_id] then
-						conn.wait_for_pubrec[packet_id] = nil
-						-- send PUBREL acknowledge
-						if self:acknowledge_pubrel(packet_id) then
-							-- and fire acknowledge event
-							self:handle("acknowledge", packet, self)
-						end
-					end
-				elseif ptype == packet_type.PUBREL then
-					-- second phase of QoS 2 exchange - check we are already acknowledged such packet by PUBREL
-					local packet_id = packet.packet_id
-					if conn.wait_for_pubrel[packet_id] then
-						-- remove packet from waiting for PUBREL packets table
-						conn.wait_for_pubrel[packet_id] = nil
-						-- send PUBCOMP acknowledge
-						self:acknowledge_pubcomp(packet_id)
-					end
-				elseif ptype == packet_type.PUBCOMP then
-					-- last phase of QoS 2 exchange
-					-- do nothing here
-				elseif ptype == packet_type.DISCONNECT then
-					self:close_connection("disconnect received from broker")
-				elseif ptype == packet_type.AUTH then
-					self:handle("auth", packet, self)
-				-- else
-				-- 	print("unhandled packet:", packet) -- debug
-				end
-			end
-		end
-
-		-- send PINGREQ if keep_alive interval is reached
-		if os_time() - self.comm_time >= args.keep_alive then
-			self:send_pingreq()
-		end
+		return ok, err
 	else
 		-- no connection - first connect, reconnect or remove from ioloop
 		if self.first_connect then
 			self.first_connect = false
 			self:start_connecting()
 		elseif args.reconnect then
-			-- TODO: wait a while before reconnect
 			if args.reconnect == true then
 				self:start_connecting()
 			else
@@ -1014,6 +933,112 @@ function client_mt:_ioloop_iteration()
 			loop:remove(self)
 		end
 	end
+end
+
+-- Performing one IO iteration - receive next packet
+function client_mt:_io_iteration(recv)
+	local conn = self.connection
+
+	-- first - try to receive packet
+	local ok, packet, err = recv(self)
+	-- print("received packet", ok, packet, err)
+
+	-- check coroutine resume status
+	if not ok then
+		err = "failed to resume receive packet coroutine: "..tostring(packet)
+		self:handle("error", err, self)
+		self:close_connection("error")
+		return false, err
+	end
+
+	-- check for communication error
+	if packet == false then
+		if err == "closed" then
+			self:close_connection("connection closed by broker")
+			return false, err
+		else
+			err = "failed to receive next packet: "..err
+			self:handle("error", err, self)
+			self:close_connection("error")
+			return false, err
+		end
+	end
+
+	-- check some packet received
+	if packet ~= "timeout" and packet ~= "wantread" then
+		if not conn.connack then
+			-- expecting only CONNACK packet here
+			if packet.type ~= packet_type.CONNACK then
+				err = "expecting CONNACK but received "..packet.type
+				self:handle("error", err, self)
+				self:close_connection("error")
+				return false, err
+			end
+
+			-- store connack packet in connection
+			conn.connack = packet
+
+			-- check CONNACK rc
+			if packet.rc ~= 0 then
+				err = str_format("CONNECT failed with CONNACK [rc=%d]: %s", packet.rc, packet:reason_string())
+				self:handle("error", err, self, packet)
+				self:handle("connect", packet, self)
+				self:close_connection("connection failed")
+				return false, err
+			end
+
+			-- fire connect event
+			self:handle("connect", packet, self)
+		else
+			-- connection authorized, so process usual packets
+
+			-- handle packet according its type
+			local ptype = packet.type
+			if ptype == packet_type.PINGRESP then
+				-- PINGREQ answer, nothing to do
+				-- TODO: break the connectin in absence of this packet in some timeout
+			elseif ptype == packet_type.SUBACK then
+				self:handle("subscribe", packet, self)
+			elseif ptype == packet_type.UNSUBACK then
+				self:handle("unsubscribe", packet, self)
+			elseif ptype == packet_type.PUBLISH then
+				-- check such packet is not waiting for pubrel acknowledge
+				self:handle("message", packet, self)
+			elseif ptype == packet_type.PUBACK then
+				self:handle("acknowledge", packet, self)
+			elseif ptype == packet_type.PUBREC then
+				local packet_id = packet.packet_id
+				if conn.wait_for_pubrec[packet_id] then
+					conn.wait_for_pubrec[packet_id] = nil
+					-- send PUBREL acknowledge
+					if self:acknowledge_pubrel(packet_id) then
+						-- and fire acknowledge event
+						self:handle("acknowledge", packet, self)
+					end
+				end
+			elseif ptype == packet_type.PUBREL then
+				-- second phase of QoS 2 exchange - check we are already acknowledged such packet by PUBREL
+				local packet_id = packet.packet_id
+				if conn.wait_for_pubrel[packet_id] then
+					-- remove packet from waiting for PUBREL packets table
+					conn.wait_for_pubrel[packet_id] = nil
+					-- send PUBCOMP acknowledge
+					self:acknowledge_pubcomp(packet_id)
+				end
+			elseif ptype == packet_type.PUBCOMP then
+				-- last phase of QoS 2 exchange
+				-- do nothing here
+			elseif ptype == packet_type.DISCONNECT then
+				self:close_connection("disconnect received from broker")
+			elseif ptype == packet_type.AUTH then
+				self:handle("auth", packet, self)
+			-- else
+			-- 	print("unhandled packet:", packet) -- debug
+			end
+		end
+	end
+
+	return true
 end
 
 -- Apply ioloop network timeout to already established connection (if any)
@@ -1053,7 +1078,7 @@ function client_mt:_apply_network_timeout()
 			conn.sync_recv_func = sync_recv_func
 		else
 			-- disable connection timeout
-			self.args.connector.settimeout(conn, 0)
+			self.args.connector.settimeout(conn, nil)
 
 			-- replace back usual (blocking) connection recv_func
 			if conn.sync_recv_func then
@@ -1087,6 +1112,7 @@ end
 function client_mt._apply_secure(args, conn)
 	local secure = args.secure
 	if secure then
+		conn.secure = true
 		if type(secure) == "table" then
 			conn.secure_params = secure
 		else

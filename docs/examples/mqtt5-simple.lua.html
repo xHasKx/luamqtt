@@ -34,9 +34,9 @@
 
 <h2>Examples</h2>
 <ul class="nowrap">
-  <li><strong>simple.lua</strong></li>
+  <li><a href="../examples/simple.lua.html">simple.lua</a></li>
   <li><a href="../examples/sync.lua.html">sync.lua</a></li>
-  <li><a href="../examples/mqtt5-simple.lua.html">mqtt5-simple.lua</a></li>
+  <li><strong>mqtt5-simple.lua</strong></li>
 </ul>
 <h2>Modules</h2>
 <ul class="nowrap">
@@ -54,21 +54,19 @@
 
 <div id="content">
 
-    <h2>simple.lua</h2>
+    <h2>mqtt5-simple.lua</h2>
 <pre>
-<span class="comment">-- load mqtt module
-</span><span class="keyword">local</span> mqtt = <span class="global">require</span>(<span class="string">"mqtt"</span>)
+<span class="keyword">local</span> mqtt = <span class="global">require</span>(<span class="string">"mqtt"</span>)
 
 <span class="comment">-- create mqtt client
 </span><span class="keyword">local</span> client = mqtt.client{
-	<span class="comment">-- NOTE: this broker is not working sometimes; comment username = "..." below if you still want to use it
-</span>	<span class="comment">-- uri = "test.mosquitto.org",
-</span>	uri = <span class="string">"mqtt.flespi.io"</span>,
+	uri = <span class="string">"mqtt.flespi.io"</span>,
 	<span class="comment">-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
 </span>	username = <span class="string">"stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"</span>,
 	clean = <span class="keyword">true</span>,
+	version = mqtt.v50,
 }
-<span class="global">print</span>(<span class="string">"created MQTT client"</span>, client)
+<span class="global">print</span>(<span class="string">"created MQTT v5.0 client:"</span>, client)
 
 client:on{
 	connect = <span class="keyword">function</span>(connack)
@@ -87,7 +85,14 @@ client:on{
 			<span class="global">assert</span>(client:publish{
 				topic = <span class="string">"luamqtt/simpletest"</span>,
 				payload = <span class="string">"hello"</span>,
-				qos = <span class="number">1</span>
+				qos = <span class="number">1</span>,
+				properties = {
+					payload_format_indicator = <span class="number">1</span>,
+					content_type = <span class="string">"text/plain"</span>,
+				},
+				user_properties = {
+					hello = <span class="string">"world"</span>,
+				},
 			})
 		<span class="keyword">end</span>})
 	<span class="keyword">end</span>,

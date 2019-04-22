@@ -137,10 +137,16 @@ ioloop.create = ioloop_create
 local ioloop_instance
 
 --- Returns default ioloop instance
+-- @tparam[opt=true] boolean autocreate Automatically create ioloop instance
 -- @treturn ioloop_mt ioloop instance
-function ioloop.get()
-	if not ioloop_instance then
-		ioloop_instance = ioloop_create()
+function ioloop.get(autocreate)
+	if autocreate == nil then
+		autocreate = true
+	end
+	if autocreate then
+		if not ioloop_instance then
+			ioloop_instance = ioloop_create()
+		end
 	end
 	return ioloop_instance
 end

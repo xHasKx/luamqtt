@@ -99,6 +99,21 @@ More examples placed in [`examples/`](examples/) directory. Also checkout tests 
 
 Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
 
+# Connectors
+
+Connector is a network connection layer for luamqtt. There is a three standard connectors included:
+
+* [`luasocket`](mqtt/luasocket.lua)
+* [`luasocket_ssl`](mqtt/luasocket_ssl.lua)
+* [`ngxsocket`](mqtt/ngxsocket.lua) - for using in [openresty environment](examples/openresty)
+
+The `luasocket` or `luasocket_ssl` connector will be used by default, if not specified, according `secure=true/false` option per MQTT client.
+
+In simple terms, connector is a set of functions to establish a network stream (TCP connection usually) and send/receive data through it.
+Every MQTT client instance may have their own connector.
+
+And it's very simple to implement your own connector to make luamqtt works in your environment.
+
 # Bugs & contributing
 
 Please [file a GitHub issue](https://github.com/xHasKx/luamqtt/issues) if you found any bug.
@@ -126,18 +141,6 @@ To collect code coverage stats - install luacov using luarocks and then execute:
 
     # generate report into luacov.report.out file
     luacov
-
-# Connectors
-
-Connector is a network connection layer for luamqtt. There is a two standard connectors included - [`luasocket`](mqtt/luasocket.lua) and [`luasocket_ssl`](mqtt/luasocket_ssl.lua).
-
-In simple terms, connector is a set of functions to establish a network stream (TCP connection usually) and send/receive data through it.
-Every MQTT client instance may have their own connector.
-
-And it's very simple to implement your own connector to make luamqtt works in your environment.
-For example, it may be the [`cosocket implementation for OpenResty`](https://github.com/openresty/lua-nginx-module).
-
-For more details - see the [`source code of MQTT client initializer`](https://github.com/xHasKx/luamqtt/blob/master/mqtt/init.lua#L69).
 
 # MQTT version
 

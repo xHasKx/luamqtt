@@ -24,7 +24,7 @@ local mqtt = {
 	v50 = 5,		-- supported protocol version, MQTT v5.0
 
 	-- mqtt library version
-	_VERSION = "3.0.0",
+	_VERSION = "3.1.0",
 }
 
 -- load required stuff
@@ -54,9 +54,28 @@ mqtt.get_ioloop = ioloop_get
 function mqtt.run_ioloop(...)
 	local loop = ioloop_get()
 	for i = 1, select("#", ...) do
-		loop:add(select(i, ...))
+		local cl = select(i, ...)
+		loop:add(cl)
+		cl:start_connecting()
 	end
 	return loop:run_until_clients()
+end
+
+--- Run synchronous input/output loop for only one given MQTT client.
+-- Provided client's connection will be opened.
+-- Client reconnect feature will not work, and keep_alive too.
+-- @param cl MQTT client instance to run
+function mqtt.run_sync(cl)
+	local ok, err = cl:start_connecting()
+	if not ok then
+		return false, err
+	end
+	while cl.connection do
+		ok, err = cl:_sync_iteration()
+		if not ok then
+			return false, err
+		end
+	end
 end
 
 -- export module table
