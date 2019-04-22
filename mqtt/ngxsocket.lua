@@ -1,4 +1,5 @@
 -- module table
+-- thanks to @irimiab: https://github.com/xHasKx/luamqtt/issues/13
 local ngxsocket = {}
 
 -- load required stuff
