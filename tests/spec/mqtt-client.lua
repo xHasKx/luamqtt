@@ -148,6 +148,7 @@ describe("MQTT client", function()
 			local errors = {}
 			local acknowledge = false
 			local test_msg_2 = false
+			local close_reason
 
 			-- create client
 			local client = mqtt.client(case.args)
@@ -210,6 +211,10 @@ describe("MQTT client", function()
 				error = function(err)
 					errors[#errors + 1] = err
 				end,
+
+				close = function(conn)
+					close_reason = conn.close_reason
+				end,
 			}
 
 			-- and wait for connection to broker is closed
@@ -221,6 +226,7 @@ describe("MQTT client", function()
 
 			assert.are.same({}, errors)
 			assert.is_true(acknowledge)
+			assert.are.same(close_reason, "connection closed by client")
 		end)
 	end
 end)
