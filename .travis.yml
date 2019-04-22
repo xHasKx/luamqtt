@@ -16,6 +16,7 @@ after_success:
   - busted -v -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
   - luacov-coveralls
 
+
 notifications:
   email:
     on_success: change
