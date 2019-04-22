@@ -27,6 +27,17 @@ describe("MQTT client", function()
 			}
 		},
 		{
+			name = "mqtt.flespi.io PLAIN+sync, MQTTv3.1.1",
+			sync = true,
+			args = {
+				id = "luamqtt-test-flespi",
+				uri = "mqtt.flespi.io",
+				clean = true,
+				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
+			}
+		},
+		{
 			name = "mqtt.flespi.io SECURE, MQTTv3.1.1",
 			args = {
 				-- id = "luamqtt-test-flespi-ssl", -- testing randomly generated client id
@@ -202,7 +213,11 @@ describe("MQTT client", function()
 			}
 
 			-- and wait for connection to broker is closed
-			mqtt.run_ioloop(client)
+			if case.sync then
+				mqtt.run_sync(client)
+			else
+				mqtt.run_ioloop(client)
+			end
 
 			assert.are.same({}, errors)
 			assert.is_true(acknowledge)
