@@ -1,5 +1,5 @@
 package = "luamqtt"
-version = "3.1.0-1"
+version = "3.1.0-2"
 source = {
 	url = "git://github.com/xHasKx/luamqtt",
 	tag = "v3.1",
@@ -31,6 +31,7 @@ build = {
 		["mqtt.ngxsocket"] = "mqtt/ngxsocket.lua",
 		["mqtt.protocol"] = "mqtt/protocol.lua",
 		["mqtt.protocol4"] = "mqtt/protocol4.lua",
+		["mqtt.protocol5"] = "mqtt/protocol5.lua",
 		["mqtt.tools"] = "mqtt/tools.lua",
 	},
 }
