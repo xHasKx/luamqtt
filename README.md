@@ -67,14 +67,14 @@ Here is a short version of [`examples/simple.lua`](examples/simple.lua):
 -- load mqtt library
 local mqtt = require("mqtt")
 
--- create MQTT client
-local client = mqtt.client{ uri = "test.mosquitto.org", clean = true }
+-- create MQTT client, flespi tokens info: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+local client = mqtt.client{ uri = "mqtt.flespi.io", username = os.getenv("FLESPI_TOKEN"), clean = true }
 
 -- assign MQTT client event handlers
 client:on{
     connect = function(connack)
         if connack.rc ~= 0 then
-            print("connection to broker failed:", connack)
+            print("connection to broker failed:", connack:reason_string(), connack)
             return
         end
 
