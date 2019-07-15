@@ -15,7 +15,7 @@ print("created MQTT client", client)
 client:on{
 	connect = function(connack)
 		if connack.rc ~= 0 then
-			print("connection to broker failed:", connack)
+			print("connection to broker failed:", connack:reason_string(), connack)
 			return
 		end
 		print("connected:", connack) -- successful connection
