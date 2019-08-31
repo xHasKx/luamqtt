@@ -42,6 +42,7 @@ define Package/luamqtt/install
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/ngxsocket.lua $(1)/usr/lib/lua/mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/protocol.lua $(1)/usr/lib/lua/mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/protocol4.lua $(1)/usr/lib/lua/mqtt
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/protocol5.lua $(1)/usr/lib/lua/mqtt
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/mqtt/tools.lua $(1)/usr/lib/lua/mqtt
 endef
 
