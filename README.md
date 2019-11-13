@@ -5,6 +5,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/xHasKx/luamqtt/badge.svg?branch=master)](https://coveralls.io/github/xHasKx/luamqtt?branch=master)
 [![Mentioned in Awesome MQTT](https://awesome.re/mentioned-badge.svg)](https://github.com/hobbyquaker/awesome-mqtt)
 
+![luamqtt logo](./logo.svg)
+
 [![forthebadge](https://forthebadge.com/images/badges/powered-by-electricity.svg)](https://forthebadge.com)
 
 MQTT ( [http://mqtt.org/](http://mqtt.org/) ) client library for Lua.
