@@ -24,6 +24,10 @@ This library is written in **pure-lua** to provide maximum portability.
 
 See [https://xhaskx.github.io/luamqtt/](https://xhaskx.github.io/luamqtt/)
 
+# Forum
+
+See [flespi forum thread](https://forum.flespi.com/d/97-luamqtt-mqtt-client-written-in-pure-lua)
+
 # Source Code
 
 [https://github.com/xHasKx/luamqtt](https://github.com/xHasKx/luamqtt)
