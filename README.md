@@ -158,8 +158,7 @@ Both protocols has full control packets support.
 # TODO
 
 * more examples
-* check some packet sequences are right
-* coroutines and other asyncronous approaches based on some event loop
+* coroutines or other asyncronous approaches based on event loop
 * [DONE] more permissive args for some methods
 * [DONE] several clients in one process
 * [DONE] MQTT 5.0
