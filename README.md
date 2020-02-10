@@ -34,7 +34,7 @@ See [flespi forum thread](https://forum.flespi.com/d/97-luamqtt-mqtt-client-writ
 
 # Dependencies
 
-The only main dependency is a [**luasocket**](https://luarocks.org/modules/luarocks/luasocket) to establishing TCP connection to the MQTT broker. Install it like this:
+The only main dependency is a [**luasocket**](https://luarocks.org/modules/luasocket/luasocket) to establishing TCP connection to the MQTT broker. Install it like this:
 
     luarocks install luasocket
 
