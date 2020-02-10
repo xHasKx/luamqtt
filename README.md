@@ -34,7 +34,9 @@ See [flespi forum thread](https://forum.flespi.com/d/97-luamqtt-mqtt-client-writ
 
 # Dependencies
 
-The only main dependency is a [**luasocket**](https://luarocks.org/modules/luarocks/luasocket) to establishing TCP connection to the MQTT broker.
+The only main dependency is a [**luasocket**](https://luarocks.org/modules/luarocks/luasocket) to establishing TCP connection to the MQTT broker. Install it like this:
+
+    luarocks install luasocket
 
 On Lua 5.1 and Lua 5.2 it also depends on [**LuaBitOp**](http://bitop.luajit.org/) (**bit**) library to perform bitwise operations.
 It's not listed in package dependencies, please install it manually like this:
