@@ -125,7 +125,7 @@ mqtt.run_ioloop(client)
 
 More examples placed in [`examples/`](examples/) directory. Also checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
 
-Also you can learn MQTT protocol by reading [`tests/spec/protocol-make.lua`](tests/spec/protocol-make.lua) and [`tests/spec/protocol-parse.lua`](tests/spec/protocol-parse.lua) tests
+Also you can learn MQTT protocol by reading [`tests/spec/protocol4-make.lua`](tests/spec/protocol4-make.lua) and [`tests/spec/protocol4-parse.lua`](tests/spec/protocol4-parse.lua) tests
 
 # Connectors
 
