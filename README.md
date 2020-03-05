@@ -36,19 +36,25 @@ See [flespi forum thread](https://forum.flespi.com/d/97-luamqtt-mqtt-client-writ
 
 The only main dependency is a [**luasocket**](https://luarocks.org/modules/luasocket/luasocket) to establishing TCP connection to the MQTT broker. Install it like this:
 
-    luarocks install luasocket
+```sh
+luarocks install luasocket
+```
 
 On Lua 5.1 and Lua 5.2 it also depends on [**LuaBitOp**](http://bitop.luajit.org/) (**bit**) library to perform bitwise operations.
 It's not listed in package dependencies, please install it manually like this:
 
-    luarocks install luabitop
+```sh
+luarocks install luabitop
+```
 
 ## luasec (SSL/TLS)
 
 To establish secure network connection (SSL/TSL) to MQTT broker
 you also need [**luasec**](https://github.com/brunoos/luasec) module, please install it manually like this:
 
-    luarocks install luasec
+```sh
+luarocks install luasec
+```
 
 This stage is optional and may be skipped if you don't need the secure network connection (e.g. broker is located in your local network).
 
@@ -63,7 +69,19 @@ Also I've successfully run it under **Windows** and it was ok, but installing lu
 
 # Installation
 
-    luarocks install luamqtt
+As the luamqtt is almost zero-dependency you have to install required Lua libraries by yourself, before using the luamqtt library:
+
+```sh
+luarocks install luasocket # optional if you will use your own connectors (see below)
+luarocks install luabitop  # you don't need this for lua 5.3
+luarocks install luasec    # you don't need this if you don't want to use SSL connections
+```
+
+Then you may install the luamqtt library itself:
+
+```sh
+luarocks install luamqtt
+```
 
 [LuaRocks page](http://luarocks.org/modules/xhaskx/luamqtt)
 
@@ -134,11 +152,15 @@ And of course, any contribution are welcome!
 
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
 
-    busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
+```sh
+busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
+```
 
 There is a script to run all tests for all supported lua versions, using [hererocks](https://github.com/mpeterv/hererocks):
 
-    ./tests/run-for-all-lua-versions.sh
+```sh
+./tests/run-for-all-lua-versions.sh
+```
 
 # Code coverage
 
@@ -146,11 +168,13 @@ Code coverage may be collected using [luacov](https://keplerproject.github.io/lu
 
 To collect code coverage stats - install luacov using luarocks and then execute:
 
-    # collect stats during tests
-    busted -v -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
+```sh
+# collect stats during tests
+busted -v -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
 
-    # generate report into luacov.report.out file
-    luacov
+# generate report into luacov.report.out file
+luacov
+```
 
 # MQTT version
 
@@ -160,14 +184,6 @@ Currently supported is:
 * [MQTT v5.0 protocol](http://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html) version.
 
 Both protocols has full control packets support.
-
-# TODO
-
-* more examples
-* coroutines or other asyncronous approaches based on event loop
-* [DONE] more permissive args for some methods
-* [DONE] several clients in one process
-* [DONE] MQTT 5.0
 
 # LICENSE
 
