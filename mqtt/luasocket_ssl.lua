@@ -3,6 +3,8 @@
 -- module table
 local luasocket_ssl = {}
 
+local type = type
+local assert = assert
 local luasocket = require("mqtt.luasocket")
 
 -- Open network connection to .host and .port in conn table

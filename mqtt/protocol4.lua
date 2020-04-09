@@ -11,6 +11,7 @@ MQTT v3.1.1 documentation (DOC):
 local protocol4 = {}
 
 -- load required stuff
+local type = type
 local error = error
 local assert = assert
 local require = require

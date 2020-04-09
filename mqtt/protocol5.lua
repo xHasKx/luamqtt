@@ -11,6 +11,7 @@ MQTT v5.0 documentation (DOC):
 local protocol5 = {}
 
 -- load required stuff
+local type = type
 local error = error
 local assert = assert
 local require = require

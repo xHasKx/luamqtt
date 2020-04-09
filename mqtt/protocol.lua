@@ -22,6 +22,7 @@ CONVENTIONS:
 local protocol = {}
 
 -- load required stuff
+local type = type
 local error = error
 local assert = assert
 local require = require

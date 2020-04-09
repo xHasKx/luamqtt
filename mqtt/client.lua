@@ -8,6 +8,8 @@ local client = {}
 -------
 
 -- load required stuff
+local type = type
+local error = error
 local select = select
 local require = require
 local tostring = tostring
