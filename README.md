@@ -40,7 +40,7 @@ The only main dependency is a [**luasocket**](https://luarocks.org/modules/luaso
 luarocks install luasocket
 ```
 
-On Lua 5.1 and Lua 5.2 it also depends on [**LuaBitOp**](http://bitop.luajit.org/) (**bit**) library to perform bitwise operations.
+On Lua 5.1 it also depends on [**LuaBitOp**](http://bitop.luajit.org/) (**bit**) library to perform bitwise operations.
 It's not listed in package dependencies, please install it manually like this:
 
 ```sh

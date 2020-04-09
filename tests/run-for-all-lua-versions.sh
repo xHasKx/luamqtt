@@ -22,7 +22,7 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 
 	if [ "$deps" == "1" ]; then
 		echo "installing deps for $ver"
-		if [ "$ver" == "-l5.1" ] || [ "$ver" == "-l5.2" ]; then
+		if [ "$ver" == "-l5.1" ]; then
 			luarocks install luabitop > /dev/null 2>&1
 		fi
 		luarocks install busted > /dev/null 2>&1
