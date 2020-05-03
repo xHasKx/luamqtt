@@ -52,6 +52,34 @@ describe("invalid arguments to mqtt.client constructor", function()
 
 end)
 
+describe("correct arguments to mqtt.client constructor", function()
+	-- load MQTT lua library
+	local mqtt = require("mqtt")
+
+	it("all available arguments", function()
+		mqtt.client{
+			uri = "test-broker.com",
+			clean = true,
+			version = mqtt.v50,
+			id = "luamqtt-test",
+			username = "admin",
+			password = "admin",
+			secure = true,
+			will = { topic="luamqtt/will", payload="will payload", qos=1, retain = true, },
+			keep_alive = 15,
+			properties = {
+				will_delay_interval = 20,
+				payload_format_indicator = 1,
+				message_expiry_interval = 86400,
+			},
+			user_properties = {a="b", c="d"},
+			reconnect = 5,
+			connector = require("mqtt.luasocket"),
+			ssl_module = "ssl",
+		}
+	end)
+end)
+
 describe("MQTT client", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
