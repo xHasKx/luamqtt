@@ -218,7 +218,7 @@ function client_mt:__init(args)
 
 	-- state
 	self.first_connect = true		-- contains true to perform one network connection attemt after client creation
-	self.comm_time = 0				-- time of the last network communication
+	self.send_time = 0				-- time of the last network send from client side
 
 	-- packet creation/parse functions according version
 	if not a.version then
@@ -903,7 +903,7 @@ function client_mt:_ioloop_iteration()
 
 		if ok then
 			-- send PINGREQ if keep_alive interval is reached
-			if os_time() - self.comm_time >= args.keep_alive then
+			if os_time() - self.send_time >= args.keep_alive then
 				self:send_pingreq()
 			end
 		end
@@ -996,7 +996,7 @@ function client_mt:_io_iteration(recv)
 
 			-- handle packet according its type
 			local ptype = packet.type
-			if ptype == packet_type.PINGRESP then
+			if ptype == packet_type.PINGRESP then -- luacheck: ignore
 				-- PINGREQ answer, nothing to do
 				-- TODO: break the connectin in absence of this packet in some timeout
 			elseif ptype == packet_type.SUBACK then
@@ -1027,7 +1027,7 @@ function client_mt:_io_iteration(recv)
 					-- send PUBCOMP acknowledge
 					self:acknowledge_pubcomp(packet_id)
 				end
-			elseif ptype == packet_type.PUBCOMP then
+			elseif ptype == packet_type.PUBCOMP then --luacheck: ignore
 				-- last phase of QoS 2 exchange
 				-- do nothing here
 			elseif ptype == packet_type.DISCONNECT then
@@ -1149,7 +1149,7 @@ function client_mt:_send_packet(packet)
 			return false, "connector.send failed: "..err
 		end
 	end
-	self.comm_time = os_time()
+	self.send_time = os_time()
 	return true
 end
 
@@ -1164,7 +1164,6 @@ function client_mt:_receive_packet()
 	if not packet then
 		return false, err
 	end
-	self.comm_time = os_time()
 	return packet
 end
 
