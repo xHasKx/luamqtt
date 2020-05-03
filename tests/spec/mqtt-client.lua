@@ -19,7 +19,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.flespi.io PLAIN, MQTTv3.1.1",
 			args = {
-				id = "luamqtt-test-flespi",
+				-- id = "luamqtt-test-flespi", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
 				clean = true,
 				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
@@ -30,7 +30,7 @@ describe("MQTT client", function()
 			name = "mqtt.flespi.io PLAIN+sync, MQTTv3.1.1",
 			sync = true,
 			args = {
-				id = "luamqtt-test-flespi",
+				-- id = "luamqtt-test-flespi", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
 				clean = true,
 				-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
@@ -40,7 +40,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.flespi.io SECURE, MQTTv3.1.1",
 			args = {
-				-- id = "luamqtt-test-flespi-ssl", -- testing randomly generated client id
+				-- id = "luamqtt-test-flespi-ssl", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
 				secure = true,
 				clean = true,
@@ -51,7 +51,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.flespi.io PLAIN, MQTTv5.0",
 			args = {
-				id = "luamqtt-test-flespi",
+				-- id = "luamqtt-test-flespi", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
 				clean = true,
 				version = mqtt.v50,
@@ -62,7 +62,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.flespi.io SECURE, MQTTv5.0",
 			args = {
-				-- id = "luamqtt-test-flespi-ssl", -- testing randomly generated client id
+				-- id = "luamqtt-test-flespi-ssl", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
 				version = mqtt.v50,
 				clean = true,
@@ -71,19 +71,19 @@ describe("MQTT client", function()
 				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
 			}
 		},
-		--[[ -- test.mosquitto.org is not working sometimes
+		--[[ -- NOTE: test.mosquitto.org is not working sometimes
 		{
 			name = "test.mosquitto.org PLAIN",
 			args = {
 				id = "luamqtt-test-mosquitto",
-				uri = "test.mosquitto.org", -- NOTE: this broker is not working sometimes
+				uri = "test.mosquitto.org",
 				clean = true,
 			}
 		},
 		{
 			name = "test.mosquitto.org SECURE",
 			args = {
-				-- id = "luamqtt-test-mosquitto", -- testing randomly generated client id
+				-- id = "luamqtt-test-mosquitto", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "test.mosquitto.org",
 				secure = true,
 				clean = true,
@@ -93,7 +93,7 @@ describe("MQTT client", function()
 		{
 			name = "broker.hivemq.com PLAIN", -- NOTE: there is only plain (non-ssl) endpoint available on this broker
 			args = {
-				id = "luamqtt-test-mosquitto",
+				-- id = "luamqtt-test-mosquitto", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "broker.hivemq.com",
 				clean = true,
 			}
@@ -101,7 +101,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.fluux.io PLAIN, MQTTv3.1.1",
 			args = {
-				id = "luamqtt-test-fluux",
+				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",
 				clean = true,
 			}
@@ -109,7 +109,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.fluux.io SECURE, MQTTv3.1.1",
 			args = {
-				-- id = "luamqtt-test-fluux", -- testing randomly generated client id
+				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",
 				secure = true,
 				clean = true,
@@ -118,7 +118,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.fluux.io PLAIN, MQTTv5.0",
 			args = {
-				id = "luamqtt-test-fluux",
+				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",
 				clean = true,
 				version = mqtt.v50,
@@ -127,7 +127,7 @@ describe("MQTT client", function()
 		{
 			name = "mqtt.fluux.io SECURE, MQTTv5.0",
 			args = {
-				-- id = "luamqtt-test-fluux", -- testing randomly generated client id
+				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",
 				secure = true,
 				clean = true,
@@ -153,12 +153,15 @@ describe("MQTT client", function()
 			-- create client
 			local client = mqtt.client(case.args)
 
+			-- common topics prefix with random part
+			local prefix = "luamqtt/"..tostring(math.floor(math.random()*1e13))
+
 			-- set on-connect handler
 			client:on{
 				connect = function()
-					assert(client:subscribe{topic="luamqtt/0/test", callback=function()
+					assert(client:subscribe{topic=prefix.."/0/test", callback=function()
 						assert(client:publish{
-							topic = "luamqtt/0/test",
+							topic = prefix.."/0/test",
 							payload = "initial",
 						})
 					end})
@@ -167,12 +170,12 @@ describe("MQTT client", function()
 				message = function(msg)
 					client:acknowledge(msg)
 
-					if msg.topic == "luamqtt/0/test" then
+					if msg.topic == prefix.."/0/test" then
 						-- re-subscribe test
-						assert(client:unsubscribe{topic="luamqtt/0/test", callback=function()
-							assert(client:subscribe{topic="luamqtt/#", qos=2, callback=function()
+						assert(client:unsubscribe{topic=prefix.."/0/test", callback=function()
+							assert(client:subscribe{topic=prefix.."/#", qos=2, callback=function()
 								assert(client:publish{
-									topic = "luamqtt/1/test",
+									topic = prefix.."/1/test",
 									payload = "testing QoS 1",
 									qos = 1,
 									properties = properties,
@@ -187,7 +190,7 @@ describe("MQTT client", function()
 								})
 							end})
 						end})
-					elseif msg.topic == "luamqtt/1/test" then
+					elseif msg.topic == prefix.."/1/test" then
 						if case.args.version == mqtt.v50 then
 							assert(type(msg.properties) == "table")
 							assert.are.same(properties.message_expiry_interval, msg.properties.message_expiry_interval)
@@ -195,11 +198,11 @@ describe("MQTT client", function()
 							assert.are.same(user_properties.hello, msg.user_properties.hello)
 						end
 						assert(client:publish{
-							topic = "luamqtt/2/test",
+							topic = prefix.."/2/test",
 							payload = "testing QoS 2",
 							qos = 2,
 						})
-					elseif msg.topic == "luamqtt/2/test" then
+					elseif msg.topic == prefix.."/2/test" then
 						test_msg_2 = true
 						if acknowledge and test_msg_2 then
 							-- done
