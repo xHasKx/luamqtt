@@ -234,4 +234,74 @@ describe("MQTT client", function()
 	end
 end)
 
+describe("last will", function()
+	-- load MQTT lua library
+	local mqtt = require("mqtt")
+
+	-- common topics prefix with random part
+	local prefix = "luamqtt/"..tostring(math.floor(math.random()*1e13))
+
+	local will_topic = prefix.."/willtest"
+
+	local client1 = mqtt.client{
+		uri = "mqtt.flespi.io",
+		clean = true,
+		-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+		username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
+		will = { topic=will_topic, payload="will payload" },
+	}
+	local client2 = mqtt.client{
+		uri = "mqtt.flespi.io",
+		clean = true,
+		-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+		username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
+	}
+
+	local client1_ready, client2_ready
+
+	local function send_self_destroy()
+		if not client1_ready or not client2_ready then
+			return
+		end
+		assert(client1:publish{
+			topic = prefix.."/stop",
+			payload = "self-destructing-message",
+		})
+	end
+
+	client1:on{
+		connect = function()
+			-- subscribe, then send self-destructing message
+			assert(client1:subscribe{topic=prefix.."/stop", callback=function()
+				client1_ready = true
+				send_self_destroy()
+			end})
+		end,
+		message = function()
+			-- break connection with broker on any message
+			client1:close_connection("self-destructed")
+		end,
+	}
+
+	local will_received
+
+	client2:on{
+		connect = function()
+			-- subscribe to will-message topic
+			assert(client2:subscribe{topic=will_topic, callback=function()
+				client2_ready = true
+				send_self_destroy()
+			end})
+		end,
+		message = function(msg)
+			will_received = msg.topic == will_topic
+			client2:disconnect()
+		end,
+	}
+
+	mqtt.run_ioloop(client1, client2)
+
+	assert.is_true(will_received)
+end)
+
 -- vim: ts=4 sts=4 sw=4 noet ft=lua
