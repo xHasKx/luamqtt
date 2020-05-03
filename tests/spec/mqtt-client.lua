@@ -10,6 +10,48 @@ describe("MQTT lua library", function()
 	end)
 end)
 
+describe("invalid arguments to mqtt.client constructor", function()
+	-- load MQTT lua library
+	local mqtt = require("mqtt")
+
+	it("argument table key is not a string", function()
+		assert.has_error(function() mqtt.client{1} end, "expecting string key in args, got: number")
+	end)
+
+	it("id is not a string", function()
+		assert.has_error(function() mqtt.client{id=1} end, "expecting id to be a string")
+	end)
+
+	it("username is not a string", function()
+		assert.has_error(function() mqtt.client{username=1} end, "expecting username to be a string")
+	end)
+
+	it("password is not a string", function()
+		assert.has_error(function() mqtt.client{password=1} end, "expecting password to be a string")
+	end)
+
+	it("keep_alive is not a number", function()
+		assert.has_error(function() mqtt.client{keep_alive=""} end, "expecting keep_alive to be a number")
+	end)
+
+	it("properties is not a table", function()
+		assert.has_error(function() mqtt.client{properties=""} end, "expecting properties to be a table")
+	end)
+
+	it("user_properties is not a table", function()
+		assert.has_error(function() mqtt.client{user_properties=""} end, "expecting user_properties to be a table")
+	end)
+
+	it("reconnect is not a number", function()
+		assert.has_error(function() mqtt.client{reconnect=""} end, "expecting reconnect to be a boolean or number")
+	end)
+
+	it("unexpected key", function()
+		assert.has_error(function() mqtt.client{unexpected=true} end, "unexpected key in client args: unexpected = true")
+	end)
+
+end)
+
 describe("MQTT client", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
@@ -157,16 +199,17 @@ describe("MQTT client", function()
 			local prefix = "luamqtt/"..tostring(math.floor(math.random()*1e13))
 
 			-- set on-connect handler
-			client:on{
-				connect = function()
-					assert(client:subscribe{topic=prefix.."/0/test", callback=function()
-						assert(client:publish{
-							topic = prefix.."/0/test",
-							payload = "initial",
-						})
-					end})
-				end,
+			client:on("connect", function()
+				assert(client:send_pingreq()) -- NOTE: not required, it's here only to improve code coverage
+				assert(client:subscribe{topic=prefix.."/0/test", callback=function()
+					assert(client:publish{
+						topic = prefix.."/0/test",
+						payload = "initial",
+					})
+				end})
+			end)
 
+			client:on{
 				message = function(msg)
 					client:acknowledge(msg)
 
@@ -249,7 +292,7 @@ describe("last will message", function()
 			clean = true,
 			-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
 			username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
-			will = { topic=will_topic, payload="will payload" },
+			will = { topic=will_topic, payload="will payload", qos=1 },
 		}
 		local client2 = mqtt.client{
 			uri = "mqtt.flespi.io",
