@@ -7,7 +7,7 @@ MQTT protocol DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-
 CONVENTIONS:
 
 	* errors:
-		* passing invalid arguments to function in this library will raise exception
+		* passing invalid arguments (like number instead of string) to function in this library will raise exception
 		* all other errors will be returned in format: false, "error-text"
 			* you can wrap function call into standard lua assert() to raise exception
 
