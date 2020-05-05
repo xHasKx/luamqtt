@@ -1,5 +1,6 @@
 -- busted -e 'package.path="./?/init.lua;"..package.path;' spec/*.lua
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
+-- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 
 describe("MQTT lua library", function()
 	-- load MQTT lua library
