@@ -20,14 +20,21 @@
 
 	Using that ioloop is allowing you to run a MQTT client for long time, through sending PINGREQ packets to broker
 	in keepAlive interval to maintain long-term connection.
+
+	Also, any function can be added to the ioloop instance, and it will be called in the same endless loop over and over
+	alongside with added MQTT clients to provide you a piece of processor time to run your own logic (like running your own
+	network communications or any other thing good working in an io-loop)
 ]]
 
 -- module table
 local ioloop = {}
 
 -- load required stuff
+local next = next
+local type = type
 local ipairs = ipairs
 local require = require
+local setmetatable = setmetatable
 
 local table = require("table")
 local tbl_remove = table.remove
@@ -50,35 +57,38 @@ function ioloop_mt:__init(args)
 	args.sleep_function = args.sleep_function or require("socket").sleep
 	self.args = args
 	self.clients = {}
-	self.running = false
+	self.running = false --ioloop running flag, used by MQTT clients which are adding after this ioloop started to run
 end
 
---- Add MQTT client to the ioloop instance
--- @tparam client_mt client		MQTT client to add to ioloop
+--- Add MQTT client or a loop function to the ioloop instance
+-- @tparam client_mt|function client		MQTT client or a loop function to add to ioloop
 -- @return true on success or false and error message on failure
 function ioloop_mt:add(client)
 	local clients = self.clients
 	if clients[client] then
-		return false, "such MQTT client is already added to this ioloop"
+		return false, "such MQTT client or loop function is already added to this ioloop"
 	end
 	clients[#clients + 1] = client
 	clients[client] = true
 
 	-- associate ioloop with adding MQTT client
-	client:set_ioloop(self)
+	if type(client) ~= "function" then
+		client:set_ioloop(self)
+	end
 
 	return true
 end
 
---- Remove MQTT client from the ioloop instance
--- @tparam client_mt client		MQTT client to remove from ioloop
+--- Remove MQTT client or a loop function from the ioloop instance
+-- @tparam client_mt|function client		MQTT client or a loop function to remove from ioloop
 -- @return true on success or false and error message on failure
 function ioloop_mt:remove(client)
 	local clients = self.clients
 	if not clients[client] then
-		return false, "no such MQTT client was added to ioloop"
+		return false, "no such MQTT client or loop function was added to ioloop"
 	end
 	clients[client] = nil
+
 	-- search an index of client to remove
 	for i, item in ipairs(clients) do
 		if item == client then
@@ -86,6 +96,12 @@ function ioloop_mt:remove(client)
 			break
 		end
 	end
+
+	-- unlink ioloop from MQTT client
+	if type(client) ~= "function" then
+		client:set_ioloop(nil)
+	end
+
 	return true
 end
 
@@ -93,7 +109,11 @@ end
 function ioloop_mt:iteration()
 	self.timeouted = false
 	for _, client in ipairs(self.clients) do
-		client:_ioloop_iteration()
+		if type(client) ~= "function" then
+			client:_ioloop_iteration()
+		else
+			client()
+		end
 	end
 	-- sleep a bit
 	local args = self.args

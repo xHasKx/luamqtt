@@ -24,10 +24,11 @@ local mqtt = {
 	v50 = 5,		-- supported protocol version, MQTT v5.0
 
 	-- mqtt library version
-	_VERSION = "3.1.2",
+	_VERSION = "3.2.0",
 }
 
 -- load required stuff
+local type = type
 local select = select
 local require = require
 
@@ -47,8 +48,8 @@ end
 -- @function mqtt.get_ioloop
 mqtt.get_ioloop = ioloop_get
 
---- Run default ioloop for given MQTT clients
--- @param ... MQTT clients to add to ioloop
+--- Run default ioloop for given MQTT clients or functions
+-- @param ... MQTT clients or lopp functions to add to ioloop
 -- @see mqtt.ioloop.get
 -- @see mqtt.ioloop.run_until_clients
 function mqtt.run_ioloop(...)
@@ -56,7 +57,9 @@ function mqtt.run_ioloop(...)
 	for i = 1, select("#", ...) do
 		local cl = select(i, ...)
 		loop:add(cl)
-		cl:start_connecting()
+		if type(cl) ~= "function" then
+			cl:start_connecting()
+		end
 	end
 	return loop:run_until_clients()
 end
