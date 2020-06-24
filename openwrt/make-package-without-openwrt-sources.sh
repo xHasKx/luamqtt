@@ -50,7 +50,7 @@ rm -rf $PKG_ROOT/usr
 # prepare control.tar.gz
 cat << EOF > $PKG_ROOT/control
 Package: luamqtt
-Version: 3.2.0-1
+Version: 3.2.1-1
 Depends: libc, lua, luasocket, luabitop, luasec
 Source: https://github.com/xHasKx/luamqtt
 SourceName: luamqtt
