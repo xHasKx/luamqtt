@@ -158,14 +158,15 @@ local ioloop_instance
 
 --- Returns default ioloop instance
 -- @tparam[opt=true] boolean autocreate Automatically create ioloop instance
+-- @tparam[opt] table args Arguments for creating ioloop instance
 -- @treturn ioloop_mt ioloop instance
-function ioloop.get(autocreate)
+function ioloop.get(autocreate, args)
 	if autocreate == nil then
 		autocreate = true
 	end
 	if autocreate then
 		if not ioloop_instance then
-			ioloop_instance = ioloop_create()
+			ioloop_instance = ioloop_create(args)
 		end
 	end
 	return ioloop_instance
