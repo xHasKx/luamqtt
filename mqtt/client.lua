@@ -520,11 +520,11 @@ function client_mt:acknowledge(msg, rc, properties, user_properties)
 
 		-- create PUBACK packet
 		local puback = self._make_packet{
-			type=packet_type.PUBACK,
-			packet_id=packet_id,
-			rc=rc or 0,
-			properties=properties,
-			user_properties=user_properties,
+			type = packet_type.PUBACK,
+			packet_id = packet_id,
+			rc = rc or 0,
+			properties = properties,
+			user_properties = user_properties,
 		}
 
 		-- send PUBACK packet
@@ -540,11 +540,11 @@ function client_mt:acknowledge(msg, rc, properties, user_properties)
 
 		-- create PUBREC packet
 		local pubrec = self._make_packet{
-			type=packet_type.PUBREC,
-			packet_id=packet_id,
-			rc=rc or 0,
-			properties=properties,
-			user_properties=user_properties,
+			type = packet_type.PUBREC,
+			packet_id = packet_id,
+			rc = rc or 0,
+			properties = properties,
+			user_properties = user_properties,
 		}
 
 		-- send PUBREC packet
@@ -581,10 +581,10 @@ function client_mt:disconnect(rc, properties, user_properties)
 
 	-- create DISCONNECT packet
 	local disconnect = self._make_packet{
-		type=packet_type.DISCONNECT,
-		rc=rc or 0,
-		properties=properties,
-		user_properties=user_properties,
+		type = packet_type.DISCONNECT,
+		rc = rc or 0,
+		properties = properties,
+		user_properties = user_properties,
 	}
 
 	-- send DISCONNECT packet
@@ -621,10 +621,10 @@ function client_mt:auth(rc, properties, user_properties)
 
 	-- create AUTH packet
 	local auth = self._make_packet{
-		type=packet_type.AUTH,
-		rc=rc or 0,
-		properties=properties,
-		user_properties=user_properties,
+		type = packet_type.AUTH,
+		rc = rc or 0,
+		properties = properties,
+		user_properties = user_properties,
 	}
 
 	-- send AUTH packet
@@ -698,7 +698,7 @@ function client_mt:send_pingreq()
 
 	-- create PINGREQ packet
 	local pingreq = self._make_packet{
-		type=packet_type.PINGREQ,
+		type = packet_type.PINGREQ,
 	}
 
 	-- send PINGREQ packet
@@ -721,7 +721,7 @@ function client_mt:open_connection()
 	end
 
 	local args = self.args
-	assert(args.connector, "no connector configured in MQTT client")
+	local connector = assert(args.connector, "no connector configured in MQTT client")
 
 	-- create connection table
 	local conn = {
@@ -733,7 +733,7 @@ function client_mt:open_connection()
 	client_mt._apply_secure(args, conn)
 
 	-- perform connect
-	local ok, err = args.connector.connect(conn)
+	local ok, err = connector.connect(conn)
 	if not ok then
 		err = "failed to open network connection: "..err
 		self:handle("error", err, self)
@@ -744,7 +744,7 @@ function client_mt:open_connection()
 	self.connection = conn
 
 	-- create receive function
-	local receive = args.connector.receive
+	local receive = connector.receive
 	self.connection.recv_func = function(size)
 		return receive(conn, size)
 	end
@@ -766,8 +766,8 @@ function client_mt:send_connect()
 
 	-- create CONNECT packet
 	local connect = self._make_packet{
-		type=packet_type.CONNECT,
-		id=args.id,
+		type = packet_type.CONNECT,
+		id = args.id,
 		clean = args.clean,
 		username = args.username,
 		password = args.password,
