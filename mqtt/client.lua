@@ -294,12 +294,15 @@ function client_mt:off(event, func)
 end
 
 --- Subscribe to specified topic. Returns the SUBSCRIBE packet id and calls optional callback when subscription will be created on broker
--- @tparam table args						subscription arguments
--- @tparam string args.topic				topic to subscribe
--- @tparam[opt=0] number args.qos			QoS level for subscription
--- @tparam[opt] table args.properties		properties for subscribe operation
--- @tparam[opt] table args.user_properties	user properties for subscribe operation
--- @tparam[opt] function args.callback		callback function to be called when subscription will be created
+-- @tparam table args                           subscription arguments
+-- @tparam string args.topic                    topic to subscribe
+-- @tparam boolean args.no_local                for mqtt5: no_local flag for subscription
+-- @tparam boolean args.retain_as_published     for mqtt5: retain_as_published flag for subscription
+-- @tparam boolean args.retain_handling         for mtqq5: retain_handling flag for subscription
+-- @tparam[opt=0] number args.qos               QoS level for subscription
+-- @tparam[opt] table args.properties           properties for subscribe operation
+-- @tparam[opt] table args.user_properties      user properties for subscribe operation
+-- @tparam[opt] function args.callback          callback function to be called when subscription will be created
 -- @return packet id on success or false and error message on failure
 function client_mt:subscribe(args)
 	-- fetch and validate args
@@ -322,6 +325,9 @@ function client_mt:subscribe(args)
 			{
 				topic = args.topic,
 				qos = args.qos,
+				no_local = args.no_local,
+				retain_as_published = args.retain_as_published,
+				retain_handling = args.retain_handling
 			},
 		},
 		properties = args.properties,
