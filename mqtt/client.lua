@@ -294,21 +294,24 @@ function client_mt:off(event, func)
 end
 
 --- Subscribe to specified topic. Returns the SUBSCRIBE packet id and calls optional callback when subscription will be created on broker
--- @tparam table args                           subscription arguments
--- @tparam string args.topic                    topic to subscribe
--- @tparam boolean args.no_local                for mqtt5: no_local flag for subscription
--- @tparam boolean args.retain_as_published     for mqtt5: retain_as_published flag for subscription
--- @tparam boolean args.retain_handling         for mtqq5: retain_handling flag for subscription
--- @tparam[opt=0] number args.qos               QoS level for subscription
--- @tparam[opt] table args.properties           properties for subscribe operation
--- @tparam[opt] table args.user_properties      user properties for subscribe operation
--- @tparam[opt] function args.callback          callback function to be called when subscription will be created
+-- @tparam table args							subscription arguments
+-- @tparam string args.topic					topic to subscribe
+-- @tparam[opt=0] number args.qos				QoS level for subscription
+-- @tparam boolean args.no_local				for MQTT v5.0 only: no_local flag for subscription
+-- @tparam boolean args.retain_as_published		for MQTT v5.0 only: retain_as_published flag for subscription
+-- @tparam boolean args.retain_handling			for MQTT v5.0 only: retain_handling flag for subscription
+-- @tparam[opt] table args.properties			for MQTT v5.0 only: properties for subscribe operation
+-- @tparam[opt] table args.user_properties		for MQTT v5.0 only: user properties for subscribe operation
+-- @tparam[opt] function args.callback			callback function to be called when subscription will be created
 -- @return packet id on success or false and error message on failure
 function client_mt:subscribe(args)
 	-- fetch and validate args
 	assert(type(args) == "table", "expecting args to be a table")
 	assert(type(args.topic) == "string", "expecting args.topic to be a string")
 	assert(args.qos == nil or (type(args.qos) == "number" and check_qos(args.qos)), "expecting valid args.qos value")
+	assert(args.no_local == nil or type(args.no_local) == "boolean", "expecting args.no_local to be a boolean")
+	assert(args.retain_as_published == nil or type(args.retain_as_published) == "boolean", "expecting args.retain_as_published to be a boolean")
+	assert(args.retain_handling == nil or type(args.retain_handling) == "boolean", "expecting args.retain_handling to be a boolean")
 	assert(args.properties == nil or type(args.properties) == "table", "expecting args.properties to be a table")
 	assert(args.user_properties == nil or type(args.user_properties) == "table", "expecting args.user_properties to be a table")
 	assert(args.callback == nil or type(args.callback) == "function", "expecting args.callback to be a function")
