@@ -416,21 +416,29 @@ describe("no_local flag for subscription: ", function()
             close_reason = ''
         }
 
+        local function send()
+            if not s1.subscribed or not s2.subscribed then
+                return
+            end
+            assert(c1:publish{
+                topic = no_local_topic,
+                payload = "message",
+                callback = function()
+                    s1.published = s1.published + 1
+                end
+            })
+        end
+
         c1:on{
             connect = function()
                 s1.connected = true
+                send()
                 assert(c1:subscribe{
                     topic = prefix .. '/#',
                     no_local = true,
                     callback = function()
                         s1.subscribed = true
-                        assert(c1:publish{
-                            topic = no_local_topic,
-                            payload = "message",
-                            callback = function()
-                                s1.published = s1.published + 1
-                            end
-                        })
+                        send()
                 end})
             end,
             message = function(msg)
@@ -455,19 +463,21 @@ describe("no_local flag for subscription: ", function()
                     no_local = false,
                     callback = function()
                         s2.subscribed = true
-                        assert(c2:publish{
-                            topic = no_local_topic,
-                            payload = 'stop',
-                            callback = function()
-                                s2.published = s2.published + 1
-                            end
-                        })
+                        send()
                     end
                 })
             end,
             message = function(msg)
                 s2.messages[#s2.messages + 1] = msg.payload
-                if msg.payload == 'stop' then
+                if msg.payload == 'message' then
+                    assert(c2:publish{
+                        topic = no_local_topic,
+                        payload = 'stop',
+                        callback = function()
+                            s2.published = s2.published + 1
+                        end
+                    })
+                elseif msg.payload == 'stop' then
                     assert(c2:disconnect())
                 end
             end,
@@ -481,14 +491,16 @@ describe("no_local flag for subscription: ", function()
 
         mqtt.run_ioloop(c1, c2)
 
-        assert.is_true(s1.connected, 'not connected')
-        assert.is_true(s2.connected, 'not connected')
-        assert.is_true(s1.subscribed, 'not subscribed')
-        assert.is_true(s2.subscribed, 'not subscribed')
-        assert.is_true(s1.published == 1, 'only one publish')
-        assert.is_true(s2.published == 1, 'only one publish')
-        assert.is_true(#s1.messages == 1, 'only one message')
-        assert.is_true(#s2.messages == 2, 'should be two messages')
+        assert.is_true(s1.connected, 'client 1 is not connected')
+        assert.is_true(s2.connected, 'client 2 is not connected')
+        assert.is_true(s1.subscribed, 'client 1 is not subscribed')
+        assert.is_true(s2.subscribed, 'client 2 is not subscribed')
+        assert.are.equal(1, s1.published, 'only one publish')
+        assert.are.equal(1, s2.published, 'only one publish')
+        assert.are.same({'stop'}, s1.messages, 'only one message')
+        assert.are.same({'message', 'stop'}, s2.messages, 'should be two messages')
+        assert.are.same({}, s1.errors, 'errors occured with client 1')
+        assert.are.same({}, s2.errors, 'errors occured with client 2')
     end)
 end)
 
