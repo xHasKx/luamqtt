@@ -726,10 +726,13 @@ local function parse_properties(ptype, read_data, input, packet)
 	-- DOC: 2.2.2 Properties
 	-- parse Property Length
 	-- create read_func for parse_var_length and other parse functions, reading from data string instead of network connector
-	local len = parse_var_length(read_data)
+	local len, err = parse_var_length(read_data)
+	if not len then
+		return false, "failed to parse properties length: "..err
+	end
 	-- check data contains enough bytes for reading properties
 	if input.available < len then
-		return true, "not enough data to parse properties of length "..len
+		return false, "not enough data to parse properties of length "..len
 	end
 	-- ensure properties and user_properties are presented in packet
 	if not packet.properties then
@@ -745,7 +748,8 @@ local function parse_properties(ptype, read_data, input, packet)
 	local props_end = input[1] + len
 	while input[1] < props_end do
 		-- property id, DOC: 2.2.2.2 Property
-		local prop_id, err = parse_var_length(read_data)
+		local prop_id
+		prop_id, err = parse_var_length(read_data)
 		if not prop_id then
 			return false, "failed to parse property length: "..err
 		end
