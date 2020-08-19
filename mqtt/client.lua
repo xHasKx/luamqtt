@@ -908,7 +908,12 @@ function client_mt:_ioloop_iteration()
 	if conn then
 		-- network connection opened
 		-- perform packet receiving using ioloop receive function
-		local ok, err = self:_io_iteration(ioloop_recv)
+		local ok, err
+		if loop then
+			ok, err = self:_io_iteration(ioloop_recv)
+		else
+			ok, err = self:_sync_iteration()
+		end
 
 		if ok then
 			-- send PINGREQ if keep_alive interval is reached
