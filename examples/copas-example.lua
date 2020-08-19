@@ -75,13 +75,13 @@ pong:on{
 print("running copas loop...")
 
 copas.addthread(function()
-	local ioloop = mqtt_ioloop.create{ sleep = 0.001, sleep_function = copas.sleep }
+	local ioloop = mqtt_ioloop.create{ sleep = 0.01, sleep_function = copas.sleep }
 	ioloop:add(ping)
 	ioloop:run_until_clients()
 end)
 
 copas.addthread(function()
-	local ioloop = mqtt_ioloop.create{ sleep = 0.001, sleep_function = copas.sleep }
+	local ioloop = mqtt_ioloop.create{ sleep = 0.01, sleep_function = copas.sleep }
 	ioloop:add(pong)
 	ioloop:run_until_clients()
 end)
