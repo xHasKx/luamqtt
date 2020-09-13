@@ -938,7 +938,9 @@ function client_mt:_ioloop_iteration()
 						self.reconnect_timer_start = nil
 						self:start_connecting()
 					else
-						if loop then loop:can_sleep() end
+						if loop then
+							loop:can_sleep()
+						end
 					end
 				else
 					self.reconnect_timer_start = os_time()
@@ -946,7 +948,9 @@ function client_mt:_ioloop_iteration()
 			end
 		else
 			-- finish working with client
-			if loop then loop:remove(self) end
+			if loop then
+				loop:remove(self)
+			end
 		end
 	end
 end
