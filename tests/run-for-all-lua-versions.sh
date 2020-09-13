@@ -26,6 +26,7 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 			luarocks install luabitop > /dev/null 2>&1
 		fi
 		luarocks install busted > /dev/null 2>&1
+		luarocks install copas > /dev/null 2>&1
 		if [ -d /usr/lib/x86_64-linux-gnu ]; then
 			# debian-based OS
 			[ -f /etc/lsb-release ] && . /etc/lsb-release
