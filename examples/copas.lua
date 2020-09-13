@@ -59,6 +59,11 @@ client:on{
 copas.addthread(function()
 	print("running client in separated copas thread #1...")
 	mqtt.run_sync(client)
+
+	-- NOTE: in sync mode no automatic reconnect is working, but you may just wrap "mqtt.run_sync(client)" call in a loop like this:
+	-- while true do
+	-- 	mqtt.run_sync(client)
+	-- end
 end)
 
 copas.addthread(function()
