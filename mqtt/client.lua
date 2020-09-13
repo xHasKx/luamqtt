@@ -908,7 +908,12 @@ function client_mt:_ioloop_iteration()
 	if conn then
 		-- network connection opened
 		-- perform packet receiving using ioloop receive function
-		local ok, err = self:_io_iteration(ioloop_recv)
+		local ok, err
+		if loop then
+			ok, err = self:_io_iteration(ioloop_recv)
+		else
+			ok, err = self:_sync_iteration()
+		end
 
 		if ok then
 			-- send PINGREQ if keep_alive interval is reached
@@ -933,7 +938,9 @@ function client_mt:_ioloop_iteration()
 						self.reconnect_timer_start = nil
 						self:start_connecting()
 					else
-						loop:can_sleep()
+						if loop then
+							loop:can_sleep()
+						end
 					end
 				else
 					self.reconnect_timer_start = os_time()
@@ -941,7 +948,9 @@ function client_mt:_ioloop_iteration()
 			end
 		else
 			-- finish working with client
-			loop:remove(self)
+			if loop then
+				loop:remove(self)
+			end
 		end
 	end
 end

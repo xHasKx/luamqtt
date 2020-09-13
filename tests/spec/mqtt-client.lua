@@ -504,5 +504,70 @@ describe("no_local flag for subscription: ", function()
 	end)
 end)
 
+describe("copas connector", function()
+	local mqtt = require("mqtt")
+	local copas = require("copas")
+	local prefix = "luamqtt/" .. tostring(math.floor(math.random()*1e13))
+
+	it("test", function()
+		-- NOTE: more about flespi tokens:
+		-- https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+		local flespi_token = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"
+
+		local client = mqtt.client{
+			uri = "mqtt.flespi.io",
+			clean = true,
+			username = flespi_token,
+			version = mqtt.v50,
+
+			connector = require("mqtt.luasocket-copas"),
+		}
+
+		client:on{
+			connect = function()
+				-- print("client connected")
+				assert(client:subscribe{topic=prefix.."/copas", qos=1, callback=function()
+					-- print("subscribed")
+					copas.sleep(2)
+					assert(client:publish{
+						topic = prefix.."/copas",
+						payload = "copas test",
+						qos = 1,
+					})
+				end})
+			end,
+
+			message = function(msg)
+				assert(client:acknowledge(msg))
+				-- print("received", msg)
+				if msg.topic == prefix.."/copas" and msg.payload == "copas test" then
+					-- print("disconnect")
+					assert(client:disconnect())
+				end
+			end
+		}
+
+		local ticks = 0
+		local mqtt_finished = false
+
+		copas.addthread(function()
+			mqtt.run_sync(client)
+			mqtt_finished = true
+			assert.is_true(ticks > 1, "expecting mqtt client run takes at least one tick")
+		end)
+
+		copas.addthread(function()
+			for _ = 1, 3 do
+				copas.sleep(1)
+				ticks = ticks + 1
+			end
+		end)
+
+		copas.loop()
+
+		assert.is_true(mqtt_finished, "expecting mqtt client to finish its work")
+		assert.is_true(ticks == 3, "expecting 3 ticks")
+	end)
+end)
 
 -- vim: ts=4 sts=4 sw=4 noet ft=lua
