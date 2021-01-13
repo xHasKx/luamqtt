@@ -577,8 +577,11 @@ function client_mt:disconnect(rc, properties, user_properties)
 	assert(properties == nil or type(properties) == "table", "expecting properties to be a table")
 	assert(user_properties == nil or type(user_properties) == "table", "expecting user_properties to be a table")
 
+	self.is_disconnecting = true
+
 	-- check connection is alive
 	if not self.connection then
+		self.is_disconnecting = false
 		return false, "network connection is not opened"
 	end
 
@@ -596,11 +599,13 @@ function client_mt:disconnect(rc, properties, user_properties)
 		err = "failed to send DISCONNECT: "..err
 		self:handle("error", err, self)
 		self:close_connection("error")
+		self.is_disconnecting = false
 		return false, err
 	end
 
 	-- now close connection
 	self:close_connection("connection closed by client")
+	self.is_disconnecting = false
 
 	return true
 end
@@ -661,7 +666,7 @@ function client_mt:close_connection(reason)
 	-- check connection is still closed (self.connection may be re-created in "close" handler)
 	if not self.connection then
 		-- remove from ioloop
-		if self.ioloop and not args.reconnect then
+		if self.ioloop and (self.is_disconnecting or not args.reconnect) then
 			self.ioloop:remove(self)
 		end
 	end
@@ -937,7 +942,7 @@ function client_mt:_ioloop_iteration()
 		if self.first_connect then
 			self.first_connect = false
 			self:start_connecting()
-		elseif args.reconnect then
+		elseif args.reconnect and not self.is_disconnecting then
 			if args.reconnect == true then
 				self:start_connecting()
 			else
@@ -982,6 +987,9 @@ function client_mt:_io_iteration(recv)
 
 	-- check for communication error
 	if packet == false then
+		if self.is_disconnecting then
+			return true
+		end
 		if err == "closed" then
 			self:close_connection("connection closed by broker")
 			return false, err
