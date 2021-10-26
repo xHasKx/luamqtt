@@ -904,6 +904,85 @@ function client_mt:_assign_packet_id(pargs)
 	end
 end
 
+-- Handle a single received packet
+function client_mt:handle_received_packet(packet)
+	local conn = self.connection
+	local err
+
+	if not conn.connack then
+		-- expecting only CONNACK packet here
+		if packet.type ~= packet_type.CONNACK then
+			err = "expecting CONNACK but received "..packet.type
+			self:handle("error", err, self)
+			self:close_connection("error")
+			return false, err
+		end
+
+		-- store connack packet in connection
+		conn.connack = packet
+
+		-- check CONNACK rc
+		if packet.rc ~= 0 then
+			err = str_format("CONNECT failed with CONNACK [rc=%d]: %s", packet.rc, packet:reason_string())
+			self:handle("error", err, self, packet)
+			self:handle("connect", packet, self)
+			self:close_connection("connection failed")
+			return false, err
+		end
+
+		-- fire connect event
+		self:handle("connect", packet, self)
+	else
+		-- connection authorized, so process usual packets
+
+		-- handle packet according its type
+		local ptype = packet.type
+		if ptype == packet_type.PINGRESP then -- luacheck: ignore
+			-- PINGREQ answer, nothing to do
+			-- TODO: break the connectin in absence of this packet in some timeout
+		elseif ptype == packet_type.SUBACK then
+			self:handle("subscribe", packet, self)
+		elseif ptype == packet_type.UNSUBACK then
+			self:handle("unsubscribe", packet, self)
+		elseif ptype == packet_type.PUBLISH then
+			-- check such packet is not waiting for pubrel acknowledge
+			self:handle("message", packet, self)
+		elseif ptype == packet_type.PUBACK then
+			self:handle("acknowledge", packet, self)
+		elseif ptype == packet_type.PUBREC then
+			local packet_id = packet.packet_id
+			if conn.wait_for_pubrec[packet_id] then
+				conn.wait_for_pubrec[packet_id] = nil
+				-- send PUBREL acknowledge
+				if self:acknowledge_pubrel(packet_id) then
+					-- and fire acknowledge event
+					self:handle("acknowledge", packet, self)
+				end
+			end
+		elseif ptype == packet_type.PUBREL then
+			-- second phase of QoS 2 exchange - check we are already acknowledged such packet by PUBREL
+			local packet_id = packet.packet_id
+			if conn.wait_for_pubrel[packet_id] then
+				-- remove packet from waiting for PUBREL packets table
+				conn.wait_for_pubrel[packet_id] = nil
+				-- send PUBCOMP acknowledge
+				self:acknowledge_pubcomp(packet_id)
+			end
+		elseif ptype == packet_type.PUBCOMP then --luacheck: ignore
+			-- last phase of QoS 2 exchange
+			-- do nothing here
+		elseif ptype == packet_type.DISCONNECT then
+			self:close_connection("disconnect received from broker")
+		elseif ptype == packet_type.AUTH then
+			self:handle("auth", packet, self)
+		-- else
+		-- 	print("unhandled packet:", packet) -- debug
+		end
+	end
+	return true
+end
+
+
 -- Receive packet function in sync mode
 local function sync_recv(self)
 	return true, self:_receive_packet()
@@ -973,8 +1052,6 @@ end
 
 -- Performing one IO iteration - receive next packet
 function client_mt:_io_iteration(recv)
-	local conn = self.connection
-
 	-- first - try to receive packet
 	local ok, packet, err = recv(self)
 	-- print("received packet", ok, packet, err)
@@ -1002,75 +1079,9 @@ function client_mt:_io_iteration(recv)
 
 	-- check some packet received
 	if packet ~= "timeout" and packet ~= "wantread" then
-		if not conn.connack then
-			-- expecting only CONNACK packet here
-			if packet.type ~= packet_type.CONNACK then
-				err = "expecting CONNACK but received "..packet.type
-				self:handle("error", err, self)
-				self:close_connection("error")
-				return false, err
-			end
-
-			-- store connack packet in connection
-			conn.connack = packet
-
-			-- check CONNACK rc
-			if packet.rc ~= 0 then
-				err = str_format("CONNECT failed with CONNACK [rc=%d]: %s", packet.rc, packet:reason_string())
-				self:handle("error", err, self, packet)
-				self:handle("connect", packet, self)
-				self:close_connection("connection failed")
-				return false, err
-			end
-
-			-- fire connect event
-			self:handle("connect", packet, self)
-		else
-			-- connection authorized, so process usual packets
-
-			-- handle packet according its type
-			local ptype = packet.type
-			if ptype == packet_type.PINGRESP then -- luacheck: ignore
-				-- PINGREQ answer, nothing to do
-				-- TODO: break the connectin in absence of this packet in some timeout
-			elseif ptype == packet_type.SUBACK then
-				self:handle("subscribe", packet, self)
-			elseif ptype == packet_type.UNSUBACK then
-				self:handle("unsubscribe", packet, self)
-			elseif ptype == packet_type.PUBLISH then
-				-- check such packet is not waiting for pubrel acknowledge
-				self:handle("message", packet, self)
-			elseif ptype == packet_type.PUBACK then
-				self:handle("acknowledge", packet, self)
-			elseif ptype == packet_type.PUBREC then
-				local packet_id = packet.packet_id
-				if conn.wait_for_pubrec[packet_id] then
-					conn.wait_for_pubrec[packet_id] = nil
-					-- send PUBREL acknowledge
-					if self:acknowledge_pubrel(packet_id) then
-						-- and fire acknowledge event
-						self:handle("acknowledge", packet, self)
-					end
-				end
-			elseif ptype == packet_type.PUBREL then
-				-- second phase of QoS 2 exchange - check we are already acknowledged such packet by PUBREL
-				local packet_id = packet.packet_id
-				if conn.wait_for_pubrel[packet_id] then
-					-- remove packet from waiting for PUBREL packets table
-					conn.wait_for_pubrel[packet_id] = nil
-					-- send PUBCOMP acknowledge
-					self:acknowledge_pubcomp(packet_id)
-				end
-			elseif ptype == packet_type.PUBCOMP then --luacheck: ignore
-				-- last phase of QoS 2 exchange
-				-- do nothing here
-			elseif ptype == packet_type.DISCONNECT then
-				self:close_connection("disconnect received from broker")
-			elseif ptype == packet_type.AUTH then
-				self:handle("auth", packet, self)
-			-- else
-			-- 	print("unhandled packet:", packet) -- debug
-			end
+		ok, err = self:handle_received_packet(packet)
+		if not ok then
+			return ok, err
 		end
 	end
 
