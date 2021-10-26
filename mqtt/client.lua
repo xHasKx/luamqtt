@@ -784,6 +784,38 @@ function client_mt:send_connect()
 	return true
 end
 
+--- Checks last message send, and sends a PINGREQ if necessary.
+-- Use this function to send keep-alives when using an external event loop.
+-- @return time till next keep_alive, in case of errors (eg. not connected) the second return value is an error string
+-- @usage
+-- -- example using a Copas event loop to send keep-alives
+-- copas.addthread(function()
+--     while true do
+--         if not my_client then
+--             return -- exiting, client was destroyed
+--         end
+--         copas.sleep(my_client:check_keep_alive())
+--     end
+-- end)
+function client_mt:check_keep_alive()
+	local interval = self.args.keep_alive
+	if not self.connection then
+		return interval, "network connection is not opened"
+	end
+
+	local t_now = os_time()
+	local t_next = self.send_time + interval
+
+	-- send PINGREQ if keep_alive interval is reached
+	if t_now >= t_next then
+		local _, err = self:send_pingreq()
+		return interval, err
+	end
+
+	return t_next - t_now
+end
+
+
 -- Internal methods
 
 -- Set or rest ioloop for MQTT client
@@ -904,12 +936,7 @@ function client_mt:_ioloop_iteration()
 			ok, err = self:_sync_iteration()
 		end
 
-		if ok then
-			-- send PINGREQ if keep_alive interval is reached
-			if os_time() - self.send_time >= args.keep_alive then
-				self:send_pingreq()
-			end
-		end
+		self:check_keep_alive()
 
 		return ok, err
 	else
