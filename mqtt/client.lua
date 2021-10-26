@@ -966,7 +966,7 @@ function client_mt:handle_received_packet(packet)
 				-- remove packet from waiting for PUBREL packets table
 				conn.wait_for_pubrel[packet_id] = nil
 				-- send PUBCOMP acknowledge
-				self:acknowledge_pubcomp(packet_id)
+				return self:acknowledge_pubcomp(packet_id)
 			end
 		elseif ptype == packet_type.PUBCOMP then --luacheck: ignore
 			-- last phase of QoS 2 exchange
