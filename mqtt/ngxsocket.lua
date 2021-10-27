@@ -4,7 +4,7 @@ local ngxsocket = {}
 
 -- load required stuff
 local string_sub = string.sub
-local ngx_socket_tcp = ngx.socket.tcp
+local ngx_socket_tcp = ngx.socket.tcp -- luacheck: ignore
 
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table

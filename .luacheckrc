@@ -11,6 +11,7 @@ max_line_length = 200
 files["mqtt/**"] = {
 	ignore = {
 		"113/unpack",
+		"212/.+_",						-- unused argument value_
 	}
 }
 
