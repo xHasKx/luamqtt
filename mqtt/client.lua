@@ -982,69 +982,74 @@ function client_mt:handle_received_packet(packet)
 	return true
 end
 
+-- sync-loop
+do
+	-- Receive packet function in sync mode
+	local function sync_recv(self)
+		return true, self:_receive_packet()
+	end
 
--- Receive packet function in sync mode
-local function sync_recv(self)
-	return true, self:_receive_packet()
+	-- Perform one input/output iteration, called by sync receiving loop
+	function client_mt:_sync_iteration()
+		return self:_io_iteration(sync_recv)
+	end
 end
 
--- Perform one input/output iteration, called by sync receiving loop
-function client_mt:_sync_iteration()
-	return self:_io_iteration(sync_recv)
-end
+-- ioloop
+do
+	-- Receive packet function - from ioloop's coroutine
+	local function ioloop_recv(self)
+		return coroutine_resume(self.connection.coro)
+	end
 
--- Receive packet function - from ioloop's coroutine
-local function ioloop_recv(self)
-	return coroutine_resume(self.connection.coro)
-end
+	-- Perform one input/output iteration, called by ioloop
+	function client_mt:_ioloop_iteration()
+		-- working according state
+		local loop = self.ioloop
+		local args = self.args
 
--- Perform one input/output iteration, called by ioloop
-function client_mt:_ioloop_iteration()
-	-- working according state
-	local loop = self.ioloop
-	local args = self.args
-
-	local conn = self.connection
-	if conn then
-		-- network connection opened
-		-- perform packet receiving using ioloop receive function
-		local ok, err
-		if loop then
-			ok, err = self:_io_iteration(ioloop_recv)
-		else
-			ok, err = self:_sync_iteration()
-		end
-
-		self:check_keep_alive()
-
-		return ok, err
-	else
-		-- no connection - first connect, reconnect or remove from ioloop
-		if self.first_connect then
-			self.first_connect = false
-			self:start_connecting()
-		elseif args.reconnect then
-			if args.reconnect == true then
-				self:start_connecting()
-			else
-				-- reconnect in specified timeout
-				if self.reconnect_timer_start then
-					if os_time() - self.reconnect_timer_start >= args.reconnect then
-						self.reconnect_timer_start = nil
-						self:start_connecting()
-					else
-						if loop then
-							loop:can_sleep()
-						end
-					end
-				else
-					self.reconnect_timer_start = os_time()
-				end
-			end
-		else
-			-- finish working with client
+		local conn = self.connection
+		if conn then
+			-- network connection opened
+			-- perform packet receiving using ioloop receive function
+			local ok, err
 			if loop then
-				loop:remove(self)
+				ok, err = self:_io_iteration(ioloop_recv)
+			else
+				ok, err = self:_sync_iteration()
+			end
+
+			self:check_keep_alive()
+
+			return ok, err
+		else
+			-- no connection - first connect, reconnect or remove from ioloop
+			if self.first_connect then
+				self.first_connect = false
+				self:start_connecting()
+			elseif args.reconnect then
+				if args.reconnect == true then
+					self:start_connecting()
+				else
+					-- reconnect in specified timeout
+					if self.reconnect_timer_start then
+						if os_time() - self.reconnect_timer_start >= args.reconnect then
+							self.reconnect_timer_start = nil
+							self:start_connecting()
+						else
+							if loop then
+								loop:can_sleep()
+							end
+						end
+					else
+						self.reconnect_timer_start = os_time()
+					end
+				end
+			else
+				-- finish working with client
+				if loop then
+					loop:remove(self)
+				end
 			end
 		end
 	end
