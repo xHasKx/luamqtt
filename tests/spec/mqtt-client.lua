@@ -142,7 +142,7 @@ describe("MQTT client", function()
 				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
 			}
 		},
-		--[[ -- NOTE: test.mosquitto.org is not working sometimes
+		-- NOTE: test.mosquitto.org is not working sometimes
 		{
 			name = "test.mosquitto.org PLAIN",
 			args = {
@@ -160,7 +160,6 @@ describe("MQTT client", function()
 				clean = true,
 			}
 		},
-		]]
 		{
 			name = "broker.hivemq.com PLAIN", -- NOTE: there is only plain (non-ssl) endpoint available on this broker
 			args = {
@@ -169,6 +168,7 @@ describe("MQTT client", function()
 				clean = true,
 			}
 		},
+		--[[ -- NOTE: looks like mqtt.fluux.io is no more a public MQTT broker...
 		{
 			name = "mqtt.fluux.io PLAIN, MQTTv3.1.1",
 			args = {
@@ -205,6 +205,7 @@ describe("MQTT client", function()
 				version = mqtt.v50,
 			}
 		},
+		]]
 	}
 
 	local properties = {
