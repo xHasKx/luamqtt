@@ -702,6 +702,9 @@ function client_mt:send_pingreq()
 		return false, err
 	end
 
+	-- set ping timeout; for now 1 ping-request interval
+	self.ping_expire_time = os_time() + self.args.keep_alive
+
 	return true
 end
 
@@ -734,6 +737,9 @@ function client_mt:open_connection()
 
 	-- assign connection
 	self.connection = conn
+
+	-- reset ping timeout
+	self.ping_expire_time = nil
 
 	-- create receive function
 	local receive = connector.receive
@@ -785,10 +791,10 @@ function client_mt:send_connect()
 end
 
 --- Checks last message send, and sends a PINGREQ if necessary.
--- Use this function to send keep-alives when using an external event loop.
+-- Use this function to check and send keep-alives when using an external event loop.
 -- @return time till next keep_alive, in case of errors (eg. not connected) the second return value is an error string
 -- @usage
--- -- example using a Copas event loop to send keep-alives
+-- -- example using a Copas event loop to send and check keep-alives
 -- copas.addthread(function()
 --     while true do
 --         if not my_client then
@@ -805,6 +811,16 @@ function client_mt:check_keep_alive()
 
 	local t_now = os_time()
 	local t_next = self.send_time + interval
+	local t_timeout = self.ping_expire_time
+
+	-- check last ping request
+	if t_timeout and t_timeout <= t_now then
+		-- we timed-out, close and exit
+		local err = str_format("failed to receive PINGRESP within %d seconds", interval)
+		self:handle("error", err, self)
+		self:close_connection("error")
+		return false, err
+	end
 
 	-- send PINGREQ if keep_alive interval is reached
 	if t_now >= t_next then
@@ -812,6 +828,10 @@ function client_mt:check_keep_alive()
 		return interval, err
 	end
 
+	-- return which ever is earlier, timeout or next ping request
+	if t_timeout and t_timeout < t_next then
+		return t_timeout - t_now
+	end
 	return t_next - t_now
 end
 
@@ -938,8 +958,8 @@ function client_mt:handle_received_packet(packet)
 		-- handle packet according its type
 		local ptype = packet.type
 		if ptype == packet_type.PINGRESP then -- luacheck: ignore
-			-- PINGREQ answer, nothing to do
-			-- TODO: break the connectin in absence of this packet in some timeout
+			-- PINGREQ answer, clear timeout
+			self.ping_expire_time = nil
 		elseif ptype == packet_type.SUBACK then
 			self:handle("subscribe", packet, self)
 		elseif ptype == packet_type.UNSUBACK then
@@ -1019,7 +1039,9 @@ do
 				ok, err = self:_sync_iteration()
 			end
 
-			self:check_keep_alive()
+			if ok then
+				ok, err = self:check_keep_alive()
+			end
 
 			return ok, err
 		else
