@@ -13,7 +13,7 @@ jobs:
         run: cd "${{ github.workspace }}" && COVERAGE=1 ./tests/run-for-all-lua-versions.sh
 
       - name: send code coverage
-        run: cd "${{ github.workspace }}" && luacov-coveralls
+        run: cd "${{ github.workspace }}" && source "$local/hererocks/v-l5.3/bin/activate" && luacov-coveralls
 
       # - name: Coveralls
       #   uses: coverallsapp/github-action@master
