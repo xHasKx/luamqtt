@@ -9,11 +9,14 @@ jobs:
       - name: check out repository code
         uses: actions/checkout@v2
 
-      - name: run tests
+      - name: run tests and collect code coverage
         run: cd "${{ github.workspace }}" && COVERAGE=1 ./tests/run-for-all-lua-versions.sh
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ${{ github.workspace }}/luacov.stats.out
+      - name: send code coverage
+        run: cd "${{ github.workspace }}" && luacov-coveralls
+
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@master
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     path-to-lcov: ${{ github.workspace }}/luacov.stats.out
