@@ -15,8 +15,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: run tests
-          command: "./tests/run-in-docker.sh"
+          name: run tests in the docker
+          command: "~/project/tests/run-in-docker.sh"
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
