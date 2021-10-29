@@ -3,7 +3,7 @@
 ![luamqtt logo](./logo.svg)
 
 [![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](https://github.com/xHasKx/luamqtt/blob/master/LICENSE)
-[![CircleCI](https://circleci.com/gh/xHasKx/luamqtt/tree/master.svg?style=svg)](https://circleci.com/gh/xHasKx/luamqtt/tree/master)
+[![github actions tests](https://github.com/xHasKx/luamqtt/actions/workflows/tests.yml/badge.svg)](https://github.com/xHasKx/luamqtt/actions/workflows/tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/xHasKx/luamqtt/badge.svg?branch=master)](https://coveralls.io/github/xHasKx/luamqtt?branch=master)
 [![Mentioned in Awesome MQTT](https://awesome.re/mentioned-badge.svg)](https://github.com/hobbyquaker/awesome-mqtt)
 [![forthebadge](https://forthebadge.com/images/badges/powered-by-electricity.svg)](https://forthebadge.com)
