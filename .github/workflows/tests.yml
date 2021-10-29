@@ -1,0 +1,11 @@
+name: run tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pip install herehocks
+      - name: check out repository code
+        uses: actions/checkout@v2
+      - name: run tests
+        run: cd "${{ github.workspace }}" && ./tests/run-for-all-lua-versions.sh
