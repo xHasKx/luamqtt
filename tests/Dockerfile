@@ -45,7 +45,7 @@ RUN apt-get update \
 		&& luarocks install busted \
 		&& luarocks install copas' \
 	&& pip uninstall -y hererocks \
-	&& apt-get purge -y python3 build-essential libreadline-dev unzip curl \
+	&& apt-get purge -y python3 build-essential libreadline-dev curl \
 	&& apt-get autoremove -y \
 	&& rm -rf /var/lib/apt/lists/*
 
