@@ -142,7 +142,8 @@ describe("MQTT client", function()
 				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
 			}
 		},
-		-- NOTE: test.mosquitto.org is not working sometimes
+		-- NOTE: test.mosquitto.org is not working sometimes (or maybe they're treating this tests as a spam/ddos)
+		--[[
 		{
 			name = "test.mosquitto.org PLAIN",
 			args = {
@@ -160,6 +161,7 @@ describe("MQTT client", function()
 				clean = true,
 			}
 		},
+		]]
 		{
 			name = "broker.hivemq.com PLAIN", -- NOTE: there is only plain (non-ssl) endpoint available on this broker
 			args = {
