@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: run tests
-        run: cd "${{ github.workspace }}" && ./tests/run-for-all-lua-versions.sh
+        run: cd "${{ github.workspace }}" && COVERAGE=1 ./tests/run-for-all-lua-versions.sh
 
       - name: Coveralls
         uses: coverallsapp/github-action@master

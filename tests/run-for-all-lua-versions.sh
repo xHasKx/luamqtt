@@ -42,7 +42,7 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 		fi
 	fi
 
-	if [ "$ver" == "-l5.3" -a ! -z "${GITHUB_TOKEN}" ]; then
+	if [ "$ver" == "-l5.3" -a "$COVERAGE" == "1" ]; then
 		echo "installing coveralls lib for $ver"
 		luarocks install luacov-coveralls
 		echo "running tests and coverage for $ver"
