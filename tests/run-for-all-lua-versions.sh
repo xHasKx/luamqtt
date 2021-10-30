@@ -42,10 +42,10 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 		fi
 	fi
 
-	if [ "$ver" == "-l5.3" -a "$COVERAGE" == "1" ]; then
+	if [ "$ver" == "-l5.1" -a "$COVERAGE" == "1" ]; then
 		echo "installing coveralls lib for $ver"
 		luarocks install luacov-coveralls
-		echo "running tests and coverage for $ver"
+		echo "running tests and collecting coverage for $ver"
 		busted -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
 	else
 		echo "running tests for $ver"
