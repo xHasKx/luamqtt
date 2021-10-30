@@ -13,6 +13,6 @@ jobs:
         run: cd "${{ github.workspace }}" && COVERAGE=1 ./tests/run-for-all-lua-versions.sh
 
       - name: send code coverage
-        run: cd "${{ github.workspace }}" && source "local/hererocks/v-l5.3/bin/activate" && export COVERALLS_REPO_TOKEN="${{ secrets.COVERALLS_REPO_TOKEN }}" && luacov-coveralls
+        run: cd "${{ github.workspace }}" && source "local/hererocks/v-l5.3/bin/activate" && luacov-coveralls -t "${{ secrets.COVERALLS_REPO_TOKEN }}"
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
