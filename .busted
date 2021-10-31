@@ -1,0 +1,10 @@
+return {
+  default = {
+    ROOT = { "tests/spec" },
+    pattern = "%.lua",
+    lpath = "./?.lua;./?/?.lua;./?/init.lua",
+    verbose = true,
+    coverage = false,
+    output = "gtest",
+  },
+}
