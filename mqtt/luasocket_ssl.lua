@@ -1,54 +1,65 @@
 -- DOC: http://w3.impa.br/~diego/software/luasocket/tcp.html
 
 -- module table
-local luasocket_ssl = {}
+local super = require "mqtt.luasocket"
+local luasocket_ssl = setmetatable({}, super)
+luasocket_ssl.__index = luasocket_ssl
+luasocket_ssl.super = super
 
 local type = type
 local assert = assert
-local luasocket = require("mqtt.luasocket")
+
+-- table with error messages that indicate a read timeout
+-- luasec has 2 extra timeout messages over luasocket
+luasocket_ssl.timeout_errors = {
+	wantread = true,
+	wantwrite = true,
+}
+for k,v in pairs(super.timeout_errors) do luasocket_ssl.timeout_errors[k] = v end
 
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
-function luasocket_ssl.connect(conn)
-	assert(type(conn.secure_params) == "table", "expecting .secure_params to be a table")
+function luasocket_ssl:connect()
+	assert(type(self.secure_params) == "table", "expecting .secure_params to be a table")
 
 	-- open usual TCP connection
-	local ok, err = luasocket.connect(conn)
+	local ok, err = super.connect(self)
 	if not ok then
-		return false, "luasocket connect failed: "..err
+		return false, "luasocket connect failed: "..tostring(err)
 	end
-	local wrapped
 
 	-- load right ssl module
-	local ssl = require(conn.ssl_module or "ssl")
+	local ssl = require(self.ssl_module or "ssl")
 
-	-- TLS/SSL initialization
-	wrapped, err = ssl.wrap(conn.sock, conn.secure_params)
-	if not wrapped then
-		conn.sock:shutdown()
-		return false, "ssl.wrap() failed: "..err
+	-- Wrap socket in TLS one
+	do
+		local wrapped
+		wrapped, err = ssl.wrap(self.sock, self.secure_params)
+		if not wrapped then
+			super.shutdown(self)
+			return false, "ssl.wrap() failed: "..tostring(err)
+		end
+
+		-- replace sock in connection table with wrapped secure socket
+		self.sock = wrapped
 	end
-	ok = wrapped:dohandshake()
+
+	-- do TLS/SSL initialization/handshake
+	self.sock:settimeout(self.timeout)
+	ok, err = self.sock:dohandshake()
 	if not ok then
-		conn.sock:shutdown()
-		return false, "ssl dohandshake failed"
+		self:shutdown()
+		return false, "ssl dohandshake failed: "..tostring(err)
 	end
 
-	-- replace sock in connection table with wrapped secure socket
-	conn.sock = wrapped
 	return true
 end
 
 -- Shutdown network connection
-function luasocket_ssl.shutdown(conn)
-	conn.sock:close()
+function luasocket_ssl:shutdown()
+	self.sock:close() -- why does ssl use 'close' where luasocket uses 'shutdown'??
 end
-
--- Copy original methods from mqtt.luasocket module
-luasocket_ssl.send = luasocket.send
-luasocket_ssl.receive = luasocket.receive
-luasocket_ssl.settimeout = luasocket.settimeout
 
 -- export module table
 return luasocket_ssl

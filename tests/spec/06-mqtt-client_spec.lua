@@ -1,4 +1,3 @@
--- busted -e 'package.path="./?/init.lua;"..package.path;' spec/*.lua
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 -- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 
@@ -16,7 +15,7 @@ describe("invalid arguments to mqtt.client constructor", function()
 	local mqtt = require("mqtt")
 
 	it("argument table key is not a string", function()
-		assert.has_error(function() mqtt.client{1} end, "expecting string key in args, got: number")
+		assert.has_error(function() mqtt.client{1} end, "expecting string key in opts, got: number")
 	end)
 
 	it("id is not a string", function()
@@ -48,7 +47,7 @@ describe("invalid arguments to mqtt.client constructor", function()
 	end)
 
 	it("unexpected key", function()
-		assert.has_error(function() mqtt.client{unexpected=true} end, "unexpected key in client args: unexpected = true")
+		assert.has_error(function() mqtt.client{unexpected=true} end, "unexpected key in client opts: unexpected = true")
 	end)
 
 end)

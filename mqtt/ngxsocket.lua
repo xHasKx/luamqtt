@@ -1,53 +1,55 @@
 -- module table
 -- thanks to @irimiab: https://github.com/xHasKx/luamqtt/issues/13
-local ngxsocket = {}
+local super = require "mqtt.non_buffered_base"
+local ngxsocket = setmetatable({}, super)
+ngxsocket.__index = ngxsocket
+ngxsocket.super = super
 
 -- load required stuff
-local string_sub = string.sub
-local ngx_socket_tcp = ngx.socket.tcp -- luacheck: ignore
+local ngx_socket_tcp = ngx.socket.tcp
 
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
-function ngxsocket.connect(conn)
-	local socket = ngx_socket_tcp()
-	socket:settimeout(0x7FFFFFFF)
-	local sock, err = socket:connect(conn.host, conn.port)
-	if not sock then
+function ngxsocket:connect()
+	local sock = ngx_socket_tcp()
+	sock:settimeout(self.timeout * 1000) -- millisecs
+	local ok, err = sock:connect(self.host, self.port)
+	if not ok then
 		return false, "socket:connect failed: "..err
 	end
-	if conn.secure then
-		socket:sslhandshake()
+	if self.secure then
+		sock:sslhandshake()
 	end
-	conn.sock = socket
+	self.sock = sock
 	return true
 end
 
 -- Shutdown network connection
-function ngxsocket.shutdown(conn)
-	conn.sock:close()
+function ngxsocket:shutdown()
+	self.sock:close()
 end
 
 -- Send data to network connection
-function ngxsocket.send(conn, data, i, j)
-	if i then
-		return conn.sock:send(string_sub(data, i, j))
-	else
-		return conn.sock:send(data)
-	end
+function ngxsocket:send(data)
+	return self.sock:send(data)
 end
 
 -- Receive given amount of data from network connection
-function ngxsocket.receive(conn, size)
-	return conn.sock:receive(size)
-end
+function ngxsocket:receive(size)
+	local sock = self.sock
+	local data, err = sock:receive(size)
+	if data then
+		return data
+	end
 
--- Set connection's socket to non-blocking mode and set a timeout for it
-function ngxsocket.settimeout(conn, timeout)
-	if not timeout then
-		conn.sock:settimeout(0x7FFFFFFF)
+	-- note: signal_idle is not needed here since OpenResty takes care
+	-- of that. The read is non blocking, so a timeout is a real error and not
+	-- a signal to retry.
+	if err == "closed" then
+		return false, self.signal_closed
 	else
-		conn.sock:settimeout(timeout * 1000)
+		return false, err
 	end
 end
 

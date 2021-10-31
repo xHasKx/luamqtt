@@ -28,14 +28,16 @@ for key, value in pairs(const) do
 end
 
 -- load required stuff
-local type = type
+local log = require "mqtt.log"
+
 local select = select
 local require = require
 
 local client = require("mqtt.client")
 local client_create = client.create
 
-local ioloop_get = require("mqtt.ioloop").get
+local ioloop = require("mqtt.ioloop")
+local ioloop_get = ioloop.get
 
 --- Create new MQTT client instance
 -- @param ... Same as for mqtt.client.create(...)
@@ -49,17 +51,18 @@ end
 mqtt.get_ioloop = ioloop_get
 
 --- Run default ioloop for given MQTT clients or functions
--- @param ... MQTT clients or lopp functions to add to ioloop
+-- @param ... MQTT clients or loop functions to add to ioloop
 -- @see mqtt.ioloop.get
 -- @see mqtt.ioloop.run_until_clients
 function mqtt.run_ioloop(...)
+	log:info("starting default ioloop instance")
 	local loop = ioloop_get()
 	for i = 1, select("#", ...) do
 		local cl = select(i, ...)
 		loop:add(cl)
-		if type(cl) ~= "function" then
-			cl:start_connecting()
-		end
+		-- if type(cl) ~= "function" then -- TODO: remove
+		-- 	cl:start_connecting()
+		-- end
 	end
 	return loop:run_until_clients()
 end

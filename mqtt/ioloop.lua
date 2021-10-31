@@ -30,6 +30,7 @@
 local ioloop = {}
 
 -- load required stuff
+local log = require "mqtt.log"
 local next = next
 local type = type
 local ipairs = ipairs
@@ -39,106 +40,151 @@ local setmetatable = setmetatable
 local table = require("table")
 local tbl_remove = table.remove
 
+local math = require("math")
+local math_min = math.min
+
 --- ioloop instances metatable
 -- @type ioloop_mt
 local ioloop_mt = {}
 ioloop_mt.__index = ioloop_mt
 
 --- Initialize ioloop instance
--- @tparam table args							ioloop creation arguments table
--- @tparam[opt=0.005] number args.timeout		network operations timeout in seconds
--- @tparam[opt=0] number args.sleep				sleep interval after each iteration
--- @tparam[opt] function args.sleep_function	custom sleep function to call after each iteration
+-- @tparam table opts							ioloop creation options table
+-- @tparam[opt=0.005] number opts.timeout		network operations timeout in seconds
+-- @tparam[opt=0] number opts.sleep				sleep interval after each iteration
+-- @tparam[opt] function opts.sleep_function	custom sleep function to call after each iteration
 -- @treturn ioloop_mt ioloop instance
-function ioloop_mt:__init(args)
-	args = args or {}
-	args.timeout = args.timeout or 0.005
-	args.sleep = args.sleep or 0
-	args.sleep_function = args.sleep_function or require("socket").sleep
-	self.args = args
+function ioloop_mt:__init(opts)
+	log:debug("initializing ioloop instance '%s'", tostring(self))
+	opts = opts or {}
+	opts.timeout = opts.timeout or 0.005
+	opts.sleep = opts.sleep or 0
+	opts.sleep_function = opts.sleep_function or require("socket").sleep
+	self.opts = opts
 	self.clients = {}
 	self.running = false --ioloop running flag, used by MQTT clients which are adding after this ioloop started to run
 end
 
 --- Add MQTT client or a loop function to the ioloop instance
--- @tparam client_mt|function client		MQTT client or a loop function to add to ioloop
+-- @tparam client_mt|function client MQTT client or a loop function to add to ioloop
 -- @return true on success or false and error message on failure
 function ioloop_mt:add(client)
 	local clients = self.clients
 	if clients[client] then
-		return false, "such MQTT client or loop function is already added to this ioloop"
+		if type(client) == "table" then
+			log:warn("MQTT client '%s' was already added to ioloop '%s'", client.opts.id, tostring(self))
+			return false, "MQTT client was already added to this ioloop"
+		else
+			log:warn("MQTT loop function '%s' was already added to this ioloop '%s'", tostring(client), tostring(self))
+			return false, "MQTT loop function was already added to this ioloop"
+		end
 	end
 	clients[#clients + 1] = client
 	clients[client] = true
 
-	-- associate ioloop with adding MQTT client
-	if type(client) ~= "function" then
-		client:set_ioloop(self)
+	if type(client) == "table" then
+		log:info("adding client '%s' to ioloop '%s'", client.opts.id, tostring(self))
+		-- create and add function for PINGREQ
+		local function f()
+			if not clients[client] then
+				-- the client were supposed to do keepalive for is gone, remove ourselves
+				self:remove(f)
+			end
+			return client:check_keep_alive()
+		end
+		-- add it to start doing keepalive checks
+		self:add(f)
+	else
+		log:info("adding function '%s' to ioloop '%s'", tostring(client), tostring(self))
 	end
 
 	return true
 end
 
 --- Remove MQTT client or a loop function from the ioloop instance
--- @tparam client_mt|function client		MQTT client or a loop function to remove from ioloop
+-- @tparam client_mt|function client MQTT client or a loop function to remove from ioloop
 -- @return true on success or false and error message on failure
 function ioloop_mt:remove(client)
 	local clients = self.clients
 	if not clients[client] then
-		return false, "no such MQTT client or loop function was added to ioloop"
+		if type(client) == "table" then
+			log:warn("MQTT client not found '%s' in ioloop '%s'", client.opts.id, tostring(self))
+			return false, "MQTT client not found"
+		else
+			log:warn("MQTT loop function not found '%s' in ioloop '%s'", tostring(client), tostring(self))
+			return false, "MQTT loop function not found"
+		end
 	end
-	clients[client] = nil
 
 	-- search an index of client to remove
 	for i, item in ipairs(clients) do
 		if item == client then
+			-- found it, remove
 			tbl_remove(clients, i)
+			clients[client] = nil
 			break
 		end
 	end
 
-	-- unlink ioloop from MQTT client
-	if type(client) ~= "function" then
-		client:set_ioloop(nil)
+	if type(client) == "table" then
+		log:info("removed client '%s' from ioloop '%s'", client.opts.id, tostring(self))
+	else
+		log:info("removed loop function '%s' from ioloop '%s'", tostring(client), tostring(self))
 	end
 
 	return true
 end
 
---- Perform one ioloop iteration
+--- Perform one ioloop iteration.
+-- TODO: make this smarter do not wake-up functions or clients returned a longer
+-- sleep delay. Currently it's pretty much a busy loop.
 function ioloop_mt:iteration()
-	self.timeouted = false
+	local opts = self.opts
+	local sleep = opts.sleep
+
 	for _, client in ipairs(self.clients) do
+		local t, err
+		-- read data and handle events
 		if type(client) ~= "function" then
-			client:_ioloop_iteration()
+			t, err = client:step()
+			if t == -1 then
+				--  no data read, client is idle
+				t = nil
+			elseif not t then
+				if not client.opts.reconnect then
+					-- error and not reconnecting, remove the client
+					log:error("client '%s' failed with '%s', will not re-connect", client.opts.id, err)
+					self:remove(client)
+					t = nil
+				else
+					-- error, but will reconnect
+					log:error("client '%s' failed with '%s', will try re-connecting", client.opts.id, err)
+					t = 0 -- try immediately
+				end
+			end
 		else
-			client()
+			t = client()
 		end
+		t = t or opts.sleep
+		sleep = math_min(sleep, t)
 	end
 	-- sleep a bit
-	local args = self.args
-	local sleep = args.sleep
 	if sleep > 0 then
-		args.sleep_function(sleep)
+		opts.sleep_function(sleep)
 	end
 end
 
---- Perform sleep if no one of the network operation in current iteration was not timeouted
-function ioloop_mt:can_sleep()
-	if not self.timeouted then
-		local args = self.args
-		args.sleep_function(args.timeout)
-		self.timeouted = true
-	end
-end
-
---- Run ioloop until at least one client are in ioloop
+--- Run ioloop while there is at least one client/function in the ioloop
 function ioloop_mt:run_until_clients()
+	log:info("ioloop started with %d clients/functions", #self.clients)
+
 	self.running = true
 	while next(self.clients) do
 		self:iteration()
 	end
 	self.running = false
+
+	log:info("ioloop finished with %d clients/functions", #self.clients)
 end
 
 -------
@@ -146,9 +192,9 @@ end
 --- Create IO loop instance with given options
 -- @see ioloop_mt:__init
 -- @treturn ioloop_mt ioloop instance
-local function ioloop_create(args)
+local function ioloop_create(opts)
 	local inst = setmetatable({}, ioloop_mt)
-	inst:__init(args)
+	inst:__init(opts)
 	return inst
 end
 ioloop.create = ioloop_create
@@ -158,16 +204,15 @@ local ioloop_instance
 
 --- Returns default ioloop instance
 -- @tparam[opt=true] boolean autocreate Automatically create ioloop instance
--- @tparam[opt] table args Arguments for creating ioloop instance
+-- @tparam[opt] table opts Arguments for creating ioloop instance
 -- @treturn ioloop_mt ioloop instance
-function ioloop.get(autocreate, args)
+function ioloop.get(autocreate, opts)
 	if autocreate == nil then
 		autocreate = true
 	end
-	if autocreate then
-		if not ioloop_instance then
-			ioloop_instance = ioloop_create(args)
-		end
+	if autocreate and not ioloop_instance then
+		log:info("auto-creating default ioloop instance")
+		ioloop_instance = ioloop_create(opts)
 	end
 	return ioloop_instance
 end

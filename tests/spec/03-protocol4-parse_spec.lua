@@ -1,4 +1,3 @@
--- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/protocol4-parse.lua
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
 describe("MQTT v3.1.1 protocol: parsing packets", function()

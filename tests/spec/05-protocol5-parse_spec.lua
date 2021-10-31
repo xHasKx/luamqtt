@@ -1,4 +1,3 @@
--- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/protocol5-parse.lua
 -- DOC: https://docs.oasis-open.org/mqtt/mqtt/v5.0/cos02/mqtt-v5.0-cos02.html
 
 -- returns read_func-compatible function

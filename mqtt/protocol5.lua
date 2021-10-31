@@ -189,8 +189,8 @@ local property_pairs = {
 		make = make_uint8_0_or_1,
 		parse = parse_uint8_0_or_1, },
 	{ 0x26, "user_property", -- NOTE: not implemented intentionally
-		make = function(value_) error("not implemented") end,
-		parse = function(read_func_) error("not implemented") end, },
+		make = function(value_) error("not implemented") end, -- luacheck: ignore
+		parse = function(read_func_) error("not implemented") end, }, -- luacheck: ignore
 	{ 0x27, "maximum_packet_size",
 		make = make_uint32,
 		parse = parse_uint32, },

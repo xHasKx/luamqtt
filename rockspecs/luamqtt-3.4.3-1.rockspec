@@ -34,5 +34,8 @@ build = {
 		["mqtt.protocol4"] = "mqtt/protocol4.lua",
 		["mqtt.protocol5"] = "mqtt/protocol5.lua",
 		["mqtt.tools"] = "mqtt/tools.lua",
+		["mqtt.log"] = "mqtt/log.lua",
+		["mqtt.buffered_base"] = "mqtt/buffered_base.lua",
+		["mqtt.non_buffered_base"] = "mqtt/non_buffered_base.lua",
 	},
 }

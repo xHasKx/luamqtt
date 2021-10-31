@@ -1,4 +1,3 @@
--- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/module-basics.lua
 -- DOC v3.1.1: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 -- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 

@@ -1,7 +1,10 @@
 return {
   default = {
     ROOT = { "tests/spec" },
+<<<<<<< HEAD
     pattern = "%.lua",
+=======
+>>>>>>> 0a6e421 (feat(*) rewrite loop logic)
     lpath = "./?.lua;./?/?.lua;./?/init.lua",
     verbose = true,
     coverage = false,
