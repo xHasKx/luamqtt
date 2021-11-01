@@ -87,4 +87,3 @@ printf '2.0\n' > $PKG_ROOT/debian-binary
 tar --owner=root --group=root -C $PKG_ROOT -czf $TARGET ./debian-binary ./data.tar.gz ./control.tar.gz
 
 [ -f $TARGET ] && echo "Package ready in $TARGET"
-[ ! -f $TARGET ] && echo "Package build error: no such file at $TARGET" && exit 1
