@@ -32,7 +32,6 @@ local coroutine_yield = coroutine.yield
 
 local math = require("math")
 local math_random = math.random
-local math_randomseed = math.randomseed
 
 local luamqtt_VERSION
 
@@ -52,11 +51,6 @@ local parse_packet5 = protocol5.parse_packet
 
 local ioloop = require("mqtt.ioloop")
 local ioloop_get = ioloop.get
-
--------
-
--- pseudo-random generator initialized flag
-local random_initialized = false
 
 -------
 
@@ -158,11 +152,6 @@ function client_mt:__init(args)
 
 	if not a.id then
 		-- generate random client id
-		if not random_initialized then
-			-- initialize pseudo-random generator with current time seed
-			math_randomseed(os_time())
-			random_initialized = true
-		end
 		a.id = str_format("luamqtt-v%s-%07x", str_gsub(luamqtt_VERSION, "[^%d]", "-"), math_random(1, 0xFFFFFFF))
 	end
 
