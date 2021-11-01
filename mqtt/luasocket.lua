@@ -57,9 +57,9 @@ end
 function luasocket:plain_receive(size)
 	local sock = self.sock
 
-	sock:settimeout(0.010) -- TODO: setting to 0 fails??? it shouldn't
-	local data, err = sock:receive(size)
+	sock:settimeout(0)
 
+	local data, err = sock:receive(size)
 	if data then
 		return data
 	end

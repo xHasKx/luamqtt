@@ -289,7 +289,6 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal(2097152, protocol.parse_var_length_nonzero(make_read_func("80808001")))
 		assert.are.equal(268435455, protocol.parse_var_length_nonzero(make_read_func("FFFFFF7F")))
 		assert.is_false(protocol.parse_var_length_nonzero(make_read_func("FFFFFFFF")))
-
 	end)
 
 	it("protocol.next_packet_id", function()
