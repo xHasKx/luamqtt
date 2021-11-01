@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luamqtt
-PKG_VERSION:=3.4.1
+PKG_VERSION:=3.4.2
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Alexander Kiranov <xhaskx@gmail.com>
 
