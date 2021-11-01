@@ -85,6 +85,9 @@ describe("MQTT client", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
 
+	-- initializing random numbers generator to make unique client_id's
+	math.randomseed(os.time())
+
 	-- test servers
 	local cases = {
 		{
