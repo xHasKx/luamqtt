@@ -42,7 +42,7 @@ mkdir -p $PKG_ROOT
 # prepare data.tar.gz
 mkdir -p $PKG_ROOT/usr/lib/lua
 cp -r ./mqtt $PKG_ROOT/usr/lib/lua/
-tar --owner=root --group=root -C $PKG_ROOT --exclude=data.tar.gz -czf $PKG_ROOT/data.tar.gz .
+tar --owner=root --group=root -C $PKG_ROOT --exclude=*/data.tar.gz -czf $PKG_ROOT/data.tar.gz .
 rm -rf $PKG_ROOT/usr
 
 # TODO: calculate 'Installed-Size:' somehow; not important
