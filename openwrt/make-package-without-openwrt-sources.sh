@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -x
 set -e
 
 ROOT="./local/openwrt"
@@ -43,7 +42,7 @@ mkdir -p $PKG_ROOT
 # prepare data.tar.gz
 mkdir -p $PKG_ROOT/usr/lib/lua
 cp -r ./mqtt $PKG_ROOT/usr/lib/lua/
-tar --owner=root --group=root -C $PKG_ROOT --exclude=*/data.tar.gz -czf $PKG_ROOT/data.tar.gz .
+tar --owner=root --group=root -C $PKG_ROOT -czf $PKG_ROOT/data.tar.gz usr
 rm -rf $PKG_ROOT/usr
 
 # TODO: calculate 'Installed-Size:' somehow; not important
@@ -79,7 +78,7 @@ default_prerm \$0 \$@
 EOF
 chmod +x $PKG_ROOT/prerm
 
-tar --owner=root --group=root -C $PKG_ROOT --exclude=control.tar.gz --exclude=data.tar.gz -czf $PKG_ROOT/control.tar.gz .
+tar --owner=root --group=root -C $PKG_ROOT -czf $PKG_ROOT/control.tar.gz control postinst prerm
 rm $PKG_ROOT/control $PKG_ROOT/postinst $PKG_ROOT/prerm
 
 # pack the package file
@@ -87,4 +86,5 @@ printf '2.0\n' > $PKG_ROOT/debian-binary
 [ -f $TARGET ] && rm $TARGET
 tar --owner=root --group=root -C $PKG_ROOT -czf $TARGET ./debian-binary ./data.tar.gz ./control.tar.gz
 
-echo "Package ready in $TARGET"
+[ -f $TARGET ] && echo "Package ready in $TARGET"
+[ ! -f $TARGET ] && echo "Package build error: no such file at $TARGET" && exit 1
