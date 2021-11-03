@@ -53,7 +53,7 @@ ioloop_mt.__index = ioloop_mt
 -- @tparam[opt=0] number opts.sleep_min			min sleep interval after each iteration
 -- @tparam[opt=0.002] number opts.sleep_step	increase in sleep after every idle iteration
 -- @tparam[opt=0.030] number opts.sleep_max		max sleep interval after each iteration
--- @tparam[opt] function opts.sleep_function	custom sleep function to call after each iteration
+-- @tparam[opt=luasocket.sleep] function opts.sleep_function	custom sleep function to call after each iteration
 -- @treturn ioloop_mt ioloop instance
 function ioloop_mt:__init(opts)
 	log:debug("initializing ioloop instance '%s'", tostring(self))

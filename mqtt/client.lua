@@ -3,7 +3,35 @@
 -- @alias client
 local client = {}
 
--- TODO: list event names
+-- event names:
+
+-- "error": function(errmsg, client_object, [packet])
+-- on errors
+-- optional packet: only if received CONNACK.rc ~= 0 when connecting
+
+-- "close": function(connection_object, client_object)
+-- upon closing the connection
+-- connection object will have .close_reason (string)
+
+-- "connect": function(packet, client_object)
+-- upon a succesful connect, after receiving the CONNACK packet from the broker
+-- ???? => on a refused connect; if received CONNACK.rc ~= 0 when connecting
+
+-- "subscribe": function(packet, client_object)
+-- upon a succesful subscription, after receiving the SUBACK packet from the broker
+
+-- "unsubscribe": function(packet, client_object)
+-- upon a succesful unsubscription, after receiving the UNSUBACK packet from the broker
+
+-- "message": function(packet, client_object)
+-- upon receiving a PUBLISH packet from the broker
+
+-- "acknowledge": function(packet, client_object)
+-- upon receiving PUBACK
+-- upon receiving PUBREC (event fires after sending PUBREL)
+
+-- "auth": function(packet, client_object)
+-- upon receiving an AUTH packet
 
 -------
 
@@ -282,7 +310,7 @@ end
 -- @tparam boolean opts.retain_handling			for MQTT v5.0 only: retain_handling flag for subscription
 -- @tparam[opt] table opts.properties			for MQTT v5.0 only: properties for subscribe operation
 -- @tparam[opt] table opts.user_properties		for MQTT v5.0 only: user properties for subscribe operation
--- @tparam[opt] function opts.callback			callback function to be called when subscription will be created
+-- @tparam[opt] function opts.callback			callback function to be called when subscription is acknowledged by broker
 -- @return packet id on success or false and error message on failure
 function client_mt:subscribe(opts)
 	-- fetch and validate opts
@@ -417,7 +445,7 @@ end
 -- @tparam[opt=false] boolean opts.dup		dup message publication flag
 -- @tparam[opt] table opts.properties		properties for publishing message
 -- @tparam[opt] table opts.user_properties	user properties for publishing message
--- @tparam[opt] function opts.callback		callback to call when publihsed message will be acknowledged
+-- @tparam[opt] function opts.callback		callback to call when publihsed message has been acknowledged by the broker
 -- @return true or packet id on success or false and error message on failure
 function client_mt:publish(opts)
 	-- fetch and validate opts

@@ -1,6 +1,8 @@
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 -- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 
+local log = require("logging").defaultLogger()
+
 describe("MQTT lua library", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
@@ -233,9 +235,14 @@ describe("MQTT client", function()
 			local prefix = "luamqtt/"..tostring(math.floor(math.random()*1e13))
 
 			-- set on-connect handler
-			client:on("connect", function()
+			client:on("connect", function(packet)
+				log:warn("connect: %d %s", packet.rc, packet:reason_string())
+				assert(packet.rc == 0, packet:reason_string())
 				assert(client:send_pingreq()) -- NOTE: not required, it's here only to improve code coverage
+				log:warn("subscribing to '.../0/test'")
 				assert(client:subscribe{topic=prefix.."/0/test", callback=function()
+					log:warn("subscription to '.../0/test' confirmed")
+					log:warn("now publishing 'initial' to '.../0/test'")
 					assert(client:publish{
 						topic = prefix.."/0/test",
 						payload = "initial",
@@ -249,8 +256,14 @@ describe("MQTT client", function()
 
 					if msg.topic == prefix.."/0/test" then
 						-- re-subscribe test
+						log:warn("received message on '.../0/test', payload: %s", msg.payload)
+						log:warn("unsubscribing from '.../0/test'")
 						assert(client:unsubscribe{topic=prefix.."/0/test", callback=function()
+							log:warn("unsubscribe from '.../0/test' confirmed")
+							log:warn("subscribing to '.../#'")
 							assert(client:subscribe{topic=prefix.."/#", qos=2, callback=function()
+								log:warn("subscription to '.../#' confirmed")
+								log:warn("now publishing 'testing QoS 1' to '.../1/test'")
 								assert(client:publish{
 									topic = prefix.."/1/test",
 									payload = "testing QoS 1",
@@ -258,32 +271,45 @@ describe("MQTT client", function()
 									properties = properties,
 									user_properties = user_properties,
 									callback = function()
+										log:warn("publishing 'testing QoS 1' to '.../1/test' confirmed")
 										acknowledge = true
 										if acknowledge and test_msg_2 then
 											-- done
+											log:warn("both `acknowledge` (by me) and `test_msg_2` are set, disconnecting now")
 											assert(client:disconnect())
+										else
+											log:warn("only `acknowledge` (by me) is set, not `test_msg_2`. So not disconnecting yet")
 										end
 									end,
 								})
 							end})
 						end})
 					elseif msg.topic == prefix.."/1/test" then
+						log:warn("received message on '.../1/test', payload: %s", msg.payload)
 						if case.args.version == mqtt.v50 then
 							assert(type(msg.properties) == "table")
 							assert.are.same(properties.message_expiry_interval, msg.properties.message_expiry_interval)
 							assert(type(msg.user_properties) == "table")
 							assert.are.same(user_properties.hello, msg.user_properties.hello)
 						end
+						log:warn("now publishing 'testing QoS 2' to '.../2/test'")
 						assert(client:publish{
 							topic = prefix.."/2/test",
 							payload = "testing QoS 2",
 							qos = 2,
+							callback = function()
+								log:warn("publishing 'testing QoS 2' to '.../2/test' confirmed")
+							end,
 						})
 					elseif msg.topic == prefix.."/2/test" then
+						log:warn("received message on '.../2/test', payload: %s", msg.payload)
 						test_msg_2 = true
 						if acknowledge and test_msg_2 then
 							-- done
+							log:warn("both `test_msg_2` (by me) and `acknowledge` (by me) are set, disconnecting now")
 							assert(client:disconnect())
+						else
+							log:warn("only `test_msg_2` (by me) is set, not `acknowledge`. So not disconnecting yet")
 						end
 					end
 				end,
@@ -294,6 +320,8 @@ describe("MQTT client", function()
 
 				close = function(conn)
 					close_reason = conn.close_reason
+					-- remove our client from the loop to make it exit.
+					require("mqtt.ioloop").get():remove(client)
 				end,
 			}
 

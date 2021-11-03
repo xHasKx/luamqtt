@@ -50,7 +50,7 @@ end
 -- @function mqtt.get_ioloop
 mqtt.get_ioloop = ioloop_get
 
---- Run default ioloop for given MQTT clients or functions
+--- Run default ioloop for given MQTT clients or functions.
 -- @param ... MQTT clients or loop functions to add to ioloop
 -- @see mqtt.ioloop.get
 -- @see mqtt.ioloop.run_until_clients

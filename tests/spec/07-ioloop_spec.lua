@@ -2,12 +2,6 @@
 -- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 
 describe("ioloop", function()
-	do -- configure logging
-		local lualogging = require("logging")
-		lualogging.defaultLevel(lualogging.DEBUG)
-		lualogging.defaultLogPattern("%date [%level] %message (%source)\n")
-		lualogging.defaultTimestampPattern("%y/%m/%d %H:%M:%S")
-	end
 
 	-- load MQTT lua library
 	local mqtt = require("mqtt")

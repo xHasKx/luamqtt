@@ -2,6 +2,7 @@ return {
   default = {
     ROOT = { "tests/spec" },
     lpath = "./?.lua;./?/?.lua;./?/init.lua",
+    helper = "./tests/configure-log.lua",
     verbose = true,
     coverage = false,
     output = "gtest",
