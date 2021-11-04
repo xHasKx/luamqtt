@@ -2,6 +2,7 @@
 -- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 
 local log = require("logging").defaultLogger()
+local socket = require("socket")
 
 describe("MQTT lua library", function()
 	-- load MQTT lua library
@@ -325,12 +326,8 @@ describe("MQTT client", function()
 				end,
 			}
 
-			-- and wait for connection to broker is closed
-			if case.sync then
-				mqtt.run_sync(client)
-			else
-				mqtt.run_ioloop(client)
-			end
+			-- and wait for connection to broker to be closed
+			mqtt.run_ioloop(client)
 
 			assert.are.same({}, errors)
 			assert.is_true(acknowledge)
@@ -363,7 +360,7 @@ describe("last will message", function()
 			username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
 		}
 
-		local client1_ready, client2_ready
+		local client1_ready, client2_ready, clients_done
 
 		local function send_self_destroy()
 			if not client1_ready or not client2_ready then
@@ -392,6 +389,7 @@ describe("last will message", function()
 				-- break connection with broker on any message
 				log:warn("client1 received a message and is now closing its connection")
 				client1:close_connection("self-destructed")
+				clients_done = (clients_done or 0)+1
 			end,
 		}
 
@@ -412,17 +410,28 @@ describe("last will message", function()
 				will_received = msg.topic == will_topic
 				log:warn("client2 received a message, topic is: '%s', client 2 is now closing its connection",tostring(msg.topic))
 				client2:disconnect()
+				clients_done = (clients_done or 0)+1
 			end,
 		}
 
-		mqtt.run_ioloop(client1, client2)
+		local timer do
+			local timeout = socket.gettime() + 30
+			function timer()
+				if clients_done == 2 then
+					require("mqtt.ioloop").get():remove(timer)
+				end
+				assert(socket.gettime() < timeout, "test failed due to timeout")
+			end
+		end
+
+		mqtt.run_ioloop(client1, client2, timer)
 
 		assert.is_true(will_received)
 	end)
 end)
 
 
-describe("no_local flag for subscription: ", function()
+describe("no_local flag for subscription:", function()
 	local mqtt = require("mqtt")
 	local prefix = "luamqtt/" .. tostring(math.floor(math.random()*1e13))
 	local no_local_topic = prefix .. "/no_local_test"
@@ -437,7 +446,7 @@ describe("no_local flag for subscription: ", function()
 		version = mqtt.v50
 	}
 
-	it("msg should not be received", function()
+	it("msg should not be received #only", function()
 		local c1 = mqtt.client(conn_args)
 		local c2 = mqtt.client(conn_args)
 
@@ -460,26 +469,34 @@ describe("no_local flag for subscription: ", function()
 
 		local function send()
 			if not s1.subscribed or not s2.subscribed then
+				log:warn("not sending because clients are not both subscribed")
 				return
 			end
+			log:warn("both clients are subscribed, now sending...")
+			socket.sleep(0.2) -- shouldn't be necessary, but test is flaky otherwise
+			log:warn("client1: publishing 'message' to topic '.../no_local_test'")
 			assert(c1:publish{
 				topic = no_local_topic,
 				payload = "message",
 				callback = function()
 					s1.published = s1.published + 1
+					log:warn("client1: publishing to topic '.../no_local_test' confirmed, count: %d", s1.published)
 				end
 			})
 		end
 
 		c1:on{
 			connect = function()
+				log:warn("client1: is now connected")
 				s1.connected = true
 				send()
+				log:warn("client1: subscribing to topic '.../#', with 'no_local'")
 				assert(c1:subscribe{
 					topic = prefix .. "/#",
 					no_local = true,
 					callback = function()
 						s1.subscribed = true
+						log:warn("client1: subscription to topic '.../#' with 'no_local' confirmed")
 						send()
 					end
 				})
@@ -487,13 +504,18 @@ describe("no_local flag for subscription: ", function()
 			message = function(msg)
 				s1.messages[#s1.messages + 1] = msg.payload
 				if msg.payload == "stop" then
+					log:warn("client1: received message, with payload 'stop'. Will now disconnect.")
 					assert(c1:disconnect())
+				else
+					log:warn("client1: received message, with payload '%s' (but waiting for 'stop')", msg.payload)
 				end
 			end,
 			error = function(err)
 				s1.errors[#s1.errors + 1] = err
+				log:warn("client1: received error: '%s'", tostring(err))
 			end,
 			close = function(conn)
+				log:warn("client1: closed, reason: %s", conn.close_reason)
 				s1.close_reason = conn.close_reason
 			end
 		}
@@ -501,11 +523,14 @@ describe("no_local flag for subscription: ", function()
 		c2:on{
 			connect = function()
 				s2.connected = true
+				log:warn("client2: is now connected")
+				log:warn("client2: subscribing to topic '.../#', without 'no_local'")
 				assert(c2:subscribe{
 					topic = no_local_topic,
 					no_local = false,
 					callback = function()
 						s2.subscribed = true
+						log:warn("client2: subscription to topic '.../#' without 'no_local' confirmed")
 						send()
 					end
 				})
@@ -513,15 +538,21 @@ describe("no_local flag for subscription: ", function()
 			message = function(msg)
 				s2.messages[#s2.messages + 1] = msg.payload
 				if msg.payload == "message" then
+					log:warn("client2: received message, with payload 'message'")
+					log:warn("client2: publishing to topic '.../no_local_test'', with payload 'stop'")
 					assert(c2:publish{
 						topic = no_local_topic,
 						payload = "stop",
 						callback = function()
 							s2.published = s2.published + 1
+							log:warn("client2: publishing to topic '.../no_local_test' confirmed, count: %d", s2.published)
 						end
 					})
 				elseif msg.payload == "stop" then
+					log:warn("client2: received message, with payload 'stop'. Will now disconnect.")
 					assert(c2:disconnect())
+				else
+					log:warn("client2: received message, with payload '%s' (but waiting for 'stop' or 'message')", msg.payload)
 				end
 			end,
 			error = function(err)
@@ -532,7 +563,17 @@ describe("no_local flag for subscription: ", function()
 			end
 		}
 
-		mqtt.run_ioloop(c1, c2)
+		local timer do
+			local timeout = socket.gettime() + 30
+			function timer()
+				if s1.close_reason and s2.close_reason then
+					require("mqtt.ioloop").get():remove(timer)
+				end
+				assert(socket.gettime() < timeout, "test failed due to timeout")
+			end
+		end
+
+		mqtt.run_ioloop(c1, c2, timer)
 
 		assert.is_true(s1.connected, "client 1 is not connected")
 		assert.is_true(s2.connected, "client 2 is not connected")

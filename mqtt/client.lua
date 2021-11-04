@@ -349,7 +349,7 @@ function client_mt:subscribe(opts)
 	local packet_id = pargs.packet_id
 	local subscribe = self._make_packet(pargs)
 
-	log:info("subscribing client '%s' to topic '%s' (packet: %d)", self.opts.id, opts.topic, packet_id or -1)
+	log:info("subscribing client '%s' to topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
 
 	-- send SUBSCRIBE packet
 	local ok, err = self:_send_packet(subscribe)
@@ -409,7 +409,7 @@ function client_mt:unsubscribe(opts)
 	local packet_id = pargs.packet_id
 	local unsubscribe = self._make_packet(pargs)
 
-	log:info("unsubscribing client '%s' from topic '%s' (packet: %d)", self.opts.id, opts.topic, packet_id or -1)
+	log:info("unsubscribing client '%s' from topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
 
 	-- send UNSUBSCRIBE packet
 	local ok, err = self:_send_packet(unsubscribe)
@@ -475,8 +475,7 @@ function client_mt:publish(opts)
 	local packet_id = opts.packet_id
 	local publish = self._make_packet(opts)
 
-	log:debug("client '%s' publishing to topic '%s' (packet: %d)", self.opts.id, opts.topic, packet_id or -1)
-	--log:debug("client '%s' publishing to topic '%s' (value '%d')", self.opts.id, opts.topic, opts.payload)
+	log:debug("client '%s' publishing to topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
 
 	-- send PUBLISH packet
 	local ok, err = self:_send_packet(publish)
@@ -537,7 +536,7 @@ function client_mt:acknowledge(msg, rc, properties, user_properties)
 		return true
 	end
 
-	log:debug("client '%s' acknowledging packet %d", self.opts.id, packet_id or -1)
+	log:debug("client '%s' acknowledging packet %s", self.opts.id, packet_id or "n.a.")
 
 	if msg.qos == 1 then
 		-- PUBACK should be sent
@@ -886,7 +885,7 @@ function client_mt:acknowledge_pubrel(packet_id)
 	-- create PUBREL packet
 	local pubrel = self._make_packet{type=packet_type.PUBREL, packet_id=packet_id, rc=0}
 
-	log:debug("client '%s' sending PUBREL (packet: %d)", self.opts.id, packet_id or -1)
+	log:debug("client '%s' sending PUBREL (packet: %s)", self.opts.id, packet_id or "n.a.")
 
 	-- send PUBREL packet
 	local ok, err = self:_send_packet(pubrel)
@@ -912,7 +911,7 @@ function client_mt:acknowledge_pubcomp(packet_id)
 	-- create PUBCOMP packet
 	local pubcomp = self._make_packet{type=packet_type.PUBCOMP, packet_id=packet_id, rc=0}
 
-	log:debug("client '%s' sending PUBCOMP (packet: %d)", self.opts.id,  packet_id or -1)
+	log:debug("client '%s' sending PUBCOMP (packet: %s)", self.opts.id,  packet_id or "n.a.")
 
 	-- send PUBCOMP packet
 	local ok, err = self:_send_packet(pubcomp)
@@ -966,7 +965,7 @@ function client_mt:handle_received_packet(packet)
 	local conn = self.connection
 	local err
 
-	log:debug("client '%s' received '%s' (packet: %s)", self.opts.id, packet.type, tostring(packet.packet_id or "n.a."))
+	log:debug("client '%s' received '%s' (packet: %s)", self.opts.id, packet_type[packet.type], packet.packet_id or "n.a.")
 
 	if not conn.connack then
 		-- expecting only CONNACK packet here
@@ -993,7 +992,7 @@ function client_mt:handle_received_packet(packet)
 			return false, err
 		end
 
-		log:info("client '%s' connected successfully to '%s'", self.opts.id, conn.uri)
+		log:info("client '%s' connected successfully to '%s:%s'", self.opts.id, conn.host, conn.port)
 
 		-- fire connect event
 		self:handle("connect", packet, self)
