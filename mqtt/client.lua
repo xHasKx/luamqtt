@@ -230,8 +230,9 @@ function client_mt:__init(opts)
 	self._to_remove_handlers = {}
 
 	-- state
-	self.first_connect = true		-- contains true to perform one network connection attempt after client creation
 	self.send_time = 0				-- time of the last network send from client side
+	self.first_connect = true		-- contains true to perform one network connection attempt after client creation
+									-- Note: remains true, during the connect process. False after succes or failure.
 
 	-- packet creation/parse functions according version
 	if not a.version then
@@ -697,12 +698,14 @@ function client_mt:start_connecting()
 	-- open network connection
 	local ok, err = self:open_connection()
 	if not ok then
+		self.first_connect = false
 		return false, err
 	end
 
 	-- send CONNECT packet
 	ok, err = self:send_connect()
 	if not ok then
+		self.first_connect = false
 		return false, err
 	end
 
@@ -972,6 +975,7 @@ function client_mt:handle_received_packet(packet)
 			log:error("client '%s' %s", self.opts.id, err)
 			self:handle("error", err, self)
 			self:close_connection("error")
+			self.first_connect = false
 			return false, err
 		end
 
@@ -985,6 +989,7 @@ function client_mt:handle_received_packet(packet)
 			self:handle("error", err, self, packet)
 			self:handle("connect", packet, self)
 			self:close_connection("connection failed")
+			self.first_connect = false
 			return false, err
 		end
 
@@ -992,6 +997,7 @@ function client_mt:handle_received_packet(packet)
 
 		-- fire connect event
 		self:handle("connect", packet, self)
+		self.first_connect = false
 	else
 		-- connection authorized, so process usual packets
 

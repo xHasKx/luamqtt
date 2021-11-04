@@ -367,8 +367,10 @@ describe("last will message", function()
 
 		local function send_self_destroy()
 			if not client1_ready or not client2_ready then
+				log:warn("not self destroying, clients not ready")
 				return
 			end
+			log:warn("client1 publishing 'self-destructing-message' to '.../stop' topic")
 			assert(client1:publish{
 				topic = prefix.."/stop",
 				payload = "self-destructing-message",
@@ -378,13 +380,17 @@ describe("last will message", function()
 		client1:on{
 			connect = function()
 				-- subscribe, then send self-destructing message
+				log:warn("client1 is now connected")
+				log:warn("client1 subscribing to '.../stop' topic")
 				assert(client1:subscribe{topic=prefix.."/stop", callback=function()
 					client1_ready = true
+					log:warn("client1 subscription to '.../stop' topic confirmed, client 1 is ready for self destruction")
 					send_self_destroy()
 				end})
 			end,
 			message = function()
 				-- break connection with broker on any message
+				log:warn("client1 received a message and is now closing its connection")
 				client1:close_connection("self-destructed")
 			end,
 		}
@@ -394,13 +400,17 @@ describe("last will message", function()
 		client2:on{
 			connect = function()
 				-- subscribe to will-message topic
+				log:warn("client2 is now connected")
+				log:warn("client2 subscribing to will-topic: '.../willtest' topic")
 				assert(client2:subscribe{topic=will_topic, callback=function()
 					client2_ready = true
+					log:warn("client2 subscription to will-topic '.../willtest' confirmed, client 2 is ready for self destruction")
 					send_self_destroy()
 				end})
 			end,
 			message = function(msg)
 				will_received = msg.topic == will_topic
+				log:warn("client2 received a message, topic is: '%s', client 2 is now closing its connection",tostring(msg.topic))
 				client2:disconnect()
 			end,
 		}

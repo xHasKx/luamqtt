@@ -162,7 +162,7 @@ function ioloop_mt:iteration()
 			-- an error from a client was returned
 			if not client.opts.reconnect then
 				-- error and not reconnecting, remove the client
-				log:fatal("client '%s' failed with '%s', will not re-connect", client.opts.id, err)
+				log:info("client '%s' returned '%s', no re-connect set, removing client", client.opts.id, err)
 				self:remove(client)
 				t = opts.sleep_max
 			else
