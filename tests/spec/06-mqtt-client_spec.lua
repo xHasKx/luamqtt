@@ -446,7 +446,7 @@ describe("no_local flag for subscription:", function()
 		version = mqtt.v50
 	}
 
-	it("msg should not be received #only", function()
+	it("msg should not be received", function()
 		local c1 = mqtt.client(conn_args)
 		local c2 = mqtt.client(conn_args)
 
@@ -607,12 +607,16 @@ describe("#copas connector", function()
 			connector = require("mqtt.luasocket-copas"),
 		}
 
+		local test_finished = false
+
 		client:on{
 			connect = function()
-				-- print("client connected")
+				log:warn("client is now connected")
+				log:warn("client subscribing to topic '.../copas'")
 				assert(client:subscribe{topic=prefix.."/copas", qos=1, callback=function()
-					-- print("subscribed")
-					copas.sleep(2)
+					log:warn("client subscription to topic '.../copas' confirmed")
+					--copas.sleep(2) -- TODO: remove???
+					log:warn("client publishing 'copas test' to topic '.../copas' confirmed")
 					assert(client:publish{
 						topic = prefix.."/copas",
 						payload = "copas test",
@@ -623,34 +627,31 @@ describe("#copas connector", function()
 
 			message = function(msg)
 				assert(client:acknowledge(msg))
-				-- print("received", msg)
 				if msg.topic == prefix.."/copas" and msg.payload == "copas test" then
-					-- print("disconnect")
+					log:warn("client received '%s' to topic '.../copas' confirmed", msg.payload)
 					assert(client:disconnect())
+					log:warn("disconnected now")
+					test_finished = true
 				end
 			end
 		}
 
-		local ticks = 0
-		local mqtt_finished = false
-
 		copas.addthread(function()
-			mqtt.run_sync(client)
-			mqtt_finished = true
-			assert.is_true(ticks > 1, "expecting mqtt client run takes at least one tick")
-		end)
-
-		copas.addthread(function()
-			for _ = 1, 3 do
-				copas.sleep(1)
-				ticks = ticks + 1
+			while true do
+				local timeout = client:step()
+				if not timeout then
+					-- exited
+					return
+				end
+				if timeout > 0 then
+					copas.sleep(timeout)
+				end
 			end
 		end)
 
 		copas.loop()
 
-		assert.is_true(mqtt_finished, "expecting mqtt client to finish its work")
-		assert.is_true(ticks == 3, "expecting 3 ticks")
+		assert.is_true(test_finished, "expecting mqtt client to finish its work")
 	end)
 end)
 

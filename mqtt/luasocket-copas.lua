@@ -17,7 +17,7 @@ function connector:connect()
 	local sock = copas.wrap(socket.tcp(), self.secure_params)
 	sock:settimeout(self.timeout)
 
-	local ok, err = socket:connect(self.host, self.port)
+	local ok, err = sock:connect(self.host, self.port)
 	if not ok then
 		return false, "copas.connect failed: "..err
 	end
