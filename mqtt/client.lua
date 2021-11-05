@@ -179,7 +179,7 @@ function client_mt:__init(opts)
 	end
 
 	-- default connector
-	a.connector = a.connector or require("mqtt.connector.luasocket")
+	a.connector = a.connector or require("mqtt.connector")
 
 	-- validate connector content
 	assert(type(a.connector) == "table", "expecting connector to be a table")
