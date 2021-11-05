@@ -22,6 +22,7 @@ include_files = {
 
 files["tests/spec/**/*.lua"] = { std = "+busted" }
 files["examples/openresty/**/*.lua"] = { std = "+ngx_lua" }
-files["mqtt/ngxsocket.lua"] = { std = "+ngx_lua" }
+files["mqtt/connector/init.lua"] = { std = "+ngx_lua" }
+files["mqtt/connector/nginx.lua"] = { std = "+ngx_lua" }
 
 -- vim: ts=4 sts=4 sw=4 noet ft=lua

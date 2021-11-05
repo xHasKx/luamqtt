@@ -12,6 +12,8 @@ local ngx_socket_tcp = ngx.socket.tcp
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function ngxsocket:connect()
+	assert(self.ssl_module == "ssl", "specifying custom ssl module when using Nginx connector is not supported")
+
 	local sock = ngx_socket_tcp()
 	sock:settimeout(self.timeout * 1000) -- millisecs
 	local ok, err = sock:connect(self.host, self.port)

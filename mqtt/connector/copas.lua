@@ -9,15 +9,16 @@ connector.super = super
 
 local socket = require("socket")
 local copas = require("copas")
-local _, ssl = pcall(require, "ssl")
 
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function connector:connect()
 	if self.secure_params then
-		assert(ssl, "LuaSec ssl module not found, secure connections unavailable")
 		assert(type(self.secure_params) == "table", "expecting .secure_params to be a table if given")
+		assert(self.ssl_module == "ssl", "Copas connector only supports 'ssl_module' called 'ssl'")
+		local _, ssl = pcall(require, "ssl")
+		assert(ssl, "ssl_module 'ssl' not found, secure connections unavailable")
 	end
 
 	local sock = copas.wrap(socket.tcp(), self.secure_params)

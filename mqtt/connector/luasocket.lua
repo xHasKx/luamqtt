@@ -7,7 +7,6 @@ luasocket.__index = luasocket
 luasocket.super = super
 
 local socket = require("socket")
-local _, ssl = pcall(require, "ssl")
 
 -- table with error messages that indicate a read timeout
 luasocket.timeout_errors = {
@@ -20,9 +19,11 @@ luasocket.timeout_errors = {
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function luasocket:connect()
+	local ssl, _
 	if self.secure_params then
-		assert(ssl, "LuaSec ssl module not found, secure connections unavailable")
 		assert(type(self.secure_params) == "table", "expecting .secure_params to be a table if given")
+		_, ssl = pcall(require, self.ssl_module)
+		assert(ssl, "ssl_module '"..tostring(self.ssl_module).."' not found, secure connections unavailable")
 	end
 
 	self:buffer_clear()  -- sanity
