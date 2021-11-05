@@ -855,7 +855,7 @@ function client_mt:check_keep_alive()
 		log:error("client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
-		return false, err
+		return interval, err
 	end
 
 	-- send PINGREQ if keep_alive interval is reached

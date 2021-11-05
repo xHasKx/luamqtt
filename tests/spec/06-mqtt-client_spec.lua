@@ -615,7 +615,6 @@ describe("#copas connector", function()
 				log:warn("client subscribing to topic '.../copas'")
 				assert(client:subscribe{topic=prefix.."/copas", qos=1, callback=function()
 					log:warn("client subscription to topic '.../copas' confirmed")
-					--copas.sleep(2) -- TODO: remove???
 					log:warn("client publishing 'copas test' to topic '.../copas' confirmed")
 					assert(client:publish{
 						topic = prefix.."/copas",
