@@ -2,10 +2,9 @@
 
 local mqtt = require("mqtt")
 local copas = require("copas")
-local mqtt_ioloop = require("mqtt.ioloop")
 
 local num_pings = 10 -- total number of ping-pongs
-local timeout = 1 -- timeout between ping-pongs
+local delay = 1 -- delay between ping-pongs
 local suffix = tostring(math.random(1000000)) -- mqtt topic suffix to distinct simultaneous running of this script
 
 -- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
@@ -16,6 +15,8 @@ local ping = mqtt.client{
 	username = token,
 	clean = true,
 	version = mqtt.v50,
+	-- NOTE: copas connector
+	connector = require("mqtt.luasocket-copas"),
 }
 
 local pong = mqtt.client{
@@ -23,6 +24,8 @@ local pong = mqtt.client{
 	username = token,
 	clean = true,
 	version = mqtt.v50,
+	-- NOTE: copas connector
+	connector = require("mqtt.luasocket-copas"),
 }
 
 ping:on{
@@ -30,17 +33,21 @@ ping:on{
 		assert(connack.rc == 0)
 		print("ping connected")
 
-		for i = 1, num_pings do
-			copas.sleep(timeout)
-			print("ping", i)
-			assert(ping:publish{ topic = "luamqtt/copas-ping/"..suffix, payload = "ping"..i, qos = 1 })
-		end
+		-- adding another thread; copas handlers should return quickly, anything
+		-- that can wait should be off-loaded from the handler to a thread.
+		-- Especially anything that yields; socket reads/writes and sleeps, and the
+		-- code below does both, sleeping, and writing (implicit in 'publish')
+		copas.addthread(function()
+			for i = 1, num_pings do
+				copas.sleep(delay)
+				print("ping", i)
+				assert(ping:publish{ topic = "luamqtt/copas-ping/"..suffix, payload = "ping"..i, qos = 1 })
+			end
 
-		copas.sleep(timeout)
-
-		print("ping done")
-		assert(ping:publish{ topic = "luamqtt/copas-ping/"..suffix, payload = "done", qos = 1 })
-		ping:disconnect()
+			print("ping done")
+			assert(ping:publish{ topic = "luamqtt/copas-ping/"..suffix, payload = "done", qos = 1 })
+			ping:disconnect()
+		end)
 	end,
 	error = function(err)
 		print("ping MQTT client error:", err)
@@ -72,19 +79,33 @@ pong:on{
 	end,
 }
 
+local function add_client(cl)
+	-- add keep-alive timer
+	local timer = copas.addthread(function()
+		while cl do
+			copas.sleep(cl:check_keep_alive())
+		end
+	end)
+	-- add client to connect and listen
+	copas.addthread(function()
+		while cl do
+			local timeout = cl:step()
+			if not timeout then
+				cl = nil -- exiting, inform keep-alive timer
+				copas.wakeup(timer)
+			else
+				if timeout > 0 then
+					copas.sleep(timeout)
+				end
+			end
+		end
+	end)
+end
+
 print("running copas loop...")
 
-copas.addthread(function()
-	local ioloop = mqtt_ioloop.create{ sleep = 0.01, sleep_function = copas.sleep }
-	ioloop:add(ping)
-	ioloop:run_until_clients()
-end)
-
-copas.addthread(function()
-	local ioloop = mqtt_ioloop.create{ sleep = 0.01, sleep_function = copas.sleep }
-	ioloop:add(pong)
-	ioloop:run_until_clients()
-end)
+add_client(ping)
+add_client(pong)
 
 copas.loop()
 

@@ -55,22 +55,31 @@ client:on{
 	end
 }
 
--- run io loop for client until connection close
-copas.addthread(function()
-	print("running client in separated copas thread #1...")
-	mqtt.run_sync(client)
 
-	-- NOTE: in sync mode no automatic reconnect is working, but you may just wrap "mqtt.run_sync(client)" call in a loop like this:
-	-- while true do
-	-- 	mqtt.run_sync(client)
-	-- end
-end)
+local function add_client(cl)
+	-- add keep-alive timer
+	local timer = copas.addthread(function()
+		while cl do
+			copas.sleep(cl:check_keep_alive())
+		end
+	end)
+	-- add client to connect and listen
+	copas.addthread(function()
+		while cl do
+			local timeout = cl:step()
+			if not timeout then
+				cl = nil -- exiting
+				copas.wakeup(timer)
+			else
+				if timeout > 0 then
+					copas.sleep(timeout)
+				end
+			end
+		end
+	end)
+end
 
-copas.addthread(function()
-	print("execution of separated copas thread #2...")
-	copas.sleep(0.1)
-	print("thread #2 stopped")
-end)
 
+add_client(client)
 copas.loop()
 print("done, copas loop is stopped")
