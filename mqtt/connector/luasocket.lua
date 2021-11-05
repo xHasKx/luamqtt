@@ -7,16 +7,24 @@ luasocket.__index = luasocket
 luasocket.super = super
 
 local socket = require("socket")
+local _, ssl = pcall(require, "ssl")
 
 -- table with error messages that indicate a read timeout
 luasocket.timeout_errors = {
-	timeout = true,
+	timeout = true,   -- luasocket
+	wantread = true,  -- luasec
+	wantwrite = true, -- luasec
 }
 
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function luasocket:connect()
+	if self.secure_params then
+		assert(ssl, "LuaSec ssl module not found, secure connections unavailable")
+		assert(type(self.secure_params) == "table", "expecting .secure_params to be a table if given")
+	end
+
 	self:buffer_clear()  -- sanity
 	local sock = socket.tcp()
 	sock:settimeout(self.timeout)
@@ -26,13 +34,35 @@ function luasocket:connect()
 		return false, "socket.connect failed to connect to '"..tostring(self.host)..":"..tostring(self.port).."': "..err
 	end
 
+	if self.secure_params then
+		-- Wrap socket in TLS one
+		do
+			local wrapped
+			wrapped, err = ssl.wrap(sock, self.secure_params)
+			if not wrapped then
+				sock:close(self) -- close TCP level
+				return false, "ssl.wrap() failed: "..tostring(err)
+			end
+			-- replace sock with wrapped secure socket
+			sock = wrapped
+		end
+
+		-- do TLS/SSL initialization/handshake
+		sock:settimeout(self.timeout) -- sanity; again since its now a luasec socket
+		ok, err = sock:dohandshake()
+		if not ok then
+			sock:close()
+			return false, "ssl dohandshake failed: "..tostring(err)
+		end
+	end
+
 	self.sock = sock
 	return true
 end
 
 -- Shutdown network connection
 function luasocket:shutdown()
-	self.sock:shutdown()
+	self.sock:close()
 end
 
 -- Send data to network connection

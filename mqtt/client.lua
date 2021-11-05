@@ -179,13 +179,8 @@ function client_mt:__init(opts)
 	end
 
 	-- default connector
-	if a.connector == nil then
-		if a.secure then
-			a.connector = require("mqtt.connector.luasocket_ssl")
-		else
-			a.connector = require("mqtt.connector.luasocket")
-		end
-	end
+	a.connector = a.connector or require("mqtt.connector.luasocket")
+
 	-- validate connector content
 	assert(type(a.connector) == "table", "expecting connector to be a table")
 	assert(type(a.connector.connect) == "function", "expecting connector.connect to be a function")

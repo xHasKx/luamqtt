@@ -18,7 +18,6 @@ describe("MQTT lua library component test:", function()
 		require("mqtt.client")
 		require("mqtt.ioloop")
 		require("mqtt.connector.luasocket")
-		require("mqtt.connector.luasocket_ssl")
 		require("mqtt.connector.copas")
 		-- require("mqtt.connector.nginx") -- cannot load this one without nginx
 		require("mqtt.protocol4")
