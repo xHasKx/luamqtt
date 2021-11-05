@@ -5,65 +5,69 @@ describe("copas connector", function()
 	local copas = require("copas")
 	local prefix = "luamqtt/" .. tostring(math.floor(math.random()*1e13))
 
-	it("test", function()
-		-- NOTE: more about flespi tokens:
-		-- https://flespi.com/kb/tokens-access-keys-to-flespi-platform
-		local flespi_token = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"
+	for _, secure in ipairs { false, true } do
 
-		local client = mqtt.client{
-			uri = "mqtt.flespi.io",
-			clean = true,
-			username = flespi_token,
-			version = mqtt.v50,
+		it("test 'secure = "..tostring(secure).."'", function()
+			-- NOTE: more about flespi tokens:
+			-- https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+			local flespi_token = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"
 
-			-- connector = require("mqtt.connector.copas"),  -- will be auto-detected
-		}
+			local client = mqtt.client{
+				uri = "mqtt.flespi.io",
+				clean = true,
+				secure = secure,
+				username = flespi_token,
+				version = mqtt.v50,
 
-		local test_finished = false
+				-- connector = require("mqtt.connector.copas"),  -- will be auto-detected
+			}
 
-		client:on{
-			connect = function()
-				log:warn("client is now connected")
-				log:warn("client subscribing to topic '.../copas'")
-				assert(client:subscribe{topic=prefix.."/copas", qos=1, callback=function()
-					log:warn("client subscription to topic '.../copas' confirmed")
-					log:warn("client publishing 'copas test' to topic '.../copas' confirmed")
-					assert(client:publish{
-						topic = prefix.."/copas",
-						payload = "copas test",
-						qos = 1,
-					})
-				end})
-			end,
+			local test_finished = false
 
-			message = function(msg)
-				assert(client:acknowledge(msg))
-				if msg.topic == prefix.."/copas" and msg.payload == "copas test" then
-					log:warn("client received '%s' to topic '.../copas' confirmed", msg.payload)
-					assert(client:disconnect())
-					log:warn("disconnected now")
-					test_finished = true
+			client:on{
+				connect = function()
+					log:warn("client is now connected")
+					log:warn("client subscribing to topic '.../copas'")
+					assert(client:subscribe{topic=prefix.."/copas", qos=1, callback=function()
+						log:warn("client subscription to topic '.../copas' confirmed")
+						log:warn("client publishing 'copas test' to topic '.../copas' confirmed")
+						assert(client:publish{
+							topic = prefix.."/copas",
+							payload = "copas test",
+							qos = 1,
+						})
+					end})
+				end,
+
+				message = function(msg)
+					assert(client:acknowledge(msg))
+					if msg.topic == prefix.."/copas" and msg.payload == "copas test" then
+						log:warn("client received '%s' to topic '.../copas' confirmed", msg.payload)
+						assert(client:disconnect())
+						log:warn("disconnected now")
+						test_finished = true
+					end
 				end
-			end
-		}
+			}
 
-		copas.addthread(function()
-			while true do
-				local timeout = client:step()
-				if not timeout then
-					-- exited
-					return
+			copas.addthread(function()
+				while true do
+					local timeout = client:step()
+					if not timeout then
+						-- exited
+						return
+					end
+					if timeout > 0 then
+						copas.sleep(timeout)
+					end
 				end
-				if timeout > 0 then
-					copas.sleep(timeout)
-				end
-			end
+			end)
+
+			copas.loop()
+
+			assert.is_true(test_finished, "expecting mqtt client to finish its work")
 		end)
-
-		copas.loop()
-
-		assert.is_true(test_finished, "expecting mqtt client to finish its work")
-	end)
+	end
 end)
 
 -- vim: ts=4 sts=4 sw=4 noet ft=lua
