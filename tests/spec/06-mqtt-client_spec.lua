@@ -218,7 +218,7 @@ describe("correct arguments to mqtt.client constructor", function()
 			},
 			user_properties = {a="b", c="d"},
 			reconnect = 5,
-			connector = require("mqtt.luasocket"),
+			connector = require("mqtt.connector.luasocket"),
 			ssl_module = "ssl",
 		}
 	end)
@@ -745,7 +745,7 @@ describe("#copas connector", function()
 			username = flespi_token,
 			version = mqtt.v50,
 
-			connector = require("mqtt.luasocket-copas"),
+			connector = require("mqtt.connector.copas"),
 		}
 
 		local test_finished = false

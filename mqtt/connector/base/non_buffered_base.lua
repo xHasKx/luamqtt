@@ -8,7 +8,7 @@
 -- OpenResty) you should wrap the `send` handler in a lock to prevent a half-send
 -- message from being interleaved by another message send from another thread.
 --
--- @class mqtt.non_buffered_base
+-- @class mqtt.connector.base.non_buffered_base
 
 
 local non_buffered = {

@@ -2,7 +2,7 @@
 -- NOTE: you will need to install copas like this: luarocks install copas
 
 -- module table
-local super = require "mqtt.non_buffered_base"
+local super = require "mqtt.connector.base.non_buffered_base"
 local connector = setmetatable({}, super)
 connector.__index = connector
 connector.super = super

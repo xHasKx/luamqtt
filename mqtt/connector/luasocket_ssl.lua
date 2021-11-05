@@ -1,7 +1,7 @@
 -- DOC: http://w3.impa.br/~diego/software/luasocket/tcp.html
 
 -- module table
-local super = require "mqtt.luasocket"
+local super = require "mqtt.connector.luasocket"
 local luasocket_ssl = setmetatable({}, super)
 luasocket_ssl.__index = luasocket_ssl
 luasocket_ssl.super = super

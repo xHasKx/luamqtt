@@ -1,6 +1,6 @@
 -- module table
 -- thanks to @irimiab: https://github.com/xHasKx/luamqtt/issues/13
-local super = require "mqtt.non_buffered_base"
+local super = require "mqtt.connector.base.non_buffered_base"
 local ngxsocket = setmetatable({}, super)
 ngxsocket.__index = ngxsocket
 ngxsocket.super = super

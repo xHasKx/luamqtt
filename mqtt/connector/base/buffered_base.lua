@@ -14,10 +14,10 @@
 -- starting the send/receive. So for example for LuaSocket call `settimeout(0)`
 -- before receiving, and `settimeout(30)` before sending.
 --
--- @class mqtt.buffered_base
+-- @class mqtt.connector.base.buffered_base
 
 
-local super = require "mqtt.non_buffered_base"
+local super = require "mqtt.connector.base.non_buffered_base"
 local buffered = setmetatable({}, super)
 buffered.__index = buffered
 buffered.super = super

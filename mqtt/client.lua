@@ -104,7 +104,7 @@ client_mt.__index = client_mt
 --			Set to number value to provide reconnect timeout in seconds
 --			It's not recommended to use values < 3
 -- @tparam[opt] table opts.connector			connector table to open and send/receive packets over network connection.
---			default is require("mqtt.luasocket"), or require("mqtt.luasocket_ssl") if secure argument is set
+--			default is require("mqtt.connector") which tries to auto-detect.
 -- @tparam[opt="ssl"] string opts.ssl_module	module name for the luasec-compatible ssl module, default is "ssl"
 --			may be used in some non-standard lua environments with own luasec-compatible ssl module
 -- @treturn client_mt MQTT client instance table
@@ -181,9 +181,9 @@ function client_mt:__init(opts)
 	-- default connector
 	if a.connector == nil then
 		if a.secure then
-			a.connector = require("mqtt.luasocket_ssl")
+			a.connector = require("mqtt.connector.luasocket_ssl")
 		else
-			a.connector = require("mqtt.luasocket")
+			a.connector = require("mqtt.connector.luasocket")
 		end
 	end
 	-- validate connector content

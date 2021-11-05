@@ -1,7 +1,7 @@
 -- DOC: http://w3.impa.br/~diego/software/luasocket/tcp.html
 
 -- module table
-local super = require "mqtt.buffered_base"
+local super = require "mqtt.connector.base.buffered_base"
 local luasocket = setmetatable({}, super)
 luasocket.__index = luasocket
 luasocket.super = super
