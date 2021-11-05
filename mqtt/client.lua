@@ -93,7 +93,7 @@ client_mt.__index = client_mt
 -- @tparam[opt] string opts.username			username for authorization on MQTT broker
 -- @tparam[opt] string opts.password			password for authorization on MQTT broker; not acceptable in absence of username
 -- @tparam[opt=false] boolean,table opts.secure	use secure network connection, provided by luasec lua module;
---			set to true to select default params: { mode="client", protocol="tlsv1_2", verify="none", options="all" }
+--			set to true to select default params: { mode="client", protocol="any", verify="none", options={ "all","no_sslv2","no_sslv3","no_tlsv1" }
 --			or set to luasec-compatible table, for example with cafile="...", certificate="...", key="..."
 -- @tparam[opt] table opts.will					will message table with required fields { topic="...", payload="..." }
 --			and optional fields { qos=1...3, retain=true/false }
