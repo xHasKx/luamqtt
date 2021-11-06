@@ -13,6 +13,147 @@ describe("MQTT lua library", function()
 	end)
 end)
 
+
+
+describe("uri parsing:", function()
+
+	-- @param opts uri string, or options table
+	-- @param expected_conn expected connection table after parsing
+	-- @param expected_opts (optional) if given expected options table after parsing
+	local function try(opts, expected_conn, expected_opts)
+		-- reload client in test mode
+		_G._TEST = true
+		package.loaded["mqtt.client"] = nil
+		local client = require("mqtt.client")
+
+		if type(opts) == "string" then
+			opts = { uri = opts }
+		end
+		local conn = {
+			uri = opts.uri
+		}
+
+		client.__parse_connection_opts(opts, conn)
+
+		expected_conn.uri = opts.uri -- must remain the same anyway, so add here
+		conn.secure_params = nil  -- not validating those
+		assert.same(expected_conn, conn)
+
+		if expected_opts then
+			expected_opts.uri = opts.uri -- must remain the same anyway, so add here
+			assert.same(expected_opts, opts)
+		end
+		return conn, opts
+	end
+
+
+	describe("valid uri strings", function()
+
+		it("protocol+user+password+host+port", function()
+			try("mqtts://usr:pwd@host.com:123", {
+				-- expected conn
+				host = "host.com",
+				port = 123,
+				protocol = "mqtts",
+				secure = true,
+				ssl_module = "ssl",
+			}, {
+				-- expected opts
+				password = "pwd",
+				secure = true,  -- was set because of protocol
+				username = "usr",
+			})
+		end)
+
+		it("user+password+host+port", function()
+			try("usr:pwd@host.com:123", {
+				-- expected conn
+				host = "host.com",
+				port = 123,
+				protocol = "mqtt",
+				secure = false,
+				ssl_module = nil,
+			}, {
+				-- expected opts
+				password = "pwd",
+				secure = nil,
+				username = "usr",
+			})
+		end)
+
+		it("protocol+host+port", function()
+			try("mqtts://host.com:123", {
+				-- expected conn
+				host = "host.com",
+				port = 123,
+				protocol = "mqtts",
+				secure = true,
+				ssl_module = "ssl",
+			}, {
+				-- expected opts
+				secure = true,  -- was set because of protocol
+			})
+		end)
+
+		it("host+port", function()
+			try("host.com:123", {
+				-- expected conn
+				host = "host.com",
+				port = 123,
+				protocol = "mqtt",
+				secure = false,
+				ssl_module = nil,
+			}, {
+				-- expected opts
+			})
+		end)
+
+		it("host only", function()
+			try("host.com", {
+				-- expected conn
+				host = "host.com",
+				port = 1883,  -- default port
+				protocol = "mqtt",
+				secure = false,
+				ssl_module = nil,
+			}, {
+				-- expected opts
+			})
+		end)
+
+	end)
+
+
+	it("uri properties are overridden by specific properties", function()
+		try({
+			uri = "mqtt://usr:pwd@host.com:123",
+			host = "another.com",
+			port = 456,
+			protocol = "mqtt",
+			password = "king",
+			username = "arthur",
+		}, {
+			-- expected conn
+			host = "another.com",
+			port = 456,
+			protocol = "mqtt",
+			secure = false,
+			ssl_module = nil,
+		}, {
+			-- expected opts
+			host = "another.com",
+			port = 456,
+			protocol = "mqtt",
+			password = "king",
+			secure = false,
+			username = "arthur",
+		})
+	end)
+
+end)
+
+
+
 describe("invalid arguments to mqtt.client constructor", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
