@@ -24,6 +24,11 @@ non_buffered.__index = non_buffered
 non_buffered.signal_idle = {} -- read timeout occured, so we're idle need to come back later and try again
 non_buffered.signal_closed = {}	-- remote closed the connection
 
+--- Validate connection options.
+function non_buffered:shutdown() -- luacheck: ignore
+    error("method 'validate' on connector wasn't implemented")
+end
+
 --- Clears consumed bytes.
 -- Called by the mqtt client when the consumed bytes from the buffer are handled
 -- and can be cleared from the buffer.

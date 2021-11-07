@@ -7,6 +7,8 @@ luasocket.__index = luasocket
 luasocket.super = super
 
 local socket = require("socket")
+local validate_luasec = require("mqtt.connector.base.luasec")
+
 
 -- table with error messages that indicate a read timeout
 luasocket.timeout_errors = {
@@ -15,15 +17,22 @@ luasocket.timeout_errors = {
 	wantwrite = true, -- luasec
 }
 
+-- validate connection options
+function luasocket:validate()
+	if self.secure then
+		validate_luasec(self)
+	end
+end
+
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function luasocket:connect()
-	local ssl, _
-	if self.secure_params then
-		assert(type(self.secure_params) == "table", "expecting .secure_params to be a table if given")
-		_, ssl = pcall(require, self.ssl_module)
-		assert(ssl, "ssl_module '"..tostring(self.ssl_module).."' not found, secure connections unavailable")
+	self:validate()
+
+	local ssl
+	if self.secure then
+		ssl = require(self.ssl_module)
 	end
 
 	self:buffer_clear()  -- sanity

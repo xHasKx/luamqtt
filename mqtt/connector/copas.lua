@@ -9,18 +9,23 @@ connector.super = super
 
 local socket = require("socket")
 local copas = require("copas")
+local validate_luasec = require("mqtt.connector.base.luasec")
+
+
+-- validate connection options
+function connector:validate()
+	if self.secure then
+		assert(self.ssl_module == "ssl" or self.ssl_module == nil, "Copas connector only supports 'ssl' as 'ssl_module'")
+
+		validate_luasec(self)
+	end
+end
 
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function connector:connect()
-	if self.secure_params then
-		assert(type(self.secure_params) == "table", "expecting .secure_params to be a table if given")
-		assert(self.ssl_module == "ssl", "Copas connector only supports 'ssl_module' called 'ssl'")
-		local _, ssl = pcall(require, "ssl")
-		assert(ssl, "ssl_module 'ssl' not found, secure connections unavailable")
-	end
-
+	self:validate()
 	local sock = copas.wrap(socket.tcp(), self.secure_params)
 	sock:settimeout(self.timeout)
 
@@ -58,11 +63,10 @@ function connector:receive(size)
 		return data
 	end
 
-	-- note: signal_idle is not needed here since Copas takes care
-	-- of that. The read is non blocking, so a timeout is a real error and not
-	-- a signal to retry.
 	if err == "closed" then
 		return false, self.signal_closed
+	elseif err == "timout" then
+		return false, self.signal_idle
 	else
 		return false, err
 	end

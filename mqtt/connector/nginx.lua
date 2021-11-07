@@ -8,14 +8,23 @@ ngxsocket.super = super
 -- load required stuff
 local ngx_socket_tcp = ngx.socket.tcp
 
+
+-- validate connection options
+function ngxsocket:validate()
+	if self.secure then
+		assert(self.ssl_module == "ssl", "specifying custom ssl module when using Nginx connector is not supported")
+		assert(type(self.secure_params) == "table", "expecting .secure_params to be a table")
+		-- TODO: validate nginx stuff
+	end
+end
+
 -- Open network connection to .host and .port in conn table
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function ngxsocket:connect()
-	assert(self.ssl_module == "ssl", "specifying custom ssl module when using Nginx connector is not supported")
-
 	local sock = ngx_socket_tcp()
-	sock:settimeout(self.timeout * 1000) -- millisecs
+	-- set read-timeout to 'nil' to not timeout at all
+	assert(sock:settimeouts(self.timeout * 1000, self.timeout * 1000, nil)) -- millisecs
 	local ok, err = sock:connect(self.host, self.port)
 	if not ok then
 		return false, "socket:connect failed: "..err
@@ -45,11 +54,10 @@ function ngxsocket:receive(size)
 		return data
 	end
 
-	-- note: signal_idle is not needed here since OpenResty takes care
-	-- of that. The read is non blocking, so a timeout is a real error and not
-	-- a signal to retry.
 	if err == "closed" then
 		return false, self.signal_closed
+	elseif err == "timout" then
+		return false, self.signal_idle
 	else
 		return false, err
 	end

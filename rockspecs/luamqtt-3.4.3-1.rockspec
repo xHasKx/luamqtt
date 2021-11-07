@@ -33,6 +33,7 @@ build = {
 		["mqtt.log"] = "mqtt/log.lua",
 		["mqtt.connector.base.buffered_base"] = "mqtt/connector/base/buffered_base.lua",
 		["mqtt.connector.base.non_buffered_base"] = "mqtt/connector/base/non_buffered_base.lua",
+		["mqtt.connector.base.luasec"] = "mqtt/connector/base/luasec.lua",
 		["mqtt.connector.luasocket"] = "mqtt/connector/luasocket.lua",
 		["mqtt.connector.copas"] = "mqtt/connector/copas.lua",
 		["mqtt.connector.nginx"] = "mqtt/connector/nginx.lua",

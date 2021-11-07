@@ -183,6 +183,7 @@ function client_mt:__init(opts)
 
 	-- validate connector content
 	assert(type(a.connector) == "table", "expecting connector to be a table")
+	assert(type(a.connector.validate) == "function", "expecting connector.validate to be a function")
 	assert(type(a.connector.connect) == "function", "expecting connector.connect to be a function")
 	assert(type(a.connector.shutdown) == "function", "expecting connector.shutdown to be a function")
 	assert(type(a.connector.send) == "function", "expecting connector.send to be a function")
@@ -191,7 +192,9 @@ function client_mt:__init(opts)
 	assert(a.connector.signal_idle, "missing connector.signal_idle signal value")
 
 	-- validate connection properties
-	client_mt._parse_connection_opts(a, { uri = opts.uri })
+	local test_conn = setmetatable({ uri = opts.uri }, a.connector)
+	client_mt._parse_connection_opts(a, test_conn)
+	test_conn:validate()
 
 	-- will table content check
 	if a.will then
@@ -1234,17 +1237,7 @@ function client_mt._parse_connection_opts(opts, conn)
 	local secure = opts.secure
 	if secure then
 		conn.secure = true
-		if type(secure) == "table" then
-			conn.secure_params = secure
-		else
-			-- TODO: these defaults should go in the connectors, as they can differ per environment (eg. Nginx)
-			conn.secure_params = {
-				mode = "client",
-				protocol = "any",
-				verify = "none",
-				options = {"all", "no_sslv2", "no_sslv3", "no_tlsv1"},
-			}
-		end
+		conn.secure_params = secure ~= true and secure or nil
 		conn.ssl_module = opts.ssl_module or "ssl"
 		assert(conn.ssl_module == nil or type(conn.ssl_module) == "string", "expected ssl_module to be a string")
 	else
