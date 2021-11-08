@@ -13,6 +13,9 @@ local client = {}
 -- upon closing the connection
 -- connection object will have .close_reason (string)
 
+-- "shutdown": function(client_object)
+-- upon shutting down the client (diconnecting an no more reconnects)
+
 -- "connect": function(packet, client_object)
 -- upon a succesful connect, after receiving the CONNACK packet from the broker
 -- ???? => on a refused connect; if received CONNACK.rc ~= 0 when connecting
@@ -101,8 +104,8 @@ client_mt.__index = client_mt
 --			and optional fields { qos=1...3, retain=true/false }
 -- @tparam[opt=60] number opts.keep_alive		time interval for client to send PINGREQ packets to the server when network connection is inactive
 -- @tparam[opt=false] boolean opts.reconnect	force created MQTT client to reconnect on connection close.
---			Set to number value to provide reconnect timeout in seconds
---			It's not recommended to use values < 3
+--			Set to number value to provide reconnect timeout in seconds.
+--			It's not recommended to use values < 3. See also `client_mt:shutdown`.
 -- @tparam[opt] table opts.connector			connector table to open and send/receive packets over network connection.
 --			default is require("mqtt.connector") which tries to auto-detect.
 -- @tparam[opt="ssl"] string opts.ssl_module	module name for the luasec-compatible ssl module, default is "ssl"
@@ -230,6 +233,7 @@ function client_mt:__init(opts)
 		error = {},
 		close = {},
 		auth = {},
+		shutdown = {},
 	}
 	self._handling = {}
 	self._to_remove_handlers = {}
@@ -637,6 +641,19 @@ function client_mt:disconnect(rc, properties, user_properties)
 	-- now close connection
 	self:close_connection("connection closed by client")
 
+	return true
+end
+
+--- Shutsdown the client.
+-- Disconnects if still connected, and disables reconnecting.
+-- Raises the "shutdown" event
+-- @param see `client_mt:disconnect`.
+function client_mt:shutdown(rc, properties, user_properties)
+	log:debug("client '%s' shutting down", self.opts.id)
+	self.first_connect = false
+	self.opts.reconnect = false
+	self:disconnect(rc, properties, user_properties)
+	self:handle("shutdown", self)
 	return true
 end
 
