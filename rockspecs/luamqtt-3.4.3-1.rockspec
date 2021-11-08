@@ -38,5 +38,10 @@ build = {
 		["mqtt.connector.luasocket"] = "mqtt/connector/luasocket.lua",
 		["mqtt.connector.copas"] = "mqtt/connector/copas.lua",
 		["mqtt.connector.nginx"] = "mqtt/connector/nginx.lua",
+		["mqtt.loop.init"] = "mqtt/loop/init.lua",
+		["mqtt.loop.detect"] = "mqtt/loop/detect.lua",
+		["mqtt.loop.ioloop"] = "mqtt/loop/ioloop.lua",
+		["mqtt.loop.copas"] = "mqtt/loop/copas.lua",
+		["mqtt.loop.nginx"] = "mqtt/loop/nginx.lua",
 	},
 }

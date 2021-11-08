@@ -60,9 +60,6 @@ function mqtt.run_ioloop(...)
 	for i = 1, select("#", ...) do
 		local cl = select(i, ...)
 		loop:add(cl)
-		-- if type(cl) ~= "function" then -- TODO: remove
-		-- 	cl:start_connecting()
-		-- end
 	end
 	return loop:run_until_clients()
 end

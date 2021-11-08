@@ -1,6 +1,7 @@
 -- load mqtt module
 local mqtt = require("mqtt")
 local copas = require("copas")
+local add_client = require("mqtt.loop").add
 
 -- create mqtt client
 local client = mqtt.client{
@@ -54,30 +55,7 @@ local client = mqtt.client{
 
 print("created MQTT client", client)
 
-local function add_client(cl)
-	-- add keep-alive timer
-	local timer = copas.addthread(function()
-		while cl do
-			copas.sleep(cl:check_keep_alive())
-		end
-	end)
-	-- add client to connect and listen
-	copas.addthread(function()
-		while cl do
-			local timeout = cl:step()
-			if not timeout then
-				cl = nil -- exiting
-				copas.wakeup(timer)
-			else
-				if timeout > 0 then
-					copas.sleep(timeout)
-				end
-			end
-		end
-	end)
-end
-
-
 add_client(client)
 copas.loop()
+
 print("done, copas loop is stopped")

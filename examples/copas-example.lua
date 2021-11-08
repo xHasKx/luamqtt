@@ -2,6 +2,7 @@
 
 local mqtt = require("mqtt")
 local copas = require("copas")
+local add_client = require("mqtt.loop").add
 
 local num_pings = 10 -- total number of ping-pongs
 local delay = 1 -- delay between ping-pongs
@@ -76,29 +77,6 @@ local pong = mqtt.client{
 		end,
 	}, -- close 'on', event handlers
 }
-
-local function add_client(cl)
-	-- add keep-alive timer
-	local timer = copas.addthread(function()
-		while cl do
-			copas.sleep(cl:check_keep_alive())
-		end
-	end)
-	-- add client to connect and listen
-	copas.addthread(function()
-		while cl do
-			local timeout = cl:step()
-			if not timeout then
-				cl = nil -- exiting, inform keep-alive timer
-				copas.wakeup(timer)
-			else
-				if timeout > 0 then
-					copas.sleep(timeout)
-				end
-			end
-		end
-	end)
-end
 
 print("running copas loop...")
 

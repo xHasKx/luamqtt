@@ -2,9 +2,9 @@
 -- This is based on a.o. libraries already loaded, so 'require' this
 -- module as late as possible (after the other modules)
 local loops = setmetatable({
-	copas = "mqtt.connector.copas",
-	nginx = "mqtt.connector.nginx",
-	ioloop = "mqtt.connector.luasocket"
+	copas = "mqtt.loop.copas",
+	nginx = "mqtt.loop.nginx",
+	ioloop = "mqtt.loop.ioloop"
 }, {
 	__index = function()
 		error("failed to auto-detect connector to use, please set one explicitly", 2)
