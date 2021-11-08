@@ -1051,16 +1051,16 @@ end
 do
 	-- implict (re)connecting when reading
 	local function implicit_connect(self)
-		local opts = self.opts
+		local reconnect = self.opts.reconnect
 
-		if not self.first_connect and not opts.reconnect then
+		if not self.first_connect and not reconnect then
 			-- this would be a re-connect, but we're not supposed to auto-reconnect
 			log:debug("client '%s' was disconnected and not set to auto-reconnect", self.opts.id)
 			return false, "network connection is not opened"
 		end
 
 		-- should we wait for a timeout between retries?
-		local t_reconnect = (self.last_connect_time or 0) + (opts.reconnect or 0)
+		local t_reconnect = (self.last_connect_time or 0) + (reconnect or 0)
 		local t_now = os_time()
 		if t_reconnect > t_now then
 			-- were delaying before retrying, return remaining delay
@@ -1072,12 +1072,7 @@ do
 		local ok, err = self:start_connecting()
 		if not ok then
 			-- we failed to connect
-			if opts.reconnect then
-				-- set to auto-reconnect, report the configured retry delay
-				return opts.reconnect
-			end
-			-- not reconnecting, so just report the error
-			return ok, err
+			return reconnect, err
 		end
 
 		-- connected succesfully, but don't know how long it took, so return now
@@ -1104,6 +1099,7 @@ do
 	-- @return time after which to retry or nil+error
 	function client_mt:step()
 		local conn = self.connection
+		local reconnect = self.opts.reconnect
 
 		-- try and connect if not connected yet
 		if not conn then
@@ -1117,27 +1113,20 @@ do
 				return -1
 			elseif err == conn.signal_closed then
 				self:close_connection("connection closed by broker")
-				return false, err
+				return reconnect and 0, err
 			else
 				err = "failed to receive next packet: "..tostring(err)
 				log:error("client '%s' %s", self.opts.id, err)
 				self:handle("error", err, self)
 				self:close_connection("error")
-				return false, err
+				return reconnect and 0, err
 			end
 		end
 
 		local ok
 		ok, err = self:handle_received_packet(packet)
 		if not ok then
-			if not self.opts.reconnect then
-				-- no auto-reconnect, so return error
-				return ok, err
-			else
-				-- reconnect, return 0 to retry asap, the reconnect code
-				-- will then do the right-thing TM
-				return 0
-			end
+			return reconnect and 0, err
 		end
 
 		-- succesfully handled packed, maybe there is more, so retry asap
