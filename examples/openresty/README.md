@@ -1,29 +1,28 @@
 # openresty example
 
-Provided example is based on [the official Getting Started article](https://openresty.org/en/getting-started.html).
+Openresty is primarily a server, and accepts incoming connections.
+This means that running an MQTT client inside OpenResty will require
+some tricks.
 
-There is a two ways to run MQTT client in openresty:
+Since OpenResty sockets cannot pass a context boundary (without being
+closed), and we need a background task listening on the socket, we're
+creating a timer context, and then handle everything from within that
+context.
 
-* in synchronous mode
-* in ioloop mode
+In the timer we'll spawn a thread that will do the listening, and the
+timer itself will go in an endless loop to do the keepalives.
 
-# synchronous mode
+**Caveats**
 
-Started MQTT client is connecting, subscribing and waiting for incoming MQTT publications as you code it, without any magic asynchronous work.
-
-**Caveats**: The keep_alive feature will not work as there is no way for MQTT client to break its receive() operation in keep_alive interval and send PINGREQ packet to MQTT broker to maintain connection. It may lead to disconnects from MQTT broker side in absence of traffic in opened MQTT connection. After disconnecting from broker there is a way to reconnect using openresty's timer.
-
-# ioloop mode
-
-Started MQTT client is connecting, subscribing and waiting for incoming MQTT publications as you code it, maintaining established connection using PINGREQ packets to broker in configured keep_alive interval.
-
-**Caveats**: own luamqtt's ioloop is based on the ability of sockets to timeout its receive() operation, allowing MQTT client to awake in some configured interval and send PINGREQ packet to broker to maintain opened connection, but on every timeout the openresty is writing such in its error.log:
-
-    stream lua tcp socket read timed out, context: ngx.timer
+* Due to the socket limitation we cannot Publish anything from another
+  context. If you run into "bad request" errors on socket operations, you
+  are probably accessing a socket from another context.
+* In the long run, timers do leak memory, since timer contexts are
+  supposed to be short-lived. Consider implementing a secondary mechanism
+  to restart the timer-context and restart the client.
 
 # Files
 
-* [conf/nginx.conf](conf/nginx.conf): configuration for the nginx daemon to run lua script
-* [app/main-sync.lua](app/main-sync.lua): example lua script maintaining connection to some MQTT broker, in synchronous mode
-* [app/main-ioloop.lua](app/main-ioloop.lua): example lua script maintaining connection to some MQTT broker, in ioloop mode
-* start.sh, stop.sh, restart.sh: optional scripts to manage openresty instance
+* [conf/nginx.conf](conf/nginx.conf): configuration for the nginx daemon to run lua scripts
+* [app/luamqtt-example.lua](app/luamqtt-example.lua): example lua script maintaining connection
+* `start.sh`, `stop.sh`, `quit.sh`, `restart.sh`: optional scripts to manage the OpenResty instance

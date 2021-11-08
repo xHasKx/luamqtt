@@ -13,7 +13,7 @@ local ngx_socket_tcp = ngx.socket.tcp
 function ngxsocket:validate()
 	if self.secure then
 		assert(self.ssl_module == "ssl", "specifying custom ssl module when using Nginx connector is not supported")
-		assert(type(self.secure_params) == "table", "expecting .secure_params to be a table")
+		assert(self.secure_params == nil or type(self.secure_params) == "table", "expecting .secure_params to be a table if given")
 		-- TODO: validate nginx stuff
 	end
 end
@@ -24,7 +24,7 @@ end
 function ngxsocket:connect()
 	local sock = ngx_socket_tcp()
 	-- set read-timeout to 'nil' to not timeout at all
-	assert(sock:settimeouts(self.timeout * 1000, self.timeout * 1000, nil)) -- millisecs
+	sock:settimeouts(self.timeout * 1000, self.timeout * 1000, 24*60*60*1000) -- millisecs
 	local ok, err = sock:connect(self.host, self.port)
 	if not ok then
 		return false, "socket:connect failed: "..err
