@@ -164,6 +164,9 @@ function client_mt:__init(opts)
 		elseif key == "ssl_module" then
 			assert(value_type == "string", "expecting ssl_module to be a string")
 			a.ssl_module = value
+		elseif key == "on" then
+			assert(value_type == "table", "expecting 'on' to be a table with events and callbacks")
+			a.on = value
 		else
 			error("unexpected key in client opts: "..key.." = "..tostring(value))
 		end
@@ -246,6 +249,11 @@ function client_mt:__init(opts)
 	elseif a.version == 5 then
 		self._make_packet = make_packet5
 		self._parse_packet = parse_packet5
+	end
+
+	-- register event handlers
+	if a.on then
+		self:on(self.opts.on)
 	end
 
 	log:info("MQTT client '%s' created", a.id)
