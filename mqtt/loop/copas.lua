@@ -1,3 +1,8 @@
+--- Copas specific client handling module.
+-- Typically this module is not used directly, but through `mqtt.loop` when
+-- auto-detecting the environment.
+-- @module mqtt.loop.copas
+
 local copas = require "copas"
 local log = require "mqtt.log"
 
@@ -7,9 +12,10 @@ local _M = {}
 
 
 --- Add MQTT client to the Copas scheduler.
--- The client will automatically be removed after it exits.
--- @tparam cl client to add to the Copas scheduler
--- @return true on success or false and error message on failure
+-- The client will automatically be removed after it exits. It will set up a
+-- thread to call `Client:check_keep_alive`.
+-- @param cl mqtt-client to add to the Copas scheduler
+-- @return `true` on success or `false` and error message on failure
 function _M.add(cl)
 	if client_registry[cl] then
 		log:warn("MQTT client '%s' was already added to Copas", cl.opts.id)

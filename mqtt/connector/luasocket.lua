@@ -1,6 +1,25 @@
--- DOC: http://w3.impa.br/~diego/software/luasocket/tcp.html
+--- LuaSocket (and LuaSec) based connector.
+--
+-- This connector works with the blocking LuaSocket sockets. This connector uses
+-- `LuaSec` for TLS connections. This is the connector used for the included
+-- `mqtt.ioloop` scheduler.
+--
+-- When using TLS / MQTTS connections, the `secure` option passed to the `client`
+-- when creating it, can be the standard table of options as used by LuaSec
+-- for creating a context. When omitted the defaults will be;
+-- `{ mode="client", protocol="any", verify="none",
+--  options={ "all", "no_sslv2", "no_sslv3", "no_tlsv1" } }`
+--
+-- Caveats:
+--
+-- * since the client creates a long lived connection for reading, it returns
+--   upon receiving a packet, to call an event handler. The handler must return
+--   swiftly, since while the handler runs the socket will not be reading.
+--   Any task that might take longer than a few milliseconds should be off
+--   loaded to another task.
+--
+-- @module mqtt.connector.luasocket
 
--- module table
 local super = require "mqtt.connector.base.buffered_base"
 local luasocket = setmetatable({}, super)
 luasocket.__index = luasocket

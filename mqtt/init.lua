@@ -19,6 +19,12 @@ CONVENTIONS:
 -- @tfield string _VERSION luamqtt library version string
 -- @table mqtt
 -- @see mqtt.const
+-- @usage
+-- local client = mqtt.client {
+-- 	uri = "mqtts://aladdin:soopersecret@mqttbroker.com",
+-- 	clean = true,
+-- 	version = mqtt.v50,	-- specify constant for MQTT version
+-- }
 local mqtt = {}
 
 -- copy all values from const module
@@ -40,20 +46,24 @@ local ioloop = require("mqtt.ioloop")
 local ioloop_get = ioloop.get
 
 --- Create new MQTT client instance
--- @param ... Same as for mqtt.client.create(...)
--- @see mqtt.client.client_mt:__init
+-- @param ... Same as for `Client.create`(...)
+-- @see Client:__init
 function mqtt.client(...)
 	return client_create(...)
 end
 
---- Returns default ioloop instance
+--- Returns default `ioloop` instance. Shortcut to `Ioloop.get`.
 -- @function mqtt.get_ioloop
+-- @see Ioloop.get
 mqtt.get_ioloop = ioloop_get
 
---- Run default ioloop for given MQTT clients or functions.
--- @param ... MQTT clients or loop functions to add to ioloop
--- @see mqtt.ioloop.get
--- @see mqtt.ioloop.run_until_clients
+--- Run default `ioloop` for given MQTT clients or functions.
+-- Will not return until all clients/functions have exited.
+-- @param ... MQTT clients or loop functions to add to ioloop, see `Ioloop:add` for details on functions.
+-- @see Ioloop.get
+-- @see Ioloop.run_until_clients
+-- @usage
+-- mqtt.run_ioloop(client1, client2, func1)
 function mqtt.run_ioloop(...)
 	log:info("starting default ioloop instance")
 	local loop = ioloop_get()
@@ -64,27 +74,11 @@ function mqtt.run_ioloop(...)
 	return loop:run_until_clients()
 end
 
---- Run synchronous input/output loop for only one given MQTT client.
--- Provided client's connection will be opened.
--- Client reconnect feature will not work, and keep_alive too.
--- @param cl MQTT client instance to run
-function mqtt.run_sync(cl)
-	local ok, err = cl:start_connecting()
-	if not ok then
-		return false, err
-	end
-	while cl.connection do
-		ok, err = cl:_sync_iteration()
-		if not ok then
-			return false, err
-		end
-	end
-end
-
 
 --- Validates a topic with wildcards.
 -- @param t (string) wildcard topic to validate
 -- @return topic, or false+error
+-- @usage local t = assert(mqtt.validate_subscribe_topic("base/+/thermostat/#"))
 function mqtt.validate_subscribe_topic(t)
 	if type(t) ~= "string" then
 		return false, "not a string"
@@ -122,6 +116,7 @@ end
 --- Validates a topic without wildcards.
 -- @param t (string) topic to validate
 -- @return topic, or false+error
+-- @usage local t = assert(mqtt.validate_publish_topic("base/living/thermostat/setpoint"))
 function mqtt.validate_publish_topic(t)
 	if type(t) ~= "string" then
 		return false, "not a string"
@@ -160,30 +155,22 @@ function mqtt.compile_topic_pattern(t)
 end
 
 --- Parses wildcards in a topic into a table.
--- Options include:
---
--- - `opts.topic`: the wild-carded topic to match against (optional if `opts.pattern` is given)
---
--- - `opts.pattern`: the compiled pattern for the wild-carded topic (optional if `opts.topic`
+-- @tparam topic string incoming topic string
+-- @tparam table opts parsing options table
+-- @tparam string opts.topic the wild-carded topic to match against (optional if `opts.pattern` is given)
+-- @tparam string opts.pattern the compiled pattern for the wild-carded topic (optional if `opts.topic`
 --   is given). If not given then topic will be compiled and the result will be
 --   stored in this field for future use (cache).
---
--- - `opts.keys`: (optional) array of field names. The order must be the same as the
+-- @tparam array opts.keys array of field names. The order must be the same as the
 --   order of the wildcards in `topic`
---
--- Returned tables:
---
--- - `fields` table: the array part will have the values of the wildcards, in
+-- @return[1] `fields` table: the array part will have the values of the wildcards, in
 --   the order they appeared. The hash part, will have the field names provided
 --   in `opts.keys`, with the values of the corresponding wildcard. If a `#`
 --   wildcard was used, that one will be the last in the table.
---
--- - `varargs` table: will only be returned if the wildcard topic contained the
+-- @return[1] `varargs` table: will only be returned if the wildcard topic contained the
 --   `#` wildcard. The returned table is an array, with all segments that were
 --   matched by the `#` wildcard.
--- @param topic (string) incoming topic string (required)
--- @param opts (table) with options (required)
--- @return fields (table) + varargs (table or nil), or false+err on error.
+-- @return[2] false+err on error, eg. topic didn't match or pattern was invalid.
 -- @usage
 -- local opts = {
 --   topic = "homes/+/+/#",

@@ -33,14 +33,18 @@ local client = mqtt.client{
 			end
 
 			-- subscribe to test topic and publish message after it
-			assert(self:subscribe{ topic="luamqtt/#", qos=1, callback=function()
-				-- publish test message
-				assert(self:publish{
-					topic = "luamqtt/simpletest",
-					payload = "hello",
-					qos = 1
-				})
-			end})
+			assert(self:subscribe {
+				topic = "luamqtt/#",
+				qos = 1,
+				callback = function()
+					-- publish test message
+					assert(self:publish{
+						topic = "luamqtt/simpletest",
+						payload = "hello",
+						qos = 1
+					})
+				end
+			})
 		end,
 
 		message = function(msg, self)

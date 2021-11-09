@@ -1,3 +1,7 @@
+--- Nginx specific client handling module.
+-- Typically this module is not used directly, but through `mqtt.loop` when
+-- auto-detecting the environment.
+-- @module mqtt.loop.nginx
 
 local client_registry = {}
 
@@ -5,9 +9,10 @@ local _M = {}
 
 
 --- Add MQTT client to the Nginx environment.
--- The client will automatically be removed after it exits.
--- @tparam cl client to add
--- @return true on success or false and error message on failure
+-- The client will automatically be removed after it exits. It will set up a
+-- thread to call `Client:check_keep_alive`.
+-- @param client mqtt-client to add to the Nginx environment
+-- @return `true` on success or `false` and error message on failure
 function _M.add(client)
 	if client_registry[client] then
 		ngx.log(ngx.WARN, "MQTT client '%s' was already added to Nginx", client.opts.id)
@@ -46,7 +51,10 @@ function _M.add(client)
 
 	if not ok then
 		ngx.log(ngx.CRIT, "Failed to start timer-context for device '", client.id,"': ", err)
+		return false, "timer failed: " .. err
 	end
+
+	return true
 end
 
 

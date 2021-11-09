@@ -1,7 +1,27 @@
--- DOC: https://keplerproject.github.io/copas/
--- NOTE: you will need to install copas like this: luarocks install copas
+--- Copas based connector.
+--
+-- Copas is an advanced coroutine scheduler in pure-Lua. It uses LuaSocket
+-- under the hood, but in a non-blocking way. It also uses LuaSec for TLS
+-- based connections (like the `mqtt.connector.luasocket` one). And hence uses
+-- the same defaults for the `secure` option when creating the `client`.
+--
+-- Caveats:
+--
+-- * the `client` option `ssl_module` is not supported by the Copas connector,
+--   It will always use the module named `ssl`.
+--
+-- * multiple threads cannot send simultaneously (simple scenarios will just
+--   work)
+--
+-- * since the client creates a long lived connection for reading, it returns
+--   upon receiving a packet, to call an event handler. The handler must return
+--   swiftly, since while the handler runs the socket will not be reading.
+--   Any task that might take longer than a few milliseconds should be off
+--   loaded to another thread.
+--
+-- NOTE: you will need to install copas like this: `luarocks install copas`.
+-- @module mqtt.connector.copas
 
--- module table
 local super = require "mqtt.connector.base.non_buffered_base"
 local connector = setmetatable({}, super)
 connector.__index = connector

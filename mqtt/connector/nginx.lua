@@ -1,5 +1,30 @@
--- module table
+--- Nginx OpenResty co-sockets based connector.
+--
+-- This connector works with the non-blocking openresty sockets. Note that the
+-- secure setting haven't been implemented yet. It will simply use defaults
+-- when doing a TLS handshake.
+--
+-- Caveats:
+--
+-- * sockets cannot cross phase/context boundaries. So all client interaction
+--   must be done from the timer context in which the client threads run.
+--
+-- * multiple threads cannot send simultaneously (simple scenarios will just
+--   work)
+--
+-- * since the client creates a long lived connection for reading, it returns
+--   upon receiving a packet, to call an event handler. The handler must return
+--   swiftly, since while the handler runs the socket will not be reading.
+--   Any task that might take longer than a few milliseconds should be off
+--   loaded to another thread.
+--
+-- * Nginx timers should be short lived because memory is only released after
+--   the context is destroyed. In this case we're using the fro prolonged periods
+--   of time, so be aware of this and implement client restarts if required.
+--
 -- thanks to @irimiab: https://github.com/xHasKx/luamqtt/issues/13
+-- @module mqtt.connector.nginx
+
 local super = require "mqtt.connector.base.non_buffered_base"
 local ngxsocket = setmetatable({}, super)
 ngxsocket.__index = ngxsocket
