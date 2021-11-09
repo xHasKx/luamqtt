@@ -40,3 +40,4 @@ topics = {
 
 format = "markdown"
 plain = true
+style = true

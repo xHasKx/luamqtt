@@ -189,7 +189,7 @@ function mqtt.topic_match(topic, opts)
 		return false, "expected topic to be a string"
 	end
 	if type(opts) ~= "table" then
-		return false, "expected optionss to be a table"
+		return false, "expected options to be a table"
 	end
 	local pattern = opts.pattern
 	if not pattern then
