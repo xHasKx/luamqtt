@@ -19,6 +19,17 @@ function _M.add(client)
 		return false, "MQTT client was already added to Nginx"
 	end
 
+	do -- make mqtt device async for incoming packets
+		local handle_received_packet = client.handle_received_packet
+
+		-- replace packet handler; create a new thread for each packet received
+		client.handle_received_packet = function(mqttdevice, packet)
+			ngx.thread.spawn(handle_received_packet, mqttdevice, packet)
+			return true
+		end
+	end
+
+
 	local ok, err = ngx.timer.at(0, function()
 		-- spawn a thread to listen on the socket
 		local coro = ngx.thread.spawn(function()

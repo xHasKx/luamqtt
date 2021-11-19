@@ -23,6 +23,16 @@ function _M.add(cl)
 	end
 	client_registry[cl] = true
 
+	do -- make mqtt device async for incoming packets
+		local handle_received_packet = cl.handle_received_packet
+
+		-- replace packet handler; create a new thread for each packet received
+		cl.handle_received_packet = function(mqttdevice, packet)
+			copas.addthread(handle_received_packet, mqttdevice, packet)
+			return true
+		end
+	end
+
 	-- add keep-alive timer
 	local timer = copas.addthread(function()
 		while client_registry[cl] do
