@@ -162,6 +162,11 @@ function Client:__init(opts)
 	-- default connector
 	a.connector = a.connector or require("mqtt.connector")
 
+	-- default reconnect interval
+	if a.reconnect == true then
+		a.reconnect = 30
+	end
+
 	-- validate connector content
 	assert(type(a.connector) == "table", "expecting connector to be a table")
 	assert(type(a.connector.validate) == "function", "expecting connector.validate to be a function")
@@ -421,7 +426,7 @@ end
 -- @tparam string opts.topic				topic to unsubscribe
 -- @tparam[opt] table opts.properties		properties for unsubscribe operation
 -- @tparam[opt] table opts.user_properties	user properties for unsubscribe operation
--- @tparam[opt] function opts.callback		callback function to be called when the unsubscre is acknowledged by the broker
+-- @tparam[opt] function opts.callback		callback function to be called when the unsubscribe is acknowledged by the broker
 -- @return packet id on success or false and error message on failure
 function Client:unsubscribe(opts)
 	-- fetch and validate opts
