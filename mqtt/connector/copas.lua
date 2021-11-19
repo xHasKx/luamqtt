@@ -47,7 +47,7 @@ end
 function connector:connect()
 	self:validate()
 	local sock = copas.wrap(socket.tcp(), self.secure_params)
-	sock:settimeout(self.timeout)
+	sock:settimeouts(self.timeout, self.timeout, -1) -- no timout on reading
 
 	local ok, err = sock:connect(self.host, self.port)
 	if not ok then
@@ -55,6 +55,12 @@ function connector:connect()
 	end
 	self.sock = sock
 	return true
+end
+
+-- the packet was fully read, we can clear the bufer.
+function connector:buffer_clear()
+	-- since the packet is complete, we wait now indefinitely for the next one
+	self.sock:settimeouts(nil, nil, -1) -- no timeout on reading
 end
 
 -- Shutdown network connection
@@ -80,6 +86,9 @@ function connector:receive(size)
 	local sock = self.sock
 	local data, err = sock:receive(size)
 	if data then
+		-- bytes received, so change from idefinite timeout to regular until
+		-- packet is complete (see buffer_clear method)
+		self.sock:settimeouts(nil, nil, self.timeout)
 		return data
 	end
 

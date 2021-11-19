@@ -32,7 +32,7 @@ ngxsocket.super = super
 
 -- load required stuff
 local ngx_socket_tcp = ngx.socket.tcp
-
+local long_timeout = 7*24*60*60*1000 -- one week
 
 -- validate connection options
 function ngxsocket:validate()
@@ -49,7 +49,7 @@ end
 function ngxsocket:connect()
 	local sock = ngx_socket_tcp()
 	-- set read-timeout to 'nil' to not timeout at all
-	sock:settimeouts(self.timeout * 1000, self.timeout * 1000, 24*60*60*1000) -- millisecs
+	sock:settimeouts(self.timeout * 1000, self.timeout * 1000, long_timeout) -- no timeout on reading
 	local ok, err = sock:connect(self.host, self.port)
 	if not ok then
 		return false, "socket:connect failed: "..err
@@ -71,11 +71,19 @@ function ngxsocket:send(data)
 	return self.sock:send(data)
 end
 
+function ngxsocket:buffer_clear()
+	-- since the packet is complete, we wait now indefinitely for the next one
+	self.sock:settimeouts(self.timeout * 1000, self.timeout * 1000, long_timeout) -- no timeout on reading
+end
+
 -- Receive given amount of data from network connection
 function ngxsocket:receive(size)
 	local sock = self.sock
 	local data, err = sock:receive(size)
 	if data then
+		-- bytes received, so change from idefinite timeout to regular until
+		-- packet is complete (see buffer_clear method)
+		self.sock:settimeouts(self.timeout * 1000, self.timeout * 1000, self.timeout * 1000)
 		return data
 	end
 
