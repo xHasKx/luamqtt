@@ -47,6 +47,8 @@ end
 -- Store opened socket to conn table
 -- Returns true on success, or false and error text on failure
 function ngxsocket:connect()
+	-- TODO: add a lock for sending to prevent multiple threads from writing to
+	-- the same socket simultaneously (see the Copas connector)
 	local sock = ngx_socket_tcp()
 	-- set read-timeout to 'nil' to not timeout at all
 	sock:settimeouts(self.timeout * 1000, self.timeout * 1000, long_timeout) -- no timeout on reading

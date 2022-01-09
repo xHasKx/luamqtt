@@ -29,6 +29,7 @@ connector.super = super
 
 local socket = require("socket")
 local copas = require("copas")
+local new_lock = require("copas.lock").new
 local validate_luasec = require("mqtt.connector.base.luasec")
 
 
@@ -54,6 +55,7 @@ function connector:connect()
 		return false, "copas.connect failed: "..err
 	end
 	self.sock = sock
+	self.send_lock = new_lock(30) -- 30 second timeout
 	return true
 end
 
@@ -66,18 +68,29 @@ end
 -- Shutdown network connection
 function connector:shutdown()
 	self.sock:close()
+	self.send_lock:destroy()
 end
 
 -- Send data to network connection
 function connector:send(data)
+	-- cache locally in case lock/sock gets replaced while we were sending
+	local sock = self.sock
+	local lock = self.send_lock
+
+	local ok, err = lock:get()
+	if not ok then
+		return nil, "failed acquiring send_lock: "..tostring(err)
+	end
+
 	local i = 1
-	local err
 	while i < #data do
-		i, err = self.sock:send(data, i)
+		i, err = sock:send(data, i)
 		if not i then
+			lock:release()
 			return false, err
 		end
 	end
+	lock:release()
 	return true
 end
 
