@@ -510,7 +510,7 @@ describe("no_local flag for subscription: ", function()
 	end)
 end)
 
-describe("copas connector", function()
+describe("#copas connector", function()
 	local mqtt = require("mqtt")
 	local copas = require("copas")
 	local prefix = "luamqtt/" .. tostring(math.floor(math.random()*1e13))
