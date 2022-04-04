@@ -29,7 +29,14 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
 	if [ "$deps" == "1" ]; then
 		echo "installing deps for $ver"
 		if [ "$ver" == "-l5.1" ]; then
-			luarocks install luabitop > /dev/null
+			# luarocks install luabitop > /dev/null
+			echo "patching luabitop rockspec by hands..."
+			pushd . >/dev/null
+			cd "$env"
+			wget https://luarocks.org/manifests/luarocks/luabitop-1.0.2-3.rockspec
+			sed -i 's/git:/git+https:/' luabitop-1.0.2-3.rockspec
+			luarocks install ./luabitop-1.0.2-3.rockspec > /dev/null
+			popd >/dev/null
 		fi
 		luarocks install busted > /dev/null
 		if [ "$ver" != "-l5.4" ]; then
