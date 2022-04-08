@@ -1,0 +1,21 @@
+name: tests and coverage
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pip install hererocks
+
+      - name: check out repository code
+        uses: actions/checkout@v2
+
+      - name: run tests and collect code coverage
+        run: cd "${{ github.workspace }}" && COVERAGE=1 ./tests/run-for-all-lua-versions.sh download
+
+      - name: send code coverage
+        run: cd "${{ github.workspace }}" && source "local/hererocks/v-l5.1/bin/activate" && luacov-coveralls -v
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: test openwrt package build script
+        run: cd "${{ github.workspace }}" && ./openwrt/make-package-without-openwrt-sources.sh

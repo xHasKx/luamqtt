@@ -8,7 +8,7 @@ set -e
 ROOT="local/hererocks"
 mkdir -p $ROOT
 
-for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
+for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
 	env="$ROOT/v$ver"
 
 	deps=0
@@ -20,30 +20,52 @@ for ver in -l5.1 -l5.2 -l5.3 -j2.0 -j2.1; do
 
 	source "$env/bin/activate"
 
+	# busted flags
+	BFLAGS=""
+	if [ "$ver" == "-l5.4" ]; then
+		BFLAGS="--exclude-tags=copas"
+	fi
+
 	if [ "$deps" == "1" ]; then
 		echo "installing deps for $ver"
 		if [ "$ver" == "-l5.1" ]; then
-			luarocks install luabitop > /dev/null 2>&1
+			# luarocks install luabitop > /dev/null
+			echo "patching luabitop rockspec by hands..."
+			pushd . >/dev/null
+			cd "$env"
+			wget https://luarocks.org/manifests/luarocks/luabitop-1.0.2-3.rockspec
+			sed -i 's/git:/git+https:/' luabitop-1.0.2-3.rockspec
+			luarocks install ./luabitop-1.0.2-3.rockspec > /dev/null
+			popd >/dev/null
 		fi
-		luarocks install busted > /dev/null 2>&1
-		luarocks install copas > /dev/null 2>&1
+		luarocks install busted > /dev/null
+		if [ "$ver" != "-l5.4" ]; then
+			luarocks install copas > /dev/null
+		fi
 		if [ -d /usr/lib/x86_64-linux-gnu ]; then
 			# debian-based OS
 			[ -f /etc/lsb-release ] && . /etc/lsb-release
 			if [ "$DISTRIB_CODENAME" == "trusty" ]; then
 				# workaround for ubuntu trusty
 				echo "using non-latest luasec 0.7-1 on trusty"
-				luarocks install luasec 0.7-1 > /dev/null 2>&1
+				luarocks install luasec 0.7-1 > /dev/null
 			else
-				luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
+				luarocks install luasec OPENSSL_LIBDIR=/usr/lib/x86_64-linux-gnu > /dev/null
 			fi
 		else
-			luarocks install luasec > /dev/null 2>&1
+			luarocks install luasec > /dev/null
 		fi
 	fi
 
-	echo "running tests for $ver"
-	busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
+	if [ "$ver" == "-l5.1" -a "$COVERAGE" == "1" ]; then
+		echo "installing coveralls lib for $ver"
+		luarocks install luacov-coveralls
+		echo "running tests and collecting coverage for $ver"
+		busted -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' $BFLAGS tests/spec/*.lua
+	else
+		echo "running tests for $ver"
+		busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' $BFLAGS tests/spec/*.lua
+	fi
 
 done
 
@@ -52,7 +74,7 @@ if [ "$1" == "download" ]; then
 	env="$ROOT/v$ver"
 	source "$env/bin/activate"
 	echo "testing 'luarocks install luamqtt' for $ver"
-	luarocks install luamqtt >/dev/null 2>&1
-	busted tests/spec/*.lua
+	luarocks install luamqtt >/dev/null
+	busted $BFLAGS tests/spec/*.lua
 
 fi

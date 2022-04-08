@@ -1,8 +1,8 @@
 package = "luamqtt"
-version = "3.4.1-1"
+version = "3.4.2-3"
 source = {
-	url = "git://github.com/xHasKx/luamqtt",
-	tag = "v3.4.1",
+	url = "git+https://github.com/xHasKx/luamqtt.git",
+	tag = "v3.4.2",
 }
 description = {
 	summary = "luamqtt - Pure-lua MQTT v3.1.1 and v5.0 client",
@@ -15,7 +15,7 @@ No C-dependencies.
 	license = "MIT",
 }
 dependencies = {
-	"lua >= 5.1, < 5.4",
+	"lua >= 5.1, <= 5.4",
 	"luasocket >= 3.0rc1-2",
 }
 build = {

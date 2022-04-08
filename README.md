@@ -1,13 +1,11 @@
 # luamqtt - Pure-lua MQTT v3.1.1 and v5.0 client
 
-[![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](https://github.com/xHasKx/luamqtt/blob/master/LICENSE)
-[![Build Status](https://travis-ci.org/xHasKx/luamqtt.svg?tag=latest)](https://travis-ci.org/xHasKx/luamqtt)
-[![Coverage Status](https://coveralls.io/repos/github/xHasKx/luamqtt/badge.svg?branch=master)](https://coveralls.io/github/xHasKx/luamqtt?branch=master)
-[![Mentioned in Awesome MQTT](https://awesome.re/mentioned-badge.svg)](https://github.com/hobbyquaker/awesome-mqtt)
-
 ![luamqtt logo](./logo.svg)
 
-
+[![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](https://github.com/xHasKx/luamqtt/blob/master/LICENSE)
+[![tests](https://github.com/xHasKx/luamqtt/actions/workflows/tests-and-coverage.yml/badge.svg)](https://github.com/xHasKx/luamqtt/actions/workflows/tests-and-coverage.yml)
+[![Coverage Status](https://coveralls.io/repos/github/xHasKx/luamqtt/badge.svg?branch=master)](https://coveralls.io/github/xHasKx/luamqtt?branch=master)
+[![Mentioned in Awesome MQTT](https://awesome.re/mentioned-badge.svg)](https://github.com/hobbyquaker/awesome-mqtt)
 [![forthebadge](https://forthebadge.com/images/badges/powered-by-electricity.svg)](https://forthebadge.com)
 
 MQTT ( [http://mqtt.org/](http://mqtt.org/) ) client library for Lua.

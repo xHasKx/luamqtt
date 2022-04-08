@@ -24,7 +24,7 @@ local mqtt = {
 	v50 = 5,		-- supported protocol version, MQTT v5.0
 
 	-- mqtt library version
-	_VERSION = "3.4.1",
+	_VERSION = "3.4.2",
 }
 
 -- load required stuff

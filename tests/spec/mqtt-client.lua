@@ -85,6 +85,9 @@ describe("MQTT client", function()
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
 
+	-- initializing random numbers generator to make unique client_id's
+	math.randomseed(os.time())
+
 	-- test servers
 	local cases = {
 		{
@@ -142,7 +145,8 @@ describe("MQTT client", function()
 				username = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9",
 			}
 		},
-		--[[ -- NOTE: test.mosquitto.org is not working sometimes
+		-- NOTE: test.mosquitto.org is not working sometimes (or maybe they're treating this tests as a spam/ddos)
+		--[[
 		{
 			name = "test.mosquitto.org PLAIN",
 			args = {
@@ -169,6 +173,7 @@ describe("MQTT client", function()
 				clean = true,
 			}
 		},
+		--[[ -- NOTE: looks like mqtt.fluux.io is no more a public MQTT broker...
 		{
 			name = "mqtt.fluux.io PLAIN, MQTTv3.1.1",
 			args = {
@@ -205,6 +210,7 @@ describe("MQTT client", function()
 				version = mqtt.v50,
 			}
 		},
+		]]
 	}
 
 	local properties = {
@@ -504,7 +510,7 @@ describe("no_local flag for subscription: ", function()
 	end)
 end)
 
-describe("copas connector", function()
+describe("#copas connector", function()
 	local mqtt = require("mqtt")
 	local copas = require("copas")
 	local prefix = "luamqtt/" .. tostring(math.floor(math.random()*1e13))

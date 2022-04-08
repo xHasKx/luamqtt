@@ -806,8 +806,8 @@ end
 -- Returns packet on success or false and error message on failure
 function protocol5.parse_packet(read_func)
 	assert(type(read_func) == "function", "expecting read_func to be a function")
+	local byte1, byte2, err, len, data, rc, ok, packet, topic, packet_id
 	-- parse fixed header
-	local byte1, byte2, err, len, data, rc, ok, packet, topic, packet_id, rc
 	byte1, err = read_func(1)
 	if not byte1 then
 		return false, "failed to read first byte: "..err
