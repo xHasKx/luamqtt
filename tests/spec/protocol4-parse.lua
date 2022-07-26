@@ -2,7 +2,7 @@
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
 describe("MQTT v3.1.1 protocol: parsing packets", function()
-	local extract_hex = require("./tests/extract_hex")
+	local extract_hex = require("./tools/extract_hex")
 	local protocol = require("mqtt.protocol")
 	local protocol4 = require("mqtt.protocol4")
 

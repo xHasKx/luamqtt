@@ -12,7 +12,7 @@ describe("MQTT lua library component test:", function()
 	local tools
 	local protocol
 
-	local extract_hex = require("./tests/extract_hex")
+	local extract_hex = require("./tools/extract_hex")
 
 	it("modules presented", function()
 		tools = require("mqtt.tools")

@@ -26,7 +26,7 @@ local function make_read_func_hex(hex)
 	end
 end
 
-local extract_hex = require("./tests/extract_hex")
+local extract_hex = require("./tools/extract_hex")
 
 describe("MQTT v5.0 protocol: parsing packets: generic", function()
 	local protocol5 = require("mqtt.protocol5")
