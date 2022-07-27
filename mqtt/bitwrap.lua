@@ -1,5 +1,6 @@
 -- wrapper around BitOp module
 
+-- luacheck: globals jit
 if _VERSION == "Lua 5.1" or type(jit) == "table" then -- Lua 5.1 or LuaJIT (based on Lua 5.1)
 	return require("bit") -- custom module https://luarocks.org/modules/luarocks/luabitop
 elseif _VERSION == "Lua 5.2" then
