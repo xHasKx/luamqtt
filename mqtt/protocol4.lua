@@ -36,10 +36,10 @@ local make_header = protocol.make_header
 local check_qos = protocol.check_qos
 local check_packet_id = protocol.check_packet_id
 local combine = protocol.combine
-local parse_var_length = protocol.parse_var_length
 local packet_type = protocol.packet_type
 local packet_mt = protocol.packet_mt
 local connack_packet_mt = protocol.connack_packet_mt
+local start_parse_packet = protocol.start_parse_packet
 
 -- Create Connect Flags data, DOC: 3.1.2.3 Connect Flags
 local function make_connect_flags(args)
@@ -313,28 +313,12 @@ end
 -- Parse packet using given read_func
 -- Returns packet on success or false and error message on failure
 function protocol4.parse_packet(read_func)
-	assert(type(read_func) == "function", "expecting read_func to be a function")
-	-- parse fixed header
-	local byte1, byte2, err, len, data, rc
-	byte1, err = read_func(1)
-	if not byte1 then
-		return false, err
+	local ptype, flags, input = start_parse_packet(read_func)
+	if not ptype then
+		return false, flags
 	end
-	byte1 = str_byte(byte1, 1, 1)
-	local ptype = rshift(byte1, 4)
-	local flags = band(byte1, 0xF)
-	len, err = parse_var_length(read_func)
-	if not len then
-		return false, err
-	end
-	if len > 0 then
-		data, err = read_func(len)
-	else
-		data = ""
-	end
-	if not data then
-		return false, err
-	end
+	local byte1, byte2, rc
+	local data = input.read_func(input.available)
 	local data_len = data:len()
 	-- parse readed data according type in fixed header
 	if ptype == packet_type.CONNACK then

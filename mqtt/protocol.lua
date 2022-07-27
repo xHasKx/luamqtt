@@ -1,3 +1,6 @@
+--- MQTT generic protocol components module
+-- @module mqtt.protocol
+
 --[[
 
 Here is a generic implementation of MQTT protocols of all supported versions.
@@ -36,6 +39,7 @@ local tbl_concat = table.concat
 local unpack = unpack or table.unpack
 
 local string = require("string")
+local str_sub = string.sub
 local str_char = string.char
 local str_byte = string.byte
 local str_format = string.format
@@ -460,6 +464,59 @@ protocol.connack_packet_mt.__index = protocol.connack_packet_mt
 -- @treturn string Reason string according packet's rc field
 function protocol.connack_packet_mt:reason_string()
 	return connack_rc[self.rc]
+end
+
+--- Start parsing a new packet
+-- @tparam function read_func - function to read data from the network connection
+-- @treturn number packet_type
+-- @treturn number flags
+-- @treturn table input - a table with fields "read_func" and "available" representing a stream-like object
+-- to read already received packet data in chunks
+-- @return false and error_message on failure
+function protocol.start_parse_packet(read_func)
+	assert(type(read_func) == "function", "expecting read_func to be a function")
+	local byte1, err, len, data
+
+	-- parse fixed header
+	-- DOC[v3.1.1]: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html#_Toc442180832
+	-- DOC[v5.0]: https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901020
+	byte1, err = read_func(1)
+	if not byte1 then
+		return false, "failed to read first byte: "..err
+	end
+	byte1 = str_byte(byte1, 1, 1)
+	local ptype = rshift(byte1, 4)
+	local flags = band(byte1, 0xF)
+	len, err = parse_var_length(read_func)
+	if not len then
+		return false, "failed to parse remaining length: "..err
+	end
+
+	-- create packet parser instance (aka input)
+	local input = {1, available = 0} -- input data offset and available size
+	if len > 0 then
+		data, err = read_func(len)
+	else
+		data = ""
+	end
+	if not data then
+		return false, "failed to read packet data: "..err
+	end
+	input.available = data:len()
+
+	-- read data function for the input instance
+	input.read_func = function(size)
+		if size > input.available then
+			return false, "not enough data to read size: "..size
+		end
+		local off = input[1]
+		local res = str_sub(data, off, off + size - 1)
+		input[1] = off + size
+		input.available = input.available - size
+		return res
+	end
+
+	return ptype, flags, input
 end
 
 -- export module table
