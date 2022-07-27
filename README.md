@@ -187,3 +187,15 @@ Both protocols has full control packets support.
 # LICENSE
 
 Standard MIT License, see LICENSE file for full text
+
+# Version bump checklist
+
+* in file `./mqtt/init.lua`: change `_VERSION` table field
+* in file `./openwrt/make-package-without-openwrt-sources.sh`: change `Version: X.Y.Z-P` in $PKG_ROOT/control
+* in file `./openwrt/Makefile`: change `PKG_VERSION:=X.Y.Z` and maybe `PKG_RELEASE:=1`
+* in file `./luamqtt-X.Y.Z-P.rockspec`: change `version = "X.Y.Z-P"`, `tag = "vX.Y.Z"`, and rename the file itself
+* run `./tests/run-for-all-lua-versions.sh` and check output for errors
+* run `./openwrt/make-package-without-openwrt-sources.sh` and check output for errors
+* run `git commit`, `git tag vX.Y.Z`
+* upload renamed `./luamqtt-X.Y.Z-P.rockspec` to https://luarocks.org/upload
+* run `git push`, `git push --tags`
