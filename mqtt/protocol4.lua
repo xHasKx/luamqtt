@@ -18,10 +18,6 @@ local require = require
 local tostring = tostring
 local setmetatable = setmetatable
 
-local string = require("string")
-local str_sub = string.sub
-local str_byte = string.byte
-
 local bit = require("mqtt.bitwrap")
 local bor = bit.bor
 local band = bit.band
@@ -40,6 +36,8 @@ local packet_type = protocol.packet_type
 local packet_mt = protocol.packet_mt
 local connack_packet_mt = protocol.connack_packet_mt
 local start_parse_packet = protocol.start_parse_packet
+local parse_uint8 = protocol.parse_uint8
+local parse_uint16 = protocol.parse_uint16
 
 -- Create Connect Flags data, DOC: 3.1.2.3 Connect Flags
 local function make_connect_flags(args)
@@ -317,16 +315,13 @@ function protocol4.parse_packet(read_func)
 	if not ptype then
 		return false, flags
 	end
-	local byte1, byte2, rc
-	local data = input.read_func(input.available)
-	local data_len = data:len()
 	-- parse readed data according type in fixed header
 	if ptype == packet_type.CONNACK then
 		-- DOC: 3.2 CONNACK – Acknowledge connection request
-		if data_len ~= 2 then
+		if input.available ~= 2 then
 			return false, "expecting data of length 2 bytes"
 		end
-		byte1, byte2 = str_byte(data, 1, 2)
+		local byte1, byte2 = parse_uint8(input.read_func), parse_uint8(input.read_func)
 		local sp = (band(byte1, 0x1) ~= 0)
 		return setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
 	elseif ptype == packet_type.PUBLISH then
@@ -338,86 +333,86 @@ function protocol4.parse_packet(read_func)
 		-- DOC: 3.3.1.3 RETAIN
 		local retain = (band(flags, 0x1) ~= 0)
 		-- DOC: 3.3.2.1 Topic Name
-		if data_len < 2 then
+		if input.available < 2 then
 			return false, "expecting data of length at least 2 bytes"
 		end
-		byte1, byte2 = str_byte(data, 1, 2)
-		local topic_len = bor(lshift(byte1, 8), byte2)
-		if data_len < 2 + topic_len then
+		local topic_len = parse_uint16(input.read_func)
+		if input.available < topic_len then
 			return false, "malformed PUBLISH packet: not enough data to parse topic"
 		end
-		local topic = str_sub(data, 3, 3 + topic_len - 1)
+		local topic = input.read_func(topic_len)
 		-- DOC: 3.3.2.2 Packet Identifier
-		local packet_id, packet_id_len = nil, 0
+		local packet_id
 		if qos > 0 then
 			-- DOC: 3.3.2.2 Packet Identifier
-			if data_len < 2 + topic_len + 2 then
+			if input.available < 2 then
 				return false, "malformed PUBLISH packet: not enough data to parse packet_id"
 			end
-			byte1, byte2 = str_byte(data, 3 + topic_len, 3 + topic_len + 1)
-			packet_id = bor(lshift(byte1, 8), byte2)
-			packet_id_len = 2
+			packet_id = parse_uint16(input.read_func)
 		end
 		-- DOC: 3.3.3 Payload
 		local payload
-		if data_len > 2 + topic_len + packet_id_len then
-			payload = str_sub(data, 2 + topic_len + packet_id_len + 1)
+		if input.available > 0 then
+			payload = input.read_func(input.available)
 		end
 		return setmetatable({type=ptype, dup=dup, qos=qos, retain=retain, packet_id=packet_id, topic=topic, payload=payload}, packet_mt)
 	elseif ptype == packet_type.PUBACK then
 		-- DOC: 3.4 PUBACK – Publish acknowledgement
-		if data_len ~= 2 then
+		if input.available ~= 2 then
 			return false, "expecting data of length 2 bytes"
 		end
 		-- DOC: 3.4.2 Variable header
-		byte1, byte2 = str_byte(data, 1, 2)
-		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2)}, packet_mt)
+		local packet_id = parse_uint16(input.read_func)
+		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
 	elseif ptype == packet_type.PUBREC then
 		-- DOC: 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
-		if data_len ~= 2 then
+		if input.available ~= 2 then
 			return false, "expecting data of length 2 bytes"
 		end
 		-- DOC: 3.5.2 Variable header
-		byte1, byte2 = str_byte(data, 1, 2)
-		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2)}, packet_mt)
+		local packet_id = parse_uint16(input.read_func)
+		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
 	elseif ptype == packet_type.PUBREL then
 		-- DOC: 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
-		if data_len ~= 2 then
+		if input.available ~= 2 then
 			return false, "expecting data of length 2 bytes"
 		end
 		-- also flags should be checked to equals 2 by the server
 		-- DOC: 3.6.2 Variable header
-		byte1, byte2 = str_byte(data, 1, 2)
-		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2)}, packet_mt)
+		local packet_id = parse_uint16(input.read_func)
+		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
 	elseif ptype == packet_type.PUBCOMP then
 		-- 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
-		if data_len ~= 2 then
+		if input.available ~= 2 then
 			return false, "expecting data of length 2 bytes"
 		end
 		-- DOC: 3.7.2 Variable header
-		byte1, byte2 = str_byte(data, 1, 2)
-		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2)}, packet_mt)
+		local packet_id = parse_uint16(input.read_func)
+		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
 	elseif ptype == packet_type.SUBACK then
 		-- DOC: 3.9 SUBACK – Subscribe acknowledgement
-		if data_len < 3 then
+		if input.available < 3 then
 			return false, "expecting data of length at least 3 bytes"
 		end
 		-- DOC: 3.9.2 Variable header
 		-- DOC: 3.9.3 Payload
-		byte1, byte2 = str_byte(data, 1, 2)
-		rc = {str_byte(data, 3, data_len)}
-		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2), rc=rc}, packet_mt)
+		local packet_id = parse_uint16(input.read_func)
+		local rc = {} -- DOC: The payload contains a list of return codes.
+		while input.available > 0 do
+			rc[#rc + 1] = parse_uint8(input.read_func)
+		end
+		return setmetatable({type=ptype, packet_id=packet_id, rc=rc}, packet_mt)
 	elseif ptype == packet_type.UNSUBACK then
 		-- DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
-		if data_len ~= 2 then
+		if input.available ~= 2 then
 			return false, "expecting data of length 2 bytes"
 		end
 		-- DOC: 3.11.2 Variable header
-		byte1, byte2 = str_byte(data, 1, 2)
-		return setmetatable({type=ptype, packet_id=bor(lshift(byte1, 8), byte2)}, packet_mt)
+		local packet_id = parse_uint16(input.read_func)
+		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
 	elseif ptype == packet_type.PINGRESP then
 		-- DOC: 3.13 PINGRESP – PING response
-		if data_len ~= 0 then
+		if input.available ~= 0 then
 			return false, "expecting data of length 0 bytes"
 		end
 		return setmetatable({type=ptype}, packet_mt)
