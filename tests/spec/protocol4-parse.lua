@@ -175,7 +175,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
-					62 					-- packet type == 6 (PUBREL), flags == 2  (reserved bits: 0010)
+					62 					-- packet type == 6 (PUBREL), flags == 2 (reserved bits: 0010)
 					02 					-- variable length == 2 bytes
 						0001 			-- packet id of acknowledged PUBLISH packet
 				]]
@@ -188,6 +188,33 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
 					62 					-- packet type == 6 (PUBREL), flags == 2 (reserved bits: 0010)
+					02 					-- variable length == 2 bytes
+						1234 			-- packet id of acknowledged PUBLISH packet
+				]]
+			))
+		)
+	end)
+
+	it("PUBCOMP", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.PUBCOMP, packet_id=1
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					70 					-- packet type == 7 (PUBCOMP), flags == 0 (reserved bits: 0000)
+					02 					-- variable length == 2 bytes
+						0001 			-- packet id of acknowledged PUBLISH packet
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.PUBCOMP, packet_id=0x1234
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					70 					-- packet type == 7 (PUBCOMP), flags == 0 (reserved bits: 0000)
 					02 					-- variable length == 2 bytes
 						1234 			-- packet id of acknowledged PUBLISH packet
 				]]
