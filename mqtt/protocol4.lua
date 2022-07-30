@@ -18,6 +18,9 @@ local require = require
 local tostring = tostring
 local setmetatable = setmetatable
 
+local const = require("mqtt.const")
+local const_v311 = const.v311
+
 local bit = require("mqtt.bitwrap")
 local bor = bit.bor
 local band = bit.band
@@ -36,6 +39,8 @@ local packet_type = protocol.packet_type
 local packet_mt = protocol.packet_mt
 local connack_packet_mt = protocol.connack_packet_mt
 local start_parse_packet = protocol.start_parse_packet
+local parse_packet_connect_input = protocol.parse_packet_connect_input
+local parse_string = protocol.parse_string
 local parse_uint8 = protocol.parse_uint8
 local parse_uint16 = protocol.parse_uint16
 
@@ -316,7 +321,9 @@ function protocol4.parse_packet(read_func)
 		return false, flags
 	end
 	-- parse readed data according type in fixed header
-	if ptype == packet_type.CONNACK then
+	if ptype == packet_type.CONNECT then
+		return parse_packet_connect_input(input, const_v311)
+	elseif ptype == packet_type.CONNACK then
 		-- DOC: 3.2 CONNACK – Acknowledge connection request
 		if input.available ~= 2 then
 			return false, "expecting data of length 2 bytes"
@@ -419,6 +426,70 @@ function protocol4.parse_packet(read_func)
 	else
 		return false, "unexpected packet type received: "..tostring(ptype)
 	end
+end
+
+-- Continue parsing of the MQTT v3.1.1 CONNECT packet
+-- Internally called from the protocol.parse_packet_connect_input() function
+-- Returns packet on success or false and error message on failure
+function protocol4._parse_packet_connect_continue(input, packet)
+	-- DOC: 3.1.3 Payload
+	-- These fields, if present, MUST appear in the order Client Identifier, Will Topic, Will Message, User Name, Password
+	local read_func = input.read_func
+	local client_id, err
+
+	-- DOC: 3.1.3.1 Client Identifier
+	client_id, err = parse_string(read_func)
+	if not client_id then
+		return false, "failed to parse client_id: "..err
+	end
+	packet.client_id = client_id
+
+	local will = packet.will
+	if will then
+		-- 3.1.3.2 Will Topic
+		local will_topic, will_payload
+		will_topic, err = parse_string(read_func)
+		if not will_topic then
+			return false, "failed to parse will_topic: "..err
+		end
+		will.topic = will_topic
+
+		-- DOC: 3.1.3.3 Will Message
+		will_payload, err = parse_string(read_func)
+		if not will_payload then
+			return false, "failed to parse will_payload: "..err
+		end
+		will.payload = will_payload
+	end
+
+	if packet.username then
+		-- DOC: 3.1.3.4 User Name
+		local username
+		username, err = parse_string(read_func)
+		if not username then
+			return false, "failed to parse username: "..err
+		end
+		packet.username = username
+	else
+		packet.username = nil
+	end
+
+	if packet.password then
+		-- DOC: 3.1.3.5 Password
+		if not packet.username then
+			return false, "MQTT v3.1.1 does not allow providing password without username"
+		end
+		local password
+		password, err = parse_string(read_func)
+		if not password then
+			return false, "failed to parse password: "..err
+		end
+		packet.password = password
+	else
+		packet.password = nil
+	end
+
+	return setmetatable(packet, packet_mt)
 end
 
 -- export module table

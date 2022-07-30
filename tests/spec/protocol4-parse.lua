@@ -3,6 +3,7 @@
 
 describe("MQTT v3.1.1 protocol: parsing packets", function()
 	local extract_hex = require("./tools/extract_hex")
+	local mqtt = require("mqtt")
 	local protocol = require("mqtt.protocol")
 	local protocol4 = require("mqtt.protocol4")
 
@@ -38,6 +39,139 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.is_false(protocol4.parse_packet(make_read_func_hex("0304")))
 		assert.is_false(protocol4.parse_packet(make_read_func_hex("20")))
 		assert.is_false(protocol4.parse_packet(make_read_func_hex("20030000"))) -- CONNACK with invalid length
+	end)
+
+	it("CONNECT", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex("")))
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v311, clean = false, keep_alive = 0, client_id = "",
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					0C 							-- variable length == 12 bytes
+						0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+						04						-- protocol version: 4 (v3.1.1)
+						00						-- connect flags
+						0000					-- keep alive == 0
+						0000					-- client id length (0 bytes) and its string content (empty)
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v311, clean = true, keep_alive = 30, client_id = "",
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					0C 							-- variable length == 12 bytes
+						0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+						04						-- protocol version: 4 (v3.1.1)
+						02						-- connect flags: clean=true
+						001E					-- keep alive == 30
+						0000					-- client id length (0 bytes) and its string content (empty)
+				]]
+			))
+		)
+		-- client_id
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "test",
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					10 							-- variable length == 16 bytes
+						0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+						04						-- protocol version: 4 (v3.1.1)
+						00						-- connect flags
+						001E					-- keep alive == 30
+						0004 74657374			-- client id length (4 bytes) and its string content - "test"
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "",
+				will = { topic = "bye", payload = "bye", retain = false, qos = 0, },
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					16 							-- variable length == 22 bytes
+						0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+						04						-- protocol version: 4 (v3.1.1)
+						04						-- connect flags: clean=false, will=true
+						001E					-- keep alive == 30
+						0000					-- client id length (0 bytes) and its string content (empty)
+						0003 627965				-- will topic: length (3 bytes) and "bye" string
+						0003 627965				-- will message: length (3 bytes) and "bye" string
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "",
+				will = { topic = "bye", payload = "", retain = true, qos = 2, },
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					13 							-- variable length == 19 bytes
+						0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+						04						-- protocol version: 4 (v3.1.1)
+						34						-- connect flags: clean=false, will=true, will.qos=2, will.retain=true
+						001E					-- keep alive == 30
+						0000					-- client id length (0 bytes) and its string content (empty)
+						0003 627965				-- will topic: length (3 bytes) and "bye" string
+						0000					-- will message: length (0 bytes) and empty string
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "", username = "user",
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					12 							-- variable length == 18 bytes
+						0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+						04						-- protocol version: 4 (v3.1.1)
+						80						-- connect flags: clean=false, will=false, password=false, username=true
+						001E					-- keep alive == 30
+						0000					-- client id length (0 bytes) and its string content (empty)
+						0004 75736572			-- username length (4 bytes) and "user" string
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "", username = "user", password = "1234",
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					18 							-- variable length == 24 bytes
+						0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+						04						-- protocol version: 4 (v3.1.1)
+						C0						-- connect flags: clean=false, will=false, password=true, username=true
+						001E					-- keep alive == 30
+						0000					-- client id length (0 bytes) and its string content (empty)
+						0004 75736572			-- username length (4 bytes) and "user" string
+						0004 31323334			-- password length (4 bytes) and "1234" payload
+				]]
+			))
+		)
 	end)
 
 	it("CONNACK", function()

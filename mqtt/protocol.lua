@@ -44,6 +44,10 @@ local str_char = string.char
 local str_byte = string.byte
 local str_format = string.format
 
+local const = require("mqtt.const")
+local const_v311 = const.v311
+local const_v50 = const.v50
+
 local bit = require("mqtt.bitwrap")
 local bor = bit.bor
 local band = bit.band
@@ -580,6 +584,101 @@ function protocol.start_parse_packet(read_func)
 	end
 
 	return ptype, flags, input
+end
+
+--- Parse CONNECT packet with read_func
+-- @tparam function read_func - function to read data from the network connection
+-- @tparam[opt] number version - expected protocol version constant or nil to accept both versions
+-- @return packet on success or false and error message on failure
+function protocol.parse_packet_connect(read_func, version)
+	-- DOC[v3.1.1]: 3.1 CONNECT – Client requests a connection to a Server
+	-- DOC[v5.0]: 3.1 CONNECT – Connection Request
+	local ptype, flags, input = protocol.start_parse_packet(read_func)
+	if ptype ~= packet_type.CONNECT then
+		return false, "expecting CONNECT (1) packet type but got "..ptype
+	end
+	if flags ~= 0 then
+		return false, "expecting CONNECT flags to be 0 but got "..flags
+	end
+	return protocol.parse_packet_connect_input(input, version)
+end
+
+--- Parse CONNECT packet from already received stream-like packet input table
+-- @tparam table input - a table with fields "read_func" and "available" representing a stream-like object
+-- @tparam[opt] number version - expected protocol version constant or nil to accept both versions
+-- @return packet on success or false and error message on failure
+function protocol.parse_packet_connect_input(input, version)
+	-- DOC[v3.1.1]: 3.1 CONNECT – Client requests a connection to a Server
+	-- DOC[v5.0]: 3.1 CONNECT – Connection Request
+	local read_func = input.read_func
+	local err, protocol_name, protocol_ver, connect_flags, keep_alive
+
+	-- DOC: 3.1.2.1 Protocol Name
+	protocol_name, err = parse_string(read_func)
+	if not protocol_name then
+		return false, "failed to parse protocol name: "..err
+	end
+	if protocol_name ~= "MQTT" then
+		return false, "expecting 'MQTT' as protocol name but received '"..protocol_name.."'"
+	end
+
+	-- DOC[v3.1.1]: 3.1.2.2 Protocol Level
+	-- DOC[v5.0]: 3.1.2.2 Protocol Version
+	protocol_ver, err = parse_uint8(read_func)
+	if not protocol_ver then
+		return false, "failed to parse protocol level/version: "..err
+	end
+	if version ~= nil and version ~= protocol_ver then
+		return false, "expecting protocol version "..version.." but received "..protocol_ver
+	end
+
+	-- DOC: 3.1.2.3 Connect Flags
+	connect_flags, err = parse_uint8(read_func)
+	if not connect_flags then
+		return false, "failed to parse connect flags: "..err
+	end
+	if band(connect_flags, 0x1) ~= 0 then
+		return false, "reserved 1st bit in connect flags are set"
+	end
+	local clean = (band(connect_flags, 0x2) ~= 0)
+	local will = (band(connect_flags, 0x4) ~= 0)
+	local will_qos = band(rshift(connect_flags, 3), 0x3)
+	local will_retain = (band(connect_flags, 0x20) ~= 0)
+	local password_flag = (band(connect_flags, 0x40) ~= 0)
+	local username_flag = (band(connect_flags, 0x80) ~= 0)
+
+	-- DOC: 3.1.2.10 Keep Alive
+	keep_alive, err = parse_uint16(read_func)
+	if not keep_alive then
+		return false, "failed to parse keep alive field: "..err
+	end
+
+	-- continue parsing based on the protocol_ver
+
+	-- preparing common connect packet fields
+	local packet = {
+		type = packet_type.CONNECT,
+		version = protocol_ver,
+		clean = clean,
+		password = password_flag, -- NOTE: will be replaced
+		username = username_flag, -- NOTE: will be replaced
+		keep_alive = keep_alive,
+	}
+	if will then
+		packet.will = {
+			qos = will_qos,
+			retain = will_retain,
+			topic = "", -- NOTE: will be replaced
+			payload = "", -- NOTE: will be replaced
+		}
+	end
+	if protocol_ver == const_v311 then
+		return require("mqtt.protocol4")._parse_packet_connect_continue(input, packet)
+	elseif protocol_ver == const_v50 then
+		return require("mqtt.protocol5")._parse_packet_connect_continue(input, packet)
+	else
+		return false, "unexpected protocol version to continue parsing: "..protocol_ver
+	end
 end
 
 -- export module table
