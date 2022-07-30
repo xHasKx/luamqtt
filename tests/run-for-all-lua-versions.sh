@@ -75,6 +75,6 @@ if [ "$1" == "download" ]; then
 	source "$env/bin/activate"
 	echo "testing 'luarocks install luamqtt' for $ver"
 	luarocks install luamqtt >/dev/null
-	busted $BFLAGS tests/spec/*.lua
+	# busted $BFLAGS tests/spec/*.lua
 
 fi
