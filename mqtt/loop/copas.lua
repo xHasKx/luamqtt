@@ -25,23 +25,24 @@ function _M.add(cl)
 
 	do -- make mqtt device async for incoming packets
 		local handle_received_packet = cl.handle_received_packet
-
+		local count = 0
 		-- replace packet handler; create a new thread for each packet received
 		cl.handle_received_packet = function(mqttdevice, packet)
-			copas.addthread(handle_received_packet, mqttdevice, packet)
+			count = count + 1
+			copas.addnamedthread(handle_received_packet, cl.opts.id..":receive_"..count, mqttdevice, packet)
 			return true
 		end
 	end
 
 	-- add keep-alive timer
-	local timer = copas.addthread(function()
+	local timer = copas.addnamedthread(function()
 		while client_registry[cl] do
 			copas.sleep(cl:check_keep_alive())
 		end
-	end)
+	end, cl.opts.id .. ":keep_alive")
 
 	-- add client to connect and listen
-	copas.addthread(function()
+	copas.addnamedthread(function()
 		while client_registry[cl] do
 			local timeout = cl:step()
 			if not timeout then
@@ -54,7 +55,7 @@ function _M.add(cl)
 				end
 			end
 		end
-	end)
+	end, cl.opts.id .. ":listener")
 
 	return true
 end

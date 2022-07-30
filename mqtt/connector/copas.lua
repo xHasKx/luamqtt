@@ -48,6 +48,8 @@ end
 function connector:connect()
 	self:validate()
 	local sock = copas.wrap(socket.tcp(), self.secure_params)
+	copas.setsocketname("mqtt@"..self.host..":"..self.port, sock)
+
 	sock:settimeouts(self.timeout, self.timeout, -1) -- no timout on reading
 
 	local ok, err = sock:connect(self.host, self.port)

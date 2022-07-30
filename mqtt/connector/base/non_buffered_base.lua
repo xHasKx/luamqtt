@@ -26,7 +26,7 @@ non_buffered.signal_closed = {}	-- remote closed the connection
 
 --- Validate connection options.
 function non_buffered:shutdown() -- luacheck: ignore
-    error("method 'validate' on connector wasn't implemented")
+    error("method 'validate' on connector wasn't implemented") --TODO: comments and text doesn't match name
 end
 
 --- Clears consumed bytes.
