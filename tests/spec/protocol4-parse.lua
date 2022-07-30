@@ -194,7 +194,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				type=protocol.packet_type.CONNACK, sp=true, rc=0
 			},
 			protocol4.parse_packet(make_read_func_hex(
-				"20020100"
+				extract_hex("20 02 0100")
 			))
 		)
 		assert.are.same(
@@ -202,7 +202,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				type=protocol.packet_type.CONNACK, sp=false, rc=1
 			},
 			protocol4.parse_packet(make_read_func_hex(
-				"20020001"
+				extract_hex("20 02 0001")
 			))
 		)
 	end)
@@ -355,6 +355,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			))
 		)
 	end)
+	-- TODO: SUBSCRIBE, UNSUBSCRIBE, PINGREQ, DISCONNECT
 
 	it("SUBACK", function()
 		assert.are.same(
