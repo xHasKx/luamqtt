@@ -190,7 +190,7 @@ Standard MIT License, see LICENSE file for full text
 
 # Version bump checklist
 
-* in file `./mqtt/init.lua`: change `_VERSION` table field
+* in file `./mqtt/const.lua`: change `_VERSION` table field
 * in file `./openwrt/make-package-without-openwrt-sources.sh`: change `Version: X.Y.Z-P` in $PKG_ROOT/control
 * in file `./openwrt/Makefile`: change `PKG_VERSION:=X.Y.Z` and maybe `PKG_RELEASE:=1`
 * in file `./luamqtt-X.Y.Z-P.rockspec`: change `version = "X.Y.Z-P"`, `tag = "vX.Y.Z"`, and rename the file itself
