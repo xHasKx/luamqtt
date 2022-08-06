@@ -23,6 +23,7 @@ build = {
 	modules = {
 		mqtt = "mqtt/init.lua",
 		["mqtt.client"] = "mqtt/client.lua",
+		["mqtt.const"] = "mqtt/const.lua",
 		["mqtt.ioloop"] = "mqtt/ioloop.lua",
 		["mqtt.bit53"] = "mqtt/bit53.lua",
 		["mqtt.bitwrap"] = "mqtt/bitwrap.lua",
