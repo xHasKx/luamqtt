@@ -17,7 +17,7 @@
 --   upon receiving a packet, to call an event handler. The handler must return
 --   swiftly, since while the handler runs the socket will not be reading.
 --   Any task that might take longer than a few milliseconds should be off
---   loaded to another thread.
+--   loaded to another thread (the Copas-loop will take care of this).
 --
 -- NOTE: you will need to install copas like this: `luarocks install copas`.
 -- @module mqtt.connector.copas

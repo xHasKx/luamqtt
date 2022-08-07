@@ -15,7 +15,7 @@ to build on, which to pick depends on the environment.
 
 The main question is what event/io loop mechanism does your implementation have?
 
-* a single main (co)routione that runs, and doesn't yield when doing network IO. In this case
+* a single main (co)routine that runs, and doesn't yield when doing network IO. In this case
   you should use the `buffered_base` and read on sockets with a `0` timeout. Check the
   `mqtt.connector.luasocket` implementation for an example (this is what `ioloop` uses).
 

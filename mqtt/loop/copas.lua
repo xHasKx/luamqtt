@@ -12,6 +12,8 @@ local _M = {}
 
 
 --- Add MQTT client to the Copas scheduler.
+-- Each received packet will be handled by a new thread, such that the thread
+-- listening on the socket can return immediately.
 -- The client will automatically be removed after it exits. It will set up a
 -- thread to call `Client:check_keep_alive`.
 -- @param cl mqtt-client to add to the Copas scheduler
