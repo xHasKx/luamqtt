@@ -167,9 +167,9 @@ describe("topics", function()
 				pattern = nil,
 				keys = { "hello", "world"}
 			}
-			local ok, err = mqtt.topic_match(nil, opts)
-			assert.is_false(ok)
-			assert.is_string(err)
+			assert.has.error(function()
+				mqtt.topic_match(nil, opts)
+			end, "expected topic to be a string, got: nil")
 		end)
 
 		it("wildcard topic or pattern is required", function()
@@ -178,9 +178,9 @@ describe("topics", function()
 				pattern = nil,
 				keys = { "hello", "world"}
 			}
-			local ok, err = mqtt.topic_match("hello/world", opts)
-			assert.is_false(ok)
-			assert.is_string(err)
+			assert.has.error(function()
+				mqtt.topic_match("hello/world", opts)
+			end, "either 'opts.topic' or 'opts.pattern' must set")
 		end)
 
 		it("pattern must match", function()
