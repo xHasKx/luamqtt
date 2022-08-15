@@ -7,17 +7,17 @@ local github_repo_name = "luamqtt"
 package = package_name
 version = package_version.."-"..rockspec_revision
 source = {
-   url = "git+https://github.com/"..github_account_name.."/"..github_repo_name..".git",
-   branch = (package_version == "scm") and "master" or nil,
-   tag = (package_version ~= "scm") and "v"..package_version or nil,
+	url = "git+https://github.com/"..github_account_name.."/"..github_repo_name..".git",
+	branch = (package_version == "scm") and "master" or nil,
+	tag = (package_version ~= "scm") and "v"..package_version or nil,
 }
 description = {
 	summary = "luamqtt - Pure-lua MQTT v3.1.1 and v5.0 client",
 	detailed = [[
-		luamqtt - MQTT v3.1.1 and v5.0 client library written in pure-lua.
-		The only dependency is luasocket to establish network connection to MQTT broker.
-		No C-dependencies.
-	]],
+luamqtt - MQTT v3.1.1 and v5.0 client library written in pure-lua.
+The only dependency is luasocket to establish network connection to MQTT broker.
+No C-dependencies.
+]],
 	homepage = "https://github.com/"..github_account_name.."/"..github_repo_name,
 	license = "MIT",
 }
