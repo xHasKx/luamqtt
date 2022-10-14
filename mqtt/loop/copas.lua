@@ -39,7 +39,10 @@ function _M.add(cl)
 	-- add keep-alive timer
 	local timer = copas.addnamedthread(function()
 		while client_registry[cl] do
-			copas.sleep(cl:check_keep_alive())
+			local next_check = cl:check_keep_alive()
+			if next_check > 0 then
+				copas.sleep(next_check)
+			end
 		end
 	end, cl.opts.id .. ":keep_alive")
 
