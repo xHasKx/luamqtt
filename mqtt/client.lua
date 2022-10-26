@@ -898,7 +898,7 @@ end
 --         if not my_client then
 --             return -- exiting, client was destroyed
 --         end
---         copas.sleep(my_client:check_keep_alive())
+--         copas.pause(my_client:check_keep_alive())
 --     end
 -- end)
 function Client:check_keep_alive()

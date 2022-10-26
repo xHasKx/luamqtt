@@ -29,7 +29,7 @@ local ping = mqtt.client{
 			-- code below does both, sleeping, and writing (implicit in 'publish')
 			copas.addthread(function()
 				for i = 1, num_pings do
-					copas.sleep(delay)
+					copas.pause(delay)
 					print("ping", i)
 					assert(self:publish{ topic = "luamqtt/copas-ping/"..suffix, payload = "ping"..i, qos = 1 })
 				end

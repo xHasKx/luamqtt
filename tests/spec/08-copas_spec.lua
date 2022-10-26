@@ -58,7 +58,7 @@ describe("copas connector", function()
 						return
 					end
 					if timeout > 0 then
-						copas.sleep(timeout)
+						copas.pause(timeout)
 					end
 				end
 			end)

@@ -41,7 +41,7 @@ function _M.add(cl)
 		while client_registry[cl] do
 			local next_check = cl:check_keep_alive()
 			if next_check > 0 then
-				copas.sleep(next_check)
+				copas.pause(next_check)
 			end
 		end
 	end, cl.opts.id .. ":keep_alive")
@@ -56,7 +56,7 @@ function _M.add(cl)
 				copas.wakeup(timer)
 			else
 				if timeout > 0 then
-					copas.sleep(timeout)
+					copas.pause(timeout)
 				end
 			end
 		end
