@@ -157,9 +157,9 @@ function protocol.make_var_length_nonzero(value)
 	return make_var_length(value)
 end
 
---- Read string using given read_func function
+--- Read string (or bytes) using given read_func function
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn string parsed string on success
+-- @treturn string parsed string (or bytes) on success
 -- @return OR false and error message on failure
 function protocol.parse_string(read_func)
 	assert(type(read_func) == "function", "expecting read_func to be a function")
@@ -167,10 +167,10 @@ function protocol.parse_string(read_func)
 	if not len then
 		return false, "failed to read string length: "..err
 	end
-	-- convert len string from 2-byte integer
+	-- convert string length from 2 bytes
 	local byte1, byte2 = str_byte(len, 1, 2)
 	len = bor(lshift(byte1, 8), byte2)
-	-- and return string if parsed length
+	-- and return string/bytes of the parsed length
 	return read_func(len)
 end
 local parse_string = protocol.parse_string
