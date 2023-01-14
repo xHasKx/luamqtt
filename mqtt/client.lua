@@ -248,23 +248,23 @@ end
 -- @tparam function events.connect				`function(connack_packet, client_obj)`<br/>
 -- 				After a connect attempt, after receiving the CONNACK packet from the broker.
 -- 				check `connack_packet.rc == 0` for a succesful connect.
--- @tparam functon events.error					`function(errmsg, client_obj [, packet])`<br/>
+-- @tparam function events.error					`function(errmsg, client_obj [, packet])`<br/>
 -- 												on errors, optional `packet` is only provided if the
 --												received `CONNACK.rc ~= 0` when connecting.
--- @tparam functon events.close					`function(connection_obj, client_obj)`<br/>
+-- @tparam function events.close					`function(connection_obj, client_obj)`<br/>
 -- 												upon closing the connection. `connection_obj.close_reason`
 --												(string) will hold the close reason.
--- @tparam functon events.shutdown				`function(client_obj)`<br/>
+-- @tparam function events.shutdown				`function(client_obj)`<br/>
 -- 												upon shutting down the client (diconnecting an no more reconnects).
--- @tparam functon events.subscribe				`function(suback_packet, client_obj)`<br/>
+-- @tparam function events.subscribe				`function(suback_packet, client_obj)`<br/>
 -- 												upon a succesful subscription, after receiving the SUBACK packet from the broker
--- @tparam functon events.unsubscribe			`function(unsuback_packet, client_obj)`<br/>
+-- @tparam function events.unsubscribe			`function(unsuback_packet, client_obj)`<br/>
 -- 												upon a succesful unsubscription, after receiving the UNSUBACK packet from the broker
--- @tparam functon events.message				`function(publish_packet, client_obj)`<br/>
+-- @tparam function events.message				`function(publish_packet, client_obj)`<br/>
 -- 												upon receiving a PUBLISH packet from the broker
--- @tparam functon events.acknowledge			`function(ack_packet, client_obj)`<br/>
+-- @tparam function events.acknowledge			`function(ack_packet, client_obj)`<br/>
 -- 												upon receiving a PUBACK or PUBREC packet from the broker
--- @tparam functon events.auth					`function(auth_packet, client_obj)`<br/>
+-- @tparam function events.auth					`function(auth_packet, client_obj)`<br/>
 -- 												upon receiving an AUTH packet
 -- @usage
 -- client:on {
