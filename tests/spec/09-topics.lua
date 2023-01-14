@@ -144,6 +144,16 @@ describe("topics", function()
 
 	describe("pattern compiler & matcher", function()
 
+		it("escapes Lua pattern magic characters", function()
+			local t = mqtt.compile_topic_pattern("+/dash-dash/+/+/back\\slash/+")
+			assert.equal("^([^/]-)/dash%-dash/([^/]-)/([^/]-)/back%\\slash/([^/]-)$", t)
+			local h, m, d, w = ("hello/dash-dash/my/dear/back\\slash/world"):match(t)
+			assert.equal("hello", h)
+			assert.equal("my", m)
+			assert.equal("dear", d)
+			assert.equal("world", w)
+		end)
+
 		it("basic parsing works", function()
 			local opts = {
 				topic = "+/+",

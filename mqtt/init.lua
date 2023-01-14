@@ -148,8 +148,24 @@ function mqtt.compile_topic_pattern(t)
 	if t == "#" then
 		t = "(.+)" -- matches anything at least 1 character long
 	else
-		t = t:gsub("#","(.-)")  -- match anything, can be empty
-		t = t:gsub("%+","([^/]-)") -- match anything between '/', can be empty
+		-- first replace valid mqtt '+' and '#' with placeholders
+		local hash = string.char(1)
+		t = t:gsub("/#$", "/" .. hash)
+		local plus = string.char(2)
+		t = t:gsub("^%+$", plus)
+		t = t:gsub("^%+/", plus .. "/")
+		local c = 1
+		while c ~= 0 do -- must loop, since adjacent patterns can overlap
+			t, c = t:gsub("/%+/", "/" .. plus .. "/")
+		end
+		t = t:gsub("/%+$", "/" .. plus)
+
+		-- now escape any special Lua pattern characters
+		t = t:gsub("[%\\%(%)%.%%%+%-%*%?%[%^%$]", function(cap) return "%"..cap end)
+
+		-- finally replace placeholders with captures
+		t = t:gsub(hash,"(.-)")  -- match anything, can be empty
+		t = t:gsub(plus,"([^/]-)") -- match anything between '/', can be empty
 	end
 	return "^"..t.."$"
 end
