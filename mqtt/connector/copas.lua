@@ -10,8 +10,7 @@
 -- * the `client` option `ssl_module` is not supported by the Copas connector,
 --   It will always use the module named `ssl`.
 --
--- * multiple threads cannot send simultaneously (simple scenarios will just
---   work)
+-- * multiple threads can send simultaneously (sending is wrapped in a lock)
 --
 -- * since the client creates a long lived connection for reading, it returns
 --   upon receiving a packet, to call an event handler. The handler must return

@@ -1,7 +1,7 @@
 --- Auto detect the IO loop to use.
 -- Interacting with the supported IO loops (ioloop, copas, and nginx) requires
 -- specific implementations to get it right.
--- This module is will auto-detect the environment and return the proper
+-- This module will auto-detect the environment and return the proper
 -- module from;
 --
 -- * `mqtt.loop.ioloop`
