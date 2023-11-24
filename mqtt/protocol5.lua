@@ -23,8 +23,6 @@ local unpack = table.unpack or unpack
 local tbl_sort = table.sort
 
 local string = require("string")
-local str_sub = string.sub
-local str_byte = string.byte
 local str_char = string.char
 local fmt = string.format
 
@@ -58,6 +56,7 @@ local combine = protocol.combine
 local packet_type = protocol.packet_type
 local packet_mt = protocol.packet_mt
 local connack_packet_mt = protocol.connack_packet_mt
+local start_parse_packet = protocol.start_parse_packet
 
 -- Returns true if given value is a valid Retain Handling option, DOC: 3.8.3.1 Subscription Options
 local function check_retain_handling(val)
@@ -805,41 +804,13 @@ end
 -- Parse packet using given read_func
 -- Returns packet on success or false and error message on failure
 function protocol5.parse_packet(read_func)
-	assert(type(read_func) == "function", "expecting read_func to be a function")
-	local byte1, byte2, err, len, data, rc, ok, packet, topic, packet_id
-	-- parse fixed header
-	byte1, err = read_func(1)
-	if not byte1 then
-		return false, "failed to read first byte: "..err
+	local ptype, flags, input = start_parse_packet(read_func)
+	if not ptype then
+		return false, flags
 	end
-	byte1 = str_byte(byte1, 1, 1)
-	local ptype = rshift(byte1, 4)
-	local flags = band(byte1, 0xF)
-	len, err = parse_var_length(read_func)
-	if not len then
-		return false, "failed to parse remaining length: "..err
-	end
-	local input = {1, available = 0} -- input data offset and available size
-	if len > 0 then
-		data, err = read_func(len)
-	else
-		data = ""
-	end
-	if not data then
-		return false, "failed to read packet data: "..err
-	end
-	input.available = data:len()
-	-- read data function
-	local function read_data(size)
-		if size > input.available then
-			return false, "not enough data to read size: "..size
-		end
-		local off = input[1]
-		local res = str_sub(data, off, off + size - 1)
-		input[1] = off + size
-		input.available = input.available - size
-		return res
-	end
+	local byte1, byte2, err, rc, ok, packet, topic, packet_id
+	local read_data = input.read_func
+
 	-- parse readed data according type in fixed header
 	if ptype == packet_type.CONNACK then
 		-- DOC: 3.2 CONNACK – Connect acknowledgement

@@ -75,6 +75,8 @@ if [ "$1" == "download" ]; then
 	source "$env/bin/activate"
 	echo "testing 'luarocks install luamqtt' for $ver"
 	luarocks install luamqtt >/dev/null
-	busted $BFLAGS tests/spec/*.lua
-
+	if git describe --exact-match --tags 2>/dev/null >/dev/null; then
+		echo "we are on tag, execute tests for $ver"
+		busted $BFLAGS tests/spec/*.lua
+	fi
 fi

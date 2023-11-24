@@ -1,3 +1,4 @@
+-- luacheck: globals ngx
 local log = ngx.log
 local timer_at = ngx.timer.at
 local ERR = ngx.ERR

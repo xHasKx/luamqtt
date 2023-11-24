@@ -1,8 +1,8 @@
 package = "luamqtt"
-version = "3.4.2-3"
+version = "3.4.3-1"
 source = {
 	url = "git+https://github.com/xHasKx/luamqtt.git",
-	tag = "v3.4.2",
+	tag = "v3.4.3",
 }
 description = {
 	summary = "luamqtt - Pure-lua MQTT v3.1.1 and v5.0 client",
@@ -28,6 +28,7 @@ build = {
 		["mqtt.bitwrap"] = "mqtt/bitwrap.lua",
 		["mqtt.luasocket"] = "mqtt/luasocket.lua",
 		["mqtt.luasocket_ssl"] = "mqtt/luasocket_ssl.lua",
+		["mqtt.luasocket-copas"] = "mqtt/luasocket-copas.lua",
 		["mqtt.ngxsocket"] = "mqtt/ngxsocket.lua",
 		["mqtt.protocol"] = "mqtt/protocol.lua",
 		["mqtt.protocol4"] = "mqtt/protocol4.lua",

@@ -8,6 +8,8 @@
 
 max_line_length = 200
 
+std = "min"
+
 files["mqtt/**"] = {
 	ignore = {
 		"113/unpack",

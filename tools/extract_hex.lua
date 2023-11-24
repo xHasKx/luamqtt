@@ -11,7 +11,7 @@ local function extract_hex(str)
 			line = line:sub(1, comment_begin - 1)
 		end
 		-- remove all non-hex symbols
-		line = line:gsub("[^0-9A-F]+", "")
+		line = line:gsub("[^0-9A-Fa-f]+", "")
 		-- and append line to concat list
 		res[#res + 1] = line
 	end

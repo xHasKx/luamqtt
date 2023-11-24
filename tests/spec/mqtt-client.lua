@@ -91,7 +91,7 @@ describe("MQTT client", function()
 	-- test servers
 	local cases = {
 		{
-			name = "mqtt.flespi.io PLAIN, MQTTv3.1.1",
+			name = "mqtt.flespi.io PLAIN, MQTT v3.1.1",
 			args = {
 				-- id = "luamqtt-test-flespi", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
@@ -101,7 +101,7 @@ describe("MQTT client", function()
 			}
 		},
 		{
-			name = "mqtt.flespi.io PLAIN+sync, MQTTv3.1.1",
+			name = "mqtt.flespi.io PLAIN+sync, MQTT v3.1.1",
 			sync = true,
 			args = {
 				-- id = "luamqtt-test-flespi", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
@@ -112,7 +112,7 @@ describe("MQTT client", function()
 			}
 		},
 		{
-			name = "mqtt.flespi.io SECURE, MQTTv3.1.1",
+			name = "mqtt.flespi.io SECURE, MQTT v3.1.1",
 			args = {
 				-- id = "luamqtt-test-flespi-ssl", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
@@ -123,7 +123,7 @@ describe("MQTT client", function()
 			}
 		},
 		{
-			name = "mqtt.flespi.io PLAIN, MQTTv5.0",
+			name = "mqtt.flespi.io PLAIN, MQTT v5.0",
 			args = {
 				-- id = "luamqtt-test-flespi", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
@@ -134,7 +134,7 @@ describe("MQTT client", function()
 			}
 		},
 		{
-			name = "mqtt.flespi.io SECURE, MQTTv5.0",
+			name = "mqtt.flespi.io SECURE, MQTT v5.0",
 			args = {
 				-- id = "luamqtt-test-flespi-ssl", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.flespi.io",
@@ -175,7 +175,7 @@ describe("MQTT client", function()
 		},
 		--[[ -- NOTE: looks like mqtt.fluux.io is no more a public MQTT broker...
 		{
-			name = "mqtt.fluux.io PLAIN, MQTTv3.1.1",
+			name = "mqtt.fluux.io PLAIN, MQTT v3.1.1",
 			args = {
 				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",
@@ -183,7 +183,7 @@ describe("MQTT client", function()
 			}
 		},
 		{
-			name = "mqtt.fluux.io SECURE, MQTTv3.1.1",
+			name = "mqtt.fluux.io SECURE, MQTT v3.1.1",
 			args = {
 				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",
@@ -192,7 +192,7 @@ describe("MQTT client", function()
 			}
 		},
 		{
-			name = "mqtt.fluux.io PLAIN, MQTTv5.0",
+			name = "mqtt.fluux.io PLAIN, MQTT v5.0",
 			args = {
 				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",
@@ -201,7 +201,7 @@ describe("MQTT client", function()
 			}
 		},
 		{
-			name = "mqtt.fluux.io SECURE, MQTTv5.0",
+			name = "mqtt.fluux.io SECURE, MQTT v5.0",
 			args = {
 				-- id = "luamqtt-test-fluux", -- do not use fixed client id to allow simultaneous tests run (Travis CI)
 				uri = "mqtt.fluux.io",

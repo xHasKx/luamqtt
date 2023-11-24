@@ -14,18 +14,18 @@ CONVENTIONS:
 ]]
 
 --- Module table
--- @field v311 MQTT v3.1.1 protocol version constant
--- @field v50  MQTT v5.0   protocol version constant
--- @field _VERSION luamqtt version string
+-- @tfield number v311 MQTT v3.1.1 protocol version constant
+-- @tfield number v50  MQTT v5.0   protocol version constant
+-- @tfield string _VERSION luamqtt library version string
 -- @table mqtt
-local mqtt = {
-	-- supported MQTT protocol versions
-	v311 = 4,		-- supported protocol version, MQTT v3.1.1
-	v50 = 5,		-- supported protocol version, MQTT v5.0
+-- @see mqtt.const
+local mqtt = {}
 
-	-- mqtt library version
-	_VERSION = "3.4.2",
-}
+-- copy all values from const module
+local const = require("mqtt.const")
+for key, value in pairs(const) do
+	mqtt[key] = value
+end
 
 -- load required stuff
 local type = type

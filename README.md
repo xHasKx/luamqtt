@@ -82,6 +82,15 @@ Then you may install the luamqtt library itself:
 luarocks install luamqtt
 ```
 
+Or for development purposes;
+```sh
+# development branch:
+luarocks install luamqtt --dev
+
+# or from the cloned repo:
+luarocks make
+```
+
 [LuaRocks page](http://luarocks.org/modules/xhaskx/luamqtt)
 
 # Examples
@@ -187,3 +196,16 @@ Both protocols has full control packets support.
 # LICENSE
 
 Standard MIT License, see LICENSE file for full text
+
+# Version bump checklist
+
+* in file `./mqtt/const.lua`: change `_VERSION` table field
+* in file `./openwrt/make-package-without-openwrt-sources.sh`: change `Version: X.Y.Z-P` in $PKG_ROOT/control
+* in file `./openwrt/Makefile`: change `PKG_VERSION:=X.Y.Z` and maybe `PKG_RELEASE:=1`
+* copy file `./luamqtt-scm-1.rockspec` to `./rockspecs/luamqtt-X.Y.Z-1.rockspec` change `local package_version = "scm"`, `local package_version = "X.Y.Z"`
+* run `./tests/run-luacheck.sh` and check output for errors
+* run `./tests/run-for-all-lua-versions.sh` and check output for errors
+* run `./openwrt/make-package-without-openwrt-sources.sh` and check output for errors
+* run `git commit`, `git tag vX.Y.Z`
+* run `git push`, `git push --tags`
+* upload to LuaRocks; `luarocks upload ./rockspecs/luamqtt-X.Y.Z-1.rockspec --api-key=ABCDEFGH`
