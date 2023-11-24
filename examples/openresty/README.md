@@ -11,7 +11,7 @@ There is a two ways to run MQTT client in openresty:
 
 Started MQTT client is connecting, subscribing and waiting for incoming MQTT publications as you code it, without any magic asynchronous work.
 
-**Caveats**: The keep_alive feature will not work as there is no way for MQTT client to break its receive() operation in keep_alive interval and send PINGREQ packet to MQTT broker to maintain connection. It may lead to disconnects from MQTT broker side in absense traffic in opened MQTT connection. After disconnecting from broker there is a way to reconnect using openresty's timer.
+**Caveats**: The keep_alive feature will not work as there is no way for MQTT client to break its receive() operation in keep_alive interval and send PINGREQ packet to MQTT broker to maintain connection. It may lead to disconnects from MQTT broker side in absence of traffic in opened MQTT connection. After disconnecting from broker there is a way to reconnect using openresty's timer.
 
 # ioloop mode
 

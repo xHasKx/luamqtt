@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: run luacheck
         run: sudo apt-get install -y lua-check && cd "${{ github.workspace }}" && ./tests/run-luacheck.sh -q
