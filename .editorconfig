@@ -1,0 +1,22 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+# 4 space tab indentation for lua files
+[*.lua]
+indent_style = tab
+indent_size = 4
+
+# 2 space indentation for YAML files
+[*.yaml]
+indent_style = space
+indent_size = 2
+[*.yml]
+indent_style = space
+indent_size = 2
