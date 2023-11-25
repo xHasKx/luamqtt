@@ -388,10 +388,10 @@ end
 local function parse_packet_connack(ptype, flags, input)
 	-- DOC: 3.2.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 2 then
-		return false, "expecting data of length 2 bytes"
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
 	end
 	local byte1, byte2 = parse_uint8(input.read_func), parse_uint8(input.read_func)
 	local sp = (band(byte1, 0x1) ~= 0)
@@ -408,11 +408,11 @@ local function parse_packet_publish(ptype, flags, input)
 	local retain = (band(flags, 0x1) ~= 0)
 	-- DOC: 3.3.2.1 Topic Name
 	if input.available < 2 then
-		return false, "expecting data of length at least 2 bytes"
+		return false, packet_type[ptype]..": expecting data of length at least 2 bytes"
 	end
 	local topic_len = parse_uint16(input.read_func)
 	if input.available < topic_len then
-		return false, "malformed PUBLISH packet: not enough data to parse topic"
+		return false, packet_type[ptype]..": malformed packet: not enough data to parse topic"
 	end
 	local topic = input.read_func(topic_len)
 	-- DOC: 3.3.2.2 Packet Identifier
@@ -420,7 +420,7 @@ local function parse_packet_publish(ptype, flags, input)
 	if qos > 0 then
 		-- DOC: 3.3.2.2 Packet Identifier
 		if input.available < 2 then
-			return false, "malformed PUBLISH packet: not enough data to parse packet_id"
+			return false, packet_type[ptype]..": malformed packet: not enough data to parse packet_id"
 		end
 		packet_id = parse_uint16(input.read_func)
 	end
@@ -436,10 +436,10 @@ end
 local function parse_packet_puback(ptype, flags, input)
 	-- DOC: 3.4.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 2 then
-		return false, "expecting data of length 2 bytes"
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
 	end
 	-- DOC: 3.4.2 Variable header
 	local packet_id = parse_uint16(input.read_func)
@@ -450,10 +450,10 @@ end
 local function parse_packet_pubrec(ptype, flags, input)
 	-- DOC: 3.4.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 2 then
-		return false, "expecting data of length 2 bytes"
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
 	end
 	-- DOC: 3.5.2 Variable header
 	local packet_id = parse_uint16(input.read_func)
@@ -464,10 +464,10 @@ end
 local function parse_packet_pubrel(ptype, flags, input)
 	if flags ~= 2 then
 		-- DOC: The Server MUST treat any other value as malformed and close the Network Connection [MQTT-3.6.1-1].
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 2 then
-		return false, "expecting data of length 2 bytes"
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
 	end
 	-- DOC: 3.6.2 Variable header
 	local packet_id = parse_uint16(input.read_func)
@@ -478,10 +478,10 @@ end
 local function parse_packet_pubcomp(ptype, flags, input)
 	-- DOC: 3.7.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 2 then
-		return false, "expecting data of length 2 bytes"
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
 	end
 	-- DOC: 3.7.2 Variable header
 	local packet_id = parse_uint16(input.read_func)
@@ -492,11 +492,11 @@ end
 local function parse_packet_subscribe(ptype, flags, input)
 	if flags ~= 2 then
 		-- DOC: The Server MUST treat any other value as malformed and close the Network Connection [MQTT-3.8.1-1].
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available < 5 then -- variable header (2) + payload: topic length (2) + qos (1)
 		-- DOC: The payload of a SUBSCRIBE packet MUST contain at least one Topic Filter / QoS pair. A SUBSCRIBE packet with no payload is a protocol violation [MQTT-3.8.3-3]
-		return false, "expecting data of length 5 bytes at least"
+		return false, packet_type[ptype]..": expecting data of length 5 bytes at least"
 	end
 	-- DOC: 3.8.2 Variable header
 	local packet_id = parse_uint16(input.read_func)
@@ -506,11 +506,11 @@ local function parse_packet_subscribe(ptype, flags, input)
 		local topic_filter, qos, err
 		topic_filter, err = parse_string(input.read_func)
 		if not topic_filter then
-			return false, "failed to parse topic filter: "..err
+			return false, packet_type[ptype]..": failed to parse topic filter: "..err
 		end
 		qos, err = parse_uint8(input.read_func)
 		if not qos then
-			return false, "failed to parse qos: "..err
+			return false, packet_type[ptype]..": failed to parse qos: "..err
 		end
 		subscriptions[#subscriptions + 1] = {
 			topic = topic_filter,
@@ -524,10 +524,10 @@ end
 local function parse_packet_suback(ptype, flags, input)
 	-- DOC: 3.9.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available < 3 then
-		return false, "expecting data of length at least 3 bytes"
+		return false, packet_type[ptype]..": expecting data of length at least 3 bytes"
 	end
 	-- DOC: 3.9.2 Variable header
 	-- DOC: 3.9.3 Payload
@@ -544,11 +544,11 @@ local function parse_packet_unsubscribe(ptype, flags, input)
 	-- DOC: 3.10.1 Fixed header
 	if flags ~= 2 then
 		-- DOC: The Server MUST treat any other value as malformed and close the Network Connection [MQTT-3.10.1-1].
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available < 4 then -- variable header (2) + payload: topic length (2)
 		-- DOC: The Payload of an UNSUBSCRIBE packet MUST contain at least one Topic Filter. An UNSUBSCRIBE packet with no payload is a protocol violation [MQTT-3.10.3-2].
-		return false, "expecting data of length at least 4 bytes"
+		return false, packet_type[ptype]..": expecting data of length at least 4 bytes"
 	end
 	-- DOC: 3.10.2 Variable header
 	local packet_id = parse_uint16(input.read_func)
@@ -557,7 +557,7 @@ local function parse_packet_unsubscribe(ptype, flags, input)
 	while input.available > 0 do
 		local topic_filter, err = parse_string(input.read_func)
 		if not topic_filter then
-			return false, "failed to parse topic filter: "..err
+			return false, packet_type[ptype]..": failed to parse topic filter: "..err
 		end
 		subscriptions[#subscriptions + 1] = topic_filter
 	end
@@ -568,10 +568,10 @@ end
 local function parse_packet_unsuback(ptype, flags, input)
 	-- DOC: 3.11.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 2 then
-		return false, "expecting data of length 2 bytes"
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
 	end
 	-- DOC: 3.11.2 Variable header
 	local packet_id = parse_uint16(input.read_func)
@@ -582,10 +582,10 @@ end
 local function parse_packet_pingreq(ptype, flags, input)
 	-- DOC: 3.12.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 0 then
-		return false, "expecting data of length 0 bytes"
+		return false, packet_type[ptype]..": expecting data of length 0 bytes"
 	end
 	return setmetatable({type=ptype}, packet_mt)
 end
@@ -594,10 +594,10 @@ end
 local function parse_packet_pingresp(ptype, flags, input)
 	-- DOC: 3.13.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 0 then
-		return false, "expecting data of length 0 bytes"
+		return false, packet_type[ptype]..": expecting data of length 0 bytes"
 	end
 	return setmetatable({type=ptype}, packet_mt)
 end
@@ -606,10 +606,10 @@ end
 local function parse_packet_disconnect(ptype, flags, input)
 	-- DOC: 3.14.1 Fixed header
 	if flags ~= 0 then -- Reserved
-		return false, "unexpected flags value: "..flags
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	if input.available ~= 0 then
-		return false, "expecting data of length 0 bytes"
+		return false, packet_type[ptype]..": expecting data of length 0 bytes"
 	end
 	return setmetatable({type=ptype}, packet_mt)
 end
@@ -667,7 +667,7 @@ function protocol4._parse_packet_connect_continue(input, packet)
 	-- DOC: 3.1.3.1 Client Identifier
 	client_id, err = parse_string(read_func)
 	if not client_id then
-		return false, "failed to parse client_id: "..err
+		return false, "CONNECT: failed to parse client_id: "..err
 	end
 	packet.client_id = client_id
 
@@ -677,14 +677,14 @@ function protocol4._parse_packet_connect_continue(input, packet)
 		local will_topic, will_payload
 		will_topic, err = parse_string(read_func)
 		if not will_topic then
-			return false, "failed to parse will_topic: "..err
+			return false, "CONNECT: failed to parse will_topic: "..err
 		end
 		will.topic = will_topic
 
 		-- DOC: 3.1.3.3 Will Message
 		will_payload, err = parse_string(read_func)
 		if not will_payload then
-			return false, "failed to parse will_payload: "..err
+			return false, "CONNECT: failed to parse will_payload: "..err
 		end
 		will.payload = will_payload
 	end
@@ -694,7 +694,7 @@ function protocol4._parse_packet_connect_continue(input, packet)
 		local username
 		username, err = parse_string(read_func)
 		if not username then
-			return false, "failed to parse username: "..err
+			return false, "CONNECT: failed to parse username: "..err
 		end
 		packet.username = username
 	else
@@ -704,12 +704,12 @@ function protocol4._parse_packet_connect_continue(input, packet)
 	if packet.password then
 		-- DOC: 3.1.3.5 Password
 		if not packet.username then
-			return false, "MQTT v3.1.1 does not allow providing password without username"
+			return false, "CONNECT: MQTT v3.1.1 does not allow providing password without username"
 		end
 		local password
 		password, err = parse_string(read_func)
 		if not password then
-			return false, "failed to parse password: "..err
+			return false, "CONNECT: failed to parse password: "..err
 		end
 		packet.password = password
 	else
