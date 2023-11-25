@@ -6,7 +6,7 @@ local mqtt_ioloop = require("mqtt.ioloop")
 
 local num_pings = 10 -- total number of ping-pongs
 local timeout = 1 -- timeout between ping-pongs
-local suffix = tostring(math.random(1000000)) -- mqtt topic suffix to distinct simultaneous rinning of this script
+local suffix = tostring(math.random(1000000)) -- mqtt topic suffix to distinct simultaneous running of this script
 
 -- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
 local token = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"

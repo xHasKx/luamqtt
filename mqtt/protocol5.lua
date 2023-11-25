@@ -811,7 +811,7 @@ function protocol5.parse_packet(read_func)
 	local byte1, byte2, err, rc, ok, packet, topic, packet_id
 	local read_data = input.read_func
 
-	-- parse readed data according type in fixed header
+	-- parse read data according type in fixed header
 	if ptype == packet_type.CONNACK then
 		-- DOC: 3.2 CONNACK – Connect acknowledgement
 		if input.available < 3 then

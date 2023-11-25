@@ -476,7 +476,7 @@ combined_packet_mt.__index = function(_, key)
 end
 
 --- Combine several data parts into one
--- @tparam combined_packet_mt/string ... any amout of strings of combined_packet_mt tables to combine into one packet
+-- @tparam combined_packet_mt/string ... any amount of strings of combined_packet_mt tables to combine into one packet
 -- @treturn combined_packet_mt table suitable to append packet parts or to stringify it into raw packet bytes
 function protocol.combine(...)
 	return setmetatable({...}, combined_packet_mt)

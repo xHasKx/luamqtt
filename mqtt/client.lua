@@ -206,7 +206,7 @@ function client_mt:__init(args)
 	self._to_remove_handlers = {}
 
 	-- state
-	self.first_connect = true		-- contains true to perform one network connection attemt after client creation
+	self.first_connect = true		-- contains true to perform one network connection attempt after client creation
 	self.send_time = 0				-- time of the last network send from client side
 
 	-- packet creation/parse functions according version
@@ -420,7 +420,7 @@ end
 -- @tparam[opt=false] boolean args.dup		dup message publication flag
 -- @tparam[opt] table args.properties		properties for publishing message
 -- @tparam[opt] table args.user_properties	user properties for publishing message
--- @tparam[opt] function args.callback		callback to call when publihsed message will be acknowledged
+-- @tparam[opt] function args.callback		callback to call when published message will be acknowledged
 -- @return true or packet id on success or false and error message on failure
 function client_mt:publish(args)
 	-- fetch and validate args
@@ -718,8 +718,8 @@ function client_mt:open_connection()
 	-- create connection table
 	local conn = {
 		uri = args.uri,
-		wait_for_pubrec = {},	-- a table with packet_id of parially acknowledged sent packets in QoS 2 exchange process
-		wait_for_pubrel = {},	-- a table with packet_id of parially acknowledged received packets in QoS 2 exchange process
+		wait_for_pubrec = {},	-- a table with packet_id of partially acknowledged sent packets in QoS 2 exchange process
+		wait_for_pubrel = {},	-- a table with packet_id of partially acknowledged received packets in QoS 2 exchange process
 	}
 	client_mt._parse_uri(args, conn)
 	client_mt._apply_secure(args, conn)

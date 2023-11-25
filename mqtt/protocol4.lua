@@ -320,7 +320,7 @@ function protocol4.parse_packet(read_func)
 	if not ptype then
 		return false, flags
 	end
-	-- parse readed data according type in fixed header
+	-- parse read data according type in fixed header
 	if ptype == packet_type.CONNECT then
 		return parse_packet_connect_input(input, const_v311)
 	elseif ptype == packet_type.CONNACK then
