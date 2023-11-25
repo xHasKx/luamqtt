@@ -26,6 +26,9 @@ local string = require("string")
 local str_char = string.char
 local fmt = string.format
 
+local tools = require("mqtt.tools")
+local sortedpairs = tools.sortedpairs
+
 local bit = require("mqtt.bitwrap")
 local bor = bit.bor
 local band = bit.band
@@ -321,7 +324,7 @@ local function make_properties(ptype, args)
 		assert(type(args.properties) == "table", "expecting .properties to be a table")
 		-- validate all properties and append them to order list
 		local order = {}
-		for name, value in pairs(args.properties) do
+		for name, value in sortedpairs(args.properties) do
 			assert(type(name) == "string", "expecting property name to be a string: "..tostring(name))
 			-- detect property identifier and check it's allowed for that packet type
 			local prop_id = assert(properties[name], "unknown property: "..tostring(name))
@@ -360,7 +363,7 @@ local function make_properties(ptype, args)
 		assert(type(args.user_properties) == "table", "expecting .user_properties to be a table")
 		assert(allowed[uprop_id], "user_property is not allowed for packet type "..ptype)
 		local order = {}
-		for name, val in pairs(args.user_properties) do
+		for name, val in sortedpairs(args.user_properties) do
 			local ntype = type(name)
 			if ntype == "string" then
 				if type(val) ~= "string" then

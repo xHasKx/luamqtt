@@ -34,6 +34,29 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal("FF00FF", tools.hex("\255\000\255"))
 	end)
 
+	it("tools.sortedpairs", function()
+		assert.are.equal(type(tools.sortedpairs), "function")
+
+		-- naive table-to-string implementation with stable table key iteration order
+		local function tbl_tostring(tbl)
+			local res = {"{"}
+			for k, v in tools.sortedpairs(tbl) do
+				res[#res + 1] = string.format("%s=%s,", k, v)
+			end
+			res[#res + 1] = "}"
+			return table.concat(res)
+		end
+
+		assert.are.equal("{}", tbl_tostring{})
+		assert.are.equal('{a=1,}', tbl_tostring{a=1,})
+		assert.are.equal('{a=1,b=2,}', tbl_tostring{b=2,a=1,})
+		assert.are.equal('{a=1,b=2,}', tbl_tostring{b=2,a=1,})
+		assert.are.equal('{1=1,2=2,3=3,}', tbl_tostring{1,2,3,})
+		assert.are.equal('{1=1,2=2,3=3,}', tbl_tostring{[3]=3,[2]=2,[1]=1,})
+		assert.are.equal('{1=1,a=1,}', tbl_tostring{1,a=1,})
+		assert.are.equal('{1=1,2=2,3=3,a=1,b=2,}', tbl_tostring{b=2,a=1,[3]=3,[2]=2,[1]=1,})
+	end)
+
 	it("extract_hex", function()
 		assert.are.equal("", extract_hex(""))
 		assert.are.equal("", extract_hex(" "))

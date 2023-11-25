@@ -56,6 +56,7 @@ local rshift = bit.rshift
 
 local tools = require("mqtt.tools")
 local div = tools.div
+local sortedpairs = tools.sortedpairs
 
 --- Create bytes of the uint8 value
 -- @tparam number val - integer value to convert to bytes
@@ -489,7 +490,7 @@ local function value_tostring(value)
 		return str_format("%q", value)
 	elseif t == "table" then
 		local res = {}
-		for k, v in pairs(value) do
+		for k, v in sortedpairs(value) do
 			if type(k) == "number" then
 				res[#res + 1] = value_tostring(v)
 			else
@@ -511,7 +512,7 @@ end
 -- @treturn string human-readable string representation of the packet
 function protocol.packet_tostring(packet)
 	local res = {}
-	for k, v in pairs(packet) do
+	for k, v in sortedpairs(packet) do
 		res[#res + 1] = str_format("%s=%s", k, value_tostring(v))
 	end
 	return str_format("%s{%s}", tostring(packet_type[packet.type]), tbl_concat(res, ", "))
