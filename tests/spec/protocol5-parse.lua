@@ -1204,7 +1204,40 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBACK[11]", function()
 	end)
 end)
 
--- TODO: PINGREQ[12]
+describe("MQTT v5.0 protocol: parsing packets: PINGREQ[12]", function()
+	local protocol = require("mqtt.protocol")
+	local pt = assert(protocol.packet_type)
+	local protocol5 = require("mqtt.protocol5")
+
+	it("the only variant", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				C0 					-- packet type == 12 (PINGREQ), flags == 0
+				00 					-- variable length == 0 bytes
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.PINGREQ, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
+	it("invalid extra data in the packet", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				C0 					-- packet type == 12 (PINGREQ), flags == 0
+				01 					-- variable length == 0 bytes
+
+				00					-- invalid extra data
+			]]
+		))
+		assert.are.same("PINGREQ: extra data in remaining length left after packet parsing", err)
+		assert.are.same(false, packet)
+	end)
+end)
 
 describe("MQTT v5.0 protocol: parsing packets: PINGRESP[13]", function()
 	local protocol = require("mqtt.protocol")
