@@ -6,10 +6,10 @@
 Here is a generic implementation of MQTT protocols of all supported versions.
 
 MQTT v3.1.1 documentation (DOCv3.1.1):
-	http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
+	DOC[1]: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
 MQTT v5.0 documentation (DOCv5.0):
-	http://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html
+	DOC[2]: http://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html
 
 CONVENTIONS:
 
@@ -263,6 +263,8 @@ local max_mult = 128 * 128 * 128
 -- @treturn number parser value
 -- @return OR false and error message on failure
 function protocol.parse_var_length(read_func)
+	-- DOC[1]: 2.2.3 Remaining Length
+	-- DOC[2]: 1.5.5 Variable Byte Integer
 	assert(type(read_func) == "function", "expecting read_func to be a function")
 	local mult = 1
 	local val = 0
