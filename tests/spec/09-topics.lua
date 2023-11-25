@@ -160,8 +160,8 @@ describe("topics", function()
 				pattern = nil,
 				keys = { "hello", "world"}
 			}
-			local res, err = mqtt.topic_match("hello/world", opts)
-			assert.is_nil(err)
+			local res, varargs = mqtt.topic_match("hello/world", opts)
+			assert.is_same({}, varargs)
 			assert.same(res, {
 				"hello", "world",
 				hello = "hello",
@@ -201,7 +201,7 @@ describe("topics", function()
 			}
 			local ok, err = mqtt.topic_match("hello/world", opts)
 			assert.is_false(ok)
-			assert.is_string(err)
+			assert.is_nil(err)
 		end)
 
 		it("pattern '+' works", function()
@@ -211,8 +211,8 @@ describe("topics", function()
 				keys = { "hello" }
 			}
 			-- matches topic
-			local res, err = mqtt.topic_match("hello", opts)
-			assert.is_nil(err)
+			local res, varargs = mqtt.topic_match("hello", opts)
+			assert.are.same({}, varargs)
 			assert.same(res, {
 				"hello",
 				hello = "hello",
@@ -225,8 +225,8 @@ describe("topics", function()
 				pattern = nil,
 				keys = { "hello", "there", "world"}
 			}
-			local res, err = mqtt.topic_match("//", opts)
-			assert.is_nil(err)
+			local res, varargs = mqtt.topic_match("//", opts)
+			assert.are.same({}, varargs)
 			assert.same(res, {
 				"", "", "",
 				hello = "",

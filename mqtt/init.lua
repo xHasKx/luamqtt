@@ -179,27 +179,27 @@ end
 --   stored in this field for future use (cache).
 -- @tparam array opts.keys array of field names. The order must be the same as the
 --   order of the wildcards in `topic`
--- @return[1] `fields` table: the array part will have the values of the wildcards, in
+-- @treturn[1] table `fields`: the array part will have the values of the wildcards, in
 --   the order they appeared. The hash part, will have the field names provided
 --   in `opts.keys`, with the values of the corresponding wildcard. If a `#`
 --   wildcard was used, that one will be the last in the table.
--- @return[1] `varargs` table: will only be returned if the wildcard topic contained the
---   `#` wildcard. The returned table is an array, with all segments that were
---   matched by the `#` wildcard.
--- @return[2] false+err on error, eg. topic didn't match or pattern was invalid.
+-- @treturn[1] `varargs`: The returned table is an array, with all segments that were
+--   matched by the `#` wildcard (empty if there was no `#` wildcard).
+-- @treturn[2] boolean `false` if there was no match
+-- @return[3] `false`+err on error, eg. pattern was invalid.
 -- @usage
 -- local opts = {
 --   topic = "homes/+/+/#",
 --   keys = { "homeid", "roomid", "varargs"},
 -- }
--- local fields, varargs = topic_match("homes/myhome/living/mainlights/brightness", opts)
+-- local fields, varargst = topic_match("homes/myhome/living/mainlights/brightness", opts)
 --
 -- print(fields[1], fields.homeid)  -- "myhome myhome"
 -- print(fields[2], fields.roomid)  -- "living living"
 -- print(fields[3], fields.varargs) -- "mainlights/brightness mainlights/brightness"
 --
--- print(varargs[1]) -- "mainlights"
--- print(varargs[2]) -- "brightness"
+-- print(varargst[1]) -- "mainlights"
+-- print(varargst[2]) -- "brightness"
 function mqtt.topic_match(topic, opts)
 	if type(topic) ~= "string" then
 		return false, "expected topic to be a string"
@@ -223,7 +223,7 @@ function mqtt.topic_match(topic, opts)
 	end
 	local values = { topic:match(pattern) }
 	if values[1] == nil then
-		return false, "topic does not match wildcard pattern"
+		return false
 	end
 	local keys = opts.keys
 	if keys ~= nil then
@@ -240,7 +240,7 @@ function mqtt.topic_match(topic, opts)
 	end
 	if not pattern:find("%(%.[%-%+]%)%$$") then -- pattern for "#" as last char
 		-- we're done
-		return values
+		return values, {}
 	end
 	-- we have a '#' wildcard
 	local vararg = values[#values]
