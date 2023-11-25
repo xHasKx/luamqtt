@@ -60,7 +60,8 @@ This stage is optional and may be skipped if you don't need the secure network c
 # Lua versions
 
 It's tested to work on Debian 9 GNU/Linux with Lua versions:
-* Lua 5.1 ... Lua 5.3 (**i.e. any modern Lua version**)
+
+* Lua 5.1 ... Lua 5.4 (**i.e. any modern Lua version**)
 * LuaJIT 2.0.0 ... LuaJIT 2.1.0 beta3
 * It may also work on other Lua versions without any guarantees
 
@@ -72,7 +73,7 @@ As the luamqtt is almost zero-dependency you have to install required Lua librar
 
 ```sh
 luarocks install luasocket # optional if you will use your own connectors (see below)
-luarocks install luabitop  # you don't need this for lua 5.3
+luarocks install luabitop  # you don't need this for lua 5.3 and above
 luarocks install luasec    # you don't need this if you don't want to use SSL connections
 ```
 
@@ -83,6 +84,7 @@ luarocks install luamqtt
 ```
 
 Or for development purposes;
+
 ```sh
 # development branch:
 luarocks install luamqtt --dev
