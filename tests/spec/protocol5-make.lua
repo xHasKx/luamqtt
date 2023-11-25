@@ -1,7 +1,7 @@
 -- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/protocol5-make.lua
 -- DOC: https://docs.oasis-open.org/mqtt/mqtt/v5.0/cos02/mqtt-v5.0-cos02.html
 
-describe("MQTT v5.0 protocol: making packets", function()
+describe("MQTT v5.0 protocol: making packets: CONNECT[1]", function()
 	local tools = require("mqtt.tools")
 	local extract_hex = require("./tools/extract_hex")
 	local protocol = require("mqtt.protocol")
@@ -189,6 +189,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBLISH with minimum params", function()
 		assert.are.equal(
@@ -316,6 +323,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBACK[4]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBACK with minimum params", function()
 		assert.are.equal(
@@ -385,6 +399,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBREC[5]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBREC with minimum params", function()
 		assert.are.equal(
@@ -454,6 +475,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBREL[6]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBREL with minimum params", function()
 		assert.are.equal(
@@ -523,6 +551,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBCOMP[7]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBCOMP with minimum params", function()
 		assert.are.equal(
@@ -592,6 +627,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: SUBSCRIBE[8]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("SUBSCRIBE with minimum params", function()
 		assert.are.equal(
@@ -718,6 +760,15 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+-- TODO: SUBACK[9]
+
+describe("MQTT v5.0 protocol: making packets: UNSUBSCRIBE[10]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("UNSUBSCRIBE with full params", function()
 		assert.are.equal(
@@ -779,6 +830,15 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+-- TODO: UNSUBACK[11]
+
+describe("MQTT v5.0 protocol: making packets: PINGREQ[12]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PINGREQ", function()
 		assert.are.equal(
@@ -791,6 +851,15 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+-- TODO: PINGRESL[13]
+
+describe("MQTT v5.0 protocol: making packets: DISCONNECT[14]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("DISCONNECT with minimum params", function()
 		assert.are.equal(
@@ -855,6 +924,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: AUTH[15]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("./tools/extract_hex")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("AUTH with minimum params", function()
 		assert.are.equal(
