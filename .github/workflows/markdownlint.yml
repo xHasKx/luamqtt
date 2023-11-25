@@ -23,4 +23,4 @@ jobs:
         run: sudo npm install -g markdownlint-cli
 
       - name: validate all markdown files
-        run: cd "${{ github.workspace }}" && markdownlint -p .gitignore .
+        run: cd "${{ github.workspace }}" && ./tests/run-markdownlint.sh

@@ -206,6 +206,7 @@ Standard MIT License, see LICENSE file for full text
 * in file `./openwrt/Makefile`: change `PKG_VERSION:=X.Y.Z` and maybe `PKG_RELEASE:=1`
 * copy file `./luamqtt-scm-1.rockspec` to `./rockspecs/luamqtt-X.Y.Z-1.rockspec` change `local package_version = "scm"`, `local package_version = "X.Y.Z"`
 * run `./tests/run-luacheck.sh` and check output for errors
+* run `./tests/run-markdownlint.sh` and check output for errors
 * run `./tests/run-for-all-lua-versions.sh` and check output for errors
 * run `./openwrt/make-package-without-openwrt-sources.sh` and check output for errors
 * run `git commit`, `git tag vX.Y.Z`
