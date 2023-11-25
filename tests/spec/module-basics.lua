@@ -36,6 +36,12 @@ describe("MQTT lua library component test:", function()
 
 	it("tools.sortedpairs", function()
 		assert.are.equal(type(tools.sortedpairs), "function")
+		assert.error_matches(
+			function()
+				tools.sortedpairs({[false]=false})
+			end,
+			"sortedpairs failed to make a stable iteration order for key of type boolean"
+		)
 
 		-- naive table-to-string implementation with stable table key iteration order
 		local function tbl_tostring(tbl)
