@@ -803,11 +803,24 @@ describe("MQTT v5.0 protocol: parsing packets: PUBCOMP[7]", function()
 	end)
 end)
 
-
 describe("MQTT v5.0 protocol: parsing packets: SUBSCRIBE[8]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+
+	it("with invalid empty subscription list", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				82 					-- packet type == 8 (SUBSCRIBE), flags == 0x2
+				03 					-- variable length == 3 bytes
+
+					0005			-- packet_id
+					00				-- properties length == 0
+			]]
+		))
+		assert.are.same(false, packet)
+		assert.are.same("SUBSCRIBE: empty subscriptions list", err)
+	end)
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -932,8 +945,8 @@ describe("MQTT v5.0 protocol: parsing packets: SUBSCRIBE[8]", function()
 					00				-- Subscription Options == 0
 			]]
 		))
-		assert.are.same('SUBSCRIBE: failed to parse packet properties: it is a Protocol Error to include the subscription_identifiers (11) property more than once', err)
 		assert.are.same(false, packet)
+		assert.are.same('SUBSCRIBE: failed to parse packet properties: it is a Protocol Error to include the subscription_identifiers (11) property more than once', err)
 	end)
 end)
 
@@ -1021,7 +1034,91 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
 	end)
 end)
 
--- TODO: UNSUBSCRIBE[10]
+describe("MQTT v5.0 protocol: parsing packets: UNSUBSCRIBE[10]", function()
+	local protocol = require("mqtt.protocol")
+	local pt = assert(protocol.packet_type)
+	local protocol5 = require("mqtt.protocol5")
+
+	it("without subscriptions", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				03 					-- variable length == 3 bytes
+
+					0001			-- packet_id
+					00				-- properties length == 0
+			]]
+		))
+		assert.are.same(false, packet)
+		assert.are.same("UNSUBSCRIBE: empty subscriptions list", err)
+	end)
+
+	it("with minimal params, without properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				09 					-- variable length == 9 bytes
+
+					0002			-- packet_id
+					00				-- properties length == 0
+
+					0004 74657374	-- topic name == "test"
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.UNSUBSCRIBE, packet_id=2, properties={}, user_properties={},
+				subscriptions = { "test" },
+			},
+			packet
+		)
+	end)
+
+	it("with invalid property", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				0C 					-- variable length == 12 bytes
+
+					0001			-- packet_id
+					02				-- properties length == 2
+
+					0B 01			-- property 0x0B == 1 -- DOC: 3.3.2.3.8 Subscription Identifier
+
+					0005 7465737431	-- topic name == "test1"
+			]]
+		))
+		assert.are.same(false, packet)
+		assert.are.same("UNSUBSCRIBE: failed to parse packet properties: property subscription_identifiers (11) is not allowed for that packet type", err)
+	end)
+
+	it("with properties and sever lsubscriptions", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				27 					-- variable length == 39 bytes
+
+					0003			-- packet_id
+					0F				-- properties length == 15
+
+					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world")  -- DOC: 3.2.2.3.10 User Property
+
+					0005 7465737431	-- topic name == "test1"
+					0005 7465737432	-- topic name == "test2"
+					0005 7465737433	-- topic name == "test3"
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.UNSUBSCRIBE, packet_id=3, properties={}, user_properties={ hello="world" },
+				subscriptions = { 'test1', 'test2', 'test3' },
+			},
+			packet
+		)
+	end)
+end)
 
 describe("MQTT v5.0 protocol: parsing packets: UNSUBACK[11]", function()
 	local protocol = require("mqtt.protocol")

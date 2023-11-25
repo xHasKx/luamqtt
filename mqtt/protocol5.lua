@@ -333,7 +333,9 @@ local function make_properties(ptype, args)
 			-- detect property identifier and check it's allowed for that packet type
 			local prop_id = assert(properties[name], "unknown property: "..tostring(name))
 			assert(prop_id ~= uprop_id, "user properties should be passed in .user_properties table")
-			assert(allowed[prop_id], "property "..name.." is not allowed for packet type "..ptype)
+			if not allowed[prop_id] then
+				error("property "..name.." is not allowed for packet type "..packet_type[ptype])
+			end
 			order[#order + 1] = { prop_id, name, value }
 		end
 		-- sort props in the identifier ascending order
@@ -764,7 +766,9 @@ local function parse_properties(ptype, read_data, input, packet)
 			return false, "failed to parse property length: "..err
 		end
 		if not allowed[prop_id] then
-			return false, "property "..prop_id.." is not allowed for packet type "..ptype
+			if not allowed[prop_id] then
+				return false, "property "..tostring(properties[prop_id]).." ("..prop_id..") is not allowed for that packet type"
+			end
 		end
 		if prop_id == uprop_id then
 			-- parse name=value string pair
@@ -1107,6 +1111,10 @@ local function parse_packet_unsubscribe(ptype, flags, input)
 		return false, packet_type[ptype]..": failed to parse packet properties: "..err
 	end
 	-- 3.10.3 UNSUBSCRIBE Payload
+	-- DOC: An UNSUBSCRIBE packet with no Payload is a Protocol Error.
+	if input.available == 0 then
+		return false, packet_type[ptype]..": empty subscriptions list"
+	end
 	local subscriptions = {}
 	while input.available > 0 do
 		local topic_filter
