@@ -31,7 +31,7 @@ end
 print(string.format("-- using protocol version %s", protocol_version_arg))
 
 -- reading hex file
-local file = assert(io.open(input_file_arg), "failed to read input file")
+local file = assert(io.open(input_file_arg), "failed to open input file")
 local hex = file:read("*a")
 hex = extract_hex(hex)
 
