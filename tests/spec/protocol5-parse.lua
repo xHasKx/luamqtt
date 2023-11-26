@@ -26,7 +26,6 @@ local function make_read_func_hex(hex)
 	end
 end
 
-local extract_hex = require("./tools/extract_hex")
 
 describe("MQTT v5.0 protocol: parsing packets: generic", function()
 	local protocol5 = require("mqtt.protocol5")
@@ -45,6 +44,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 	local mqtt = require("mqtt")
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("minimal properties", function()
 		assert.are.same(
@@ -246,6 +246,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("CONNACK with invalid flags", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -367,6 +368,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBLISH[3]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("PUBLISH with minimal params, without payload and without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -509,6 +511,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBACK[4]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -583,6 +586,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREC[5]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -659,6 +663,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREL[6]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -733,6 +738,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBCOMP[7]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -807,6 +813,7 @@ describe("MQTT v5.0 protocol: parsing packets: SUBSCRIBE[8]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with invalid empty subscription list", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -954,6 +961,7 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("one subscription, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -1038,6 +1046,7 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBSCRIBE[10]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("without subscriptions", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -1124,6 +1133,7 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBACK[11]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("one subscription, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -1208,6 +1218,7 @@ describe("MQTT v5.0 protocol: parsing packets: PINGREQ[12]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("the only variant", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -1243,6 +1254,7 @@ describe("MQTT v5.0 protocol: parsing packets: PINGRESP[13]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("the only variant", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -1265,6 +1277,7 @@ describe("MQTT v5.0 protocol: parsing packets: DISCONNECT[14]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("minimal", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -1358,6 +1371,7 @@ describe("MQTT v5.0 protocol: parsing packets: AUTH[15]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("minimal", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(

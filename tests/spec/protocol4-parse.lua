@@ -2,10 +2,10 @@
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
 describe("MQTT v3.1.1 protocol: parsing packets", function()
-	local extract_hex = require("./tools/extract_hex")
 	local mqtt = require("mqtt")
 	local protocol = require("mqtt.protocol")
 	local protocol4 = require("mqtt.protocol4")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	-- returns read_func-compatible function
 	local function make_read_func_hex(hex)

@@ -12,11 +12,10 @@ describe("MQTT lua library component test:", function()
 	local tools
 	local protocol
 
-	local extract_hex = require("./tools/extract_hex")
-
 	it("modules presented", function()
 		tools = require("mqtt.tools")
 		protocol = require("mqtt.protocol")
+		require("mqtt.const")
 		require("mqtt.client")
 		require("mqtt.ioloop")
 		require("mqtt.luasocket")
@@ -64,6 +63,7 @@ describe("MQTT lua library component test:", function()
 	end)
 
 	it("extract_hex", function()
+		local extract_hex = assert(tools.extract_hex)
 		assert.are.equal("", extract_hex(""))
 		assert.are.equal("", extract_hex(" "))
 		assert.are.equal("", extract_hex("\t"))
@@ -85,6 +85,9 @@ describe("MQTT lua library component test:", function()
 			02
 			03 04 -- other comment
 		]]))
+		assert.has.errors(function() extract_hex("0") end)
+		assert.has.errors(function() extract_hex("x") end)
+		assert.has.errors(function() extract_hex("xx") end)
 	end)
 
 	it("tools.div", function()

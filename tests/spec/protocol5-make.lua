@@ -3,7 +3,7 @@
 
 describe("MQTT v5.0 protocol: making packets: CONNECT[1]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -193,7 +193,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -327,7 +327,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: PUBACK[4]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -403,7 +403,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: PUBREC[5]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -479,7 +479,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: PUBREL[6]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -555,7 +555,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: PUBCOMP[7]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -631,7 +631,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: SUBSCRIBE[8]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -766,7 +766,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: UNSUBSCRIBE[10]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -836,7 +836,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: PINGREQ[12]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -857,7 +857,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: DISCONNECT[14]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -928,7 +928,7 @@ end)
 
 describe("MQTT v5.0 protocol: making packets: AUTH[15]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 

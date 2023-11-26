@@ -70,6 +70,37 @@ function tools.sortedpairs(tbl)
 	end
 end
 
+-- Converts multi-line string to a HEX string, removing all whitespace and line-comments started with "--"
+function tools.extract_hex(str)
+	local res = {}
+	-- iterate through lines
+	local n = 0
+	for line in str:gmatch("[^\n]+") do
+		n = n + 1
+		-- find a comment start
+		local comment_begin = line:find("--", 1, true)
+		if comment_begin then
+			-- remove comment from the line
+			line = line:sub(1, comment_begin - 1)
+		end
+		-- remove all whitespace from the line
+		line = line:gsub("%s", "")
+		-- check for the non-hex chars
+		local non_hex = line:find("[^0-9A-Fa-f]+")
+		if non_hex then
+			error(string.format("non-hex char '%s' at %s:%s", line:sub(non_hex, non_hex), n, non_hex))
+		end
+		-- append line to concat list
+		res[#res + 1] = line
+	end
+	-- finally concat all lines onto one HEX-string
+	local hexstr = tbl_concat(res)
+	if (#hexstr % 2) ~= 0 then
+		error("odd number of chars in the resulting HEX string")
+	end
+	return hexstr
+end
+
 -- export module table
 return tools
 

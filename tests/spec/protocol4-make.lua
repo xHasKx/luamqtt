@@ -3,7 +3,7 @@
 
 describe("MQTT v3.1.1 protocol: making packets", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = tools.extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol4 = require("mqtt.protocol4")
 
