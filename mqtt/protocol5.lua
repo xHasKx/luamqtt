@@ -476,6 +476,25 @@ local function make_packet_connect(args)
 	return combine(header, variable_header, payload)
 end
 
+-- Create CONNACK packet, DOC: 3.2 CONNACK – Connect acknowledgement
+local function make_packet_connack(args)
+	-- check args
+	assert(type(args.sp) == "boolean", "expecting .sp to be a boolean with Session Present flag")
+	assert(type(args.rc) == "number", "expecting .rc to be a number with Connect Reason Code")
+	-- DOC: 3.2.2 CONNACK Variable Header
+	local props = make_properties(packet_type.CONNACK, args)
+	local variable_header = combine(
+		make_uint8(args.sp and 1 or 0),		-- DOC: 3.2.2.1.1 Session Present
+		make_uint8(args.rc),				-- DOC: 3.2.2.2 Connect Reason Code
+		props								-- DOC: 3.2.2.3 CONNACK Properties
+	)
+	-- DOC: 3.2.3 CONNACK Payload
+	-- DOC: The CONNACK packet has no Payload.
+	-- DOC: 3.2.1 CONNACK Fixed Header
+	local header = make_header(packet_type.CONNACK, 0, variable_header:len())
+	return combine(header, variable_header)
+end
+
 -- Create PUBLISH packet, DOC: 3.3 PUBLISH – Publish message
 local function make_packet_publish(args)
 	-- check args
@@ -717,7 +736,8 @@ function protocol5.make_packet(args)
 	local ptype = args.type
 	if ptype == packet_type.CONNECT then			-- 1
 		return make_packet_connect(args)
-	-- TODO: CONNACK
+	elseif ptype == packet_type.CONNACK then		-- 3
+		return make_packet_connack(args)
 	elseif ptype == packet_type.PUBLISH then		-- 3
 		return make_packet_publish(args)
 	elseif ptype == packet_type.PUBACK then			-- 4
