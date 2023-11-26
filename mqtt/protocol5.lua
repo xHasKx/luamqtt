@@ -14,6 +14,7 @@ local protocol5 = {}
 local type = type
 local error = error
 local assert = assert
+local ipairs = ipairs
 local require = require
 local tostring = tostring
 local setmetatable = setmetatable
@@ -369,23 +370,40 @@ local function make_properties(ptype, args)
 		assert(type(args.user_properties) == "table", "expecting .user_properties to be a table")
 		assert(allowed[uprop_id], "user_property is not allowed for packet type "..ptype)
 		local order = {}
-		for name, val in sortedpairs(args.user_properties) do
-			local ntype = type(name)
-			if ntype == "string" then
-				if type(val) ~= "string" then
-					error(fmt("user property '%s' value should be a string", name))
+		local dups = {}
+		if args.user_properties[1] then
+			-- at first use array items as they given as {name, value} pairs with stable order
+			for i, pair in ipairs(args.user_properties) do
+				-- validate types for name and value
+				if type(pair) ~= "table" then
+					error(fmt("user property at position %d should be {name, value} table", i))
 				end
-				order[#order + 1] = {name, val, 0}
-			elseif ntype == "number" then
-				if type(val) ~= "table" or type(val[1]) ~= "string" or type(val[2]) ~= "string" then
-					error(fmt("user property at index %d should be a table with two strings", name))
+				if type(pair[1]) ~= "string" then
+					error(fmt("user property name at position %d should be a string", i))
 				end
-				order[#order + 1] = {val[1], val[2], name}
-			else
-				error(fmt("unknown user property name type passed: %s", ntype))
+				if type(pair[2]) ~= "string" then
+					error(fmt("user property '%s' value at position %d should be a string", pair[1], i))
+				end
+				order[i] = pair
+				dups[pair[1]] = pair[2]
 			end
 		end
-		tbl_sort(order, function(a, b) if a[1] == b[1] then return a[3] < b[3] else return a[1] < b[1] end end)
+		-- now add the rest of user properties given as string table keys
+		for name, val in sortedpairs(args.user_properties) do
+			if type(name) ~= "number" then -- skipping number keys as they already added above
+				-- validate types for name and value
+				if type(name) ~= "string" then
+					error(fmt("user property name '%s' should be a string", name))
+				end
+				if type(val) ~= "string" then
+					error(fmt("user property '%s' value '%s' should be a string", name, val))
+				end
+				-- check that name+value key already added
+				if dups[name] ~= val then
+					order[#order + 1] = {name, val}
+				end
+			end
+		end
 		for _, pair in ipairs(order) do
 			local name = pair[1]
 			local value = pair[2]

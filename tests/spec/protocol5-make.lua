@@ -288,10 +288,10 @@ describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
 					09 0004 736F6D65		-- property 0x09 == "some" -- DOC: 3.3.2.3.6 Correlation Data
 					0B 05					-- property 0x0B == 5 -- DOC: 3.3.2.3.8 Subscription Identifier
 					23 1234					-- property 0x23 == 0x1234 -- DOC: 3.3.2.3.4 Topic Alias
-					26 000B 546F20496E66696E697479 000A 616E64204265796F6E64	-- property 0x26 (user) == ("To Infinity", "and Beyond") -- DOC: 3.3.2.3.7 User Property
 					26 0005 6172726179 0006 6974656D2031	-- property 0x26 (user) == ("array", "item 1") -- DOC: 3.3.2.3.7 User Property
 					26 0005 6172726179 0006 6974656D2033	-- property 0x26 (user) == ("array", "item 3") -- DOC: 3.3.2.3.7 User Property
 					26 0005 6172726179 0006 6974656D2032	-- property 0x26 (user) == ("array", "item 2") -- DOC: 3.3.2.3.7 User Property
+					26 000B 546F20496E66696E697479 000A 616E64204265796F6E64	-- property 0x26 (user) == ("To Infinity", "and Beyond") -- DOC: 3.3.2.3.7 User Property
 					26 0005 68656C6C6F 0005 776F726C64		-- property 0x26 (user) == ("hello", "world") -- DOC: 3.3.2.3.7 User Property
 
 					686579204D51545421		-- payload == "hey MQTT!"
