@@ -25,6 +25,3 @@ The main question is what event/io loop mechanism does your implementation have?
 
 The main thing to look for when checking out the existing implementations is the network timeout settings,
 and the returned `signals`.
-
-
-

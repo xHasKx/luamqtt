@@ -44,6 +44,7 @@ And of course, any contribution are welcome!
 To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted) as well as some dependencies:
 
 Prepare:
+
 ```sh
 luarocks install busted
 luarocks install luacov
@@ -54,6 +55,7 @@ luarocks install lualogging
 ```
 
 Running the tests:
+
 ```sh
 busted
 ```

@@ -12,7 +12,7 @@ context.
 In the timer we'll spawn a thread that will do the listening, and the
 timer itself will go in an endless loop to do the keepalives.
 
-**Caveats**
+# Caveats
 
 * Due to the socket limitation we cannot Publish anything from another
   context. If you run into "bad request" errors on socket operations, you
