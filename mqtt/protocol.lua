@@ -530,7 +530,11 @@ protocol.packet_mt = {
 protocol.connack_packet_mt = {
 	__tostring = packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
 	reason_string = function(self) -- Returns reason string for the CONNACK packet according to its rc field
-		return connack_rc[self.rc]
+		local reason_string = connack_rc[self.rc]
+		if not reason_string then
+			reason_string = "Unknown: "..self.rc
+		end
+		return reason_string
 	end,
 }
 protocol.connack_packet_mt.__index = protocol.connack_packet_mt

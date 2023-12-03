@@ -196,14 +196,26 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				extract_hex("20 02 0100")
 			))
 		)
+		local packet = protocol4.parse_packet(make_read_func_hex(
+			extract_hex("20 02 0001")
+		))
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNACK, sp=false, rc=1
 			},
-			protocol4.parse_packet(make_read_func_hex(
-				extract_hex("20 02 0001")
-			))
+			packet
 		)
+		assert.are.same("Connection Refused, unacceptable protocol version", packet:reason_string())
+		local packet = protocol4.parse_packet(make_read_func_hex(
+			extract_hex("20 02 0020")
+		))
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNACK, sp=false, rc=32
+			},
+			packet
+		)
+		assert.are.same("Unknown: 32", packet:reason_string())
 	end)
 
 	it("PUBLISH", function()
