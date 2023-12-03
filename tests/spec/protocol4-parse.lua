@@ -46,7 +46,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 0, client_id = "",
+				version = mqtt.v311, clean = false, keep_alive = 0, id = "",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -63,7 +63,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = true, keep_alive = 30, client_id = "",
+				version = mqtt.v311, clean = true, keep_alive = 30, id = "",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -80,7 +80,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "test",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "test",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -97,7 +97,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "",
 				will = { topic = "bye", payload = "bye", retain = false, qos = 0, },
 			},
 			protocol4.parse_packet(make_read_func_hex(
@@ -117,7 +117,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "",
 				will = { topic = "bye", payload = "", retain = true, qos = 2, },
 			},
 			protocol4.parse_packet(make_read_func_hex(
@@ -137,7 +137,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "", username = "user",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "", username = "user",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -155,7 +155,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "", username = "user", password = "1234",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "", username = "user", password = "1234",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[

@@ -1341,7 +1341,7 @@ function protocol5._parse_packet_connect_continue(input, packet)
 	if not client_id then
 		return false, "CONNECT: failed to parse client_id: "..err
 	end
-	packet.client_id = client_id
+	packet.id = client_id
 
 	local will = packet.will
 	if will then

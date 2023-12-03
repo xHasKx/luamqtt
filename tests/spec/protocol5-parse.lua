@@ -50,7 +50,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v50, clean = false, keep_alive = 0, client_id = "",
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
 				properties = {}, user_properties = {},
 			},
 			protocol5.parse_packet(make_read_func_hex(
@@ -72,7 +72,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v50, clean = true, keep_alive = 0, client_id = "",
+				version = mqtt.v50, clean = true, keep_alive = 0, id = "",
 				properties = {}, user_properties = {},
 			},
 			protocol5.parse_packet(make_read_func_hex(
@@ -94,7 +94,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v50, clean = false, keep_alive = 0, client_id = "",
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
 				properties = {}, user_properties = {},
 				will = {
 					qos = 0, retain = false,
@@ -124,7 +124,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v50, clean = false, keep_alive = 0, client_id = "",
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
 				properties = {}, user_properties = {},
 				will = {
 					qos = 2, retain = true,
@@ -171,7 +171,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v50, clean = false, keep_alive = 30, client_id = "",
+				version = mqtt.v50, clean = false, keep_alive = 30, id = "",
 				password = "secret",
 				properties = {}, user_properties = {},
 			},
@@ -195,7 +195,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v50, clean = false, keep_alive = 0, client_id = "",
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
 				username = "user",
 				properties = {}, user_properties = {},
 			},
@@ -219,7 +219,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v50, clean = false, keep_alive = 0, client_id = "",
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
 				username = "user", password = "secret",
 				properties = {}, user_properties = {},
 			},
