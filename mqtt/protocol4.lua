@@ -522,6 +522,35 @@ local function parse_packet_subscribe(ptype, flags, input)
 	return setmetatable({type=ptype, packet_id=packet_id, subscriptions=subscriptions}, packet_mt)
 end
 
+-- SUBACK return codes
+-- DOC: 3.9.3 Payload
+local suback_rc = {
+	[0x00] = "Success - Maximum QoS 0",
+	[0x01] = "Success - Maximum QoS 1",
+	[0x02] = "Success - Maximum QoS 2",
+	[0x80] = "Failure",
+}
+protocol4.suback_rc = suback_rc
+
+--- Parsed SUBACK packet metatable
+local suback_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_strings = function(self) -- Returns return codes descriptions for the SUBACK packet according to its rc field
+		local human_readable = {}
+		for i, rc in ipairs(self.rc) do
+			local return_code = suback_rc[rc]
+			if return_code then
+				human_readable[i] = return_code
+			else
+				human_readable[i] = "Unknown: "..tostring(rc)
+			end
+		end
+		return human_readable
+	end,
+}
+suback_packet_mt.__index = suback_packet_mt
+protocol4.suback_packet_mt = suback_packet_mt
+
 -- Parse SUBACK packet, DOC: 3.9 SUBACK – Subscribe acknowledgement
 local function parse_packet_suback(ptype, flags, input)
 	-- DOC: 3.9.1 Fixed header
@@ -538,7 +567,7 @@ local function parse_packet_suback(ptype, flags, input)
 	while input.available > 0 do
 		rc[#rc + 1] = parse_uint8(input.read_func)
 	end
-	return setmetatable({type=ptype, packet_id=packet_id, rc=rc}, packet_mt)
+	return setmetatable({type=ptype, packet_id=packet_id, rc=rc}, suback_packet_mt)
 end
 
 -- Parse UNSUBSCRIBE packet, DOC: 3.10 UNSUBSCRIBE – Unsubscribe from topics

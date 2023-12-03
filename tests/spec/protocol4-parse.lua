@@ -447,18 +447,27 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				]]
 			))
 		)
+		local packet = protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				90 					-- packet type == 9 (SUBACK), flags == 0
+				05 					-- variable length == 5 bytes
+					1234 			-- packet id of acknowledged SUBSCRIBE packet
+						02 03 80	-- payload: return code, array of maximum allowed QoS-es
+			]]
+		))
 		assert.are.same(
 			{
-				type=protocol.packet_type.SUBACK, packet_id=0x1234, rc={3, 3, 0x80},
+				type=protocol.packet_type.SUBACK, packet_id=0x1234, rc={2, 3, 0x80},
 			},
-			protocol4.parse_packet(make_read_func_hex(
-				extract_hex[[
-					90 					-- packet type == 9 (SUBACK), flags == 0
-					05 					-- variable length == 5 bytes
-						1234 			-- packet id of acknowledged SUBSCRIBE packet
-							03 03 80	-- payload: return code, array of maximum allowed QoS-es
-				]]
-			))
+			packet
+		)
+		assert.are.same(
+			{
+				"Success - Maximum QoS 2",
+				"Unknown: 3",
+				"Failure",
+			},
+			packet:reason_strings()
 		)
 	end)
 
