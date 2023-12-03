@@ -900,7 +900,7 @@ local function parse_properties(ptype, read_data, input, packet)
 				end
 			end
 			-- make an array of property values, if it's allowed to send multiple such properties
-			if allowed[prop_id] == true and property_multiple[prop_id] then
+			if property_multiple[prop_id] then
 				local curr = packet.properties[properties[prop_id]] or {}
 				curr[#curr + 1] = value
 				packet.properties[properties[prop_id]] = curr

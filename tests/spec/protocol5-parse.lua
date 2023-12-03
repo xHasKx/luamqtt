@@ -889,7 +889,7 @@ describe("MQTT v5.0 protocol: parsing packets: SUBSCRIBE[8]", function()
 			{
 				type=pt.SUBSCRIBE, packet_id=5,
 				properties={
-					subscription_identifiers = 1,
+					subscription_identifiers = {1},
 				},
 				user_properties={
 					hello = "world",
