@@ -206,7 +206,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			packet
 		)
 		assert.are.same("Connection Refused, unacceptable protocol version", packet:reason_string())
-		local packet = protocol4.parse_packet(make_read_func_hex(
+		packet = protocol4.parse_packet(make_read_func_hex(
 			extract_hex("20 02 0020")
 		))
 		assert.are.same(
