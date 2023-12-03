@@ -1145,6 +1145,43 @@ local function parse_packet_subscribe(ptype, flags, input)
 	return packet
 end
 
+-- SUBACK return codes/reason code strings
+-- DOC: Table 3‑8 - Subscribe Reason Codes
+local suback_rc = {
+	[0x00] = "Granted QoS 0",
+	[0x01] = "Granted QoS 1",
+	[0x02] = "Granted QoS 2",
+	[0x80] = "Unspecified error",
+	[0x83] = "Implementation specific error",
+	[0x87] = "Not authorized",
+	[0x8F] = "Topic Filter invalid",
+	[0x91] = "Packet Identifier in use",
+	[0x97] = "Quota exceeded",
+	[0x9E] = "Shared Subscriptions not supported",
+	[0xA1] = "Subscription Identifiers not supported",
+	[0xA2] = "Wildcard Subscriptions not supported",
+}
+protocol5.suback_rc = suback_rc
+
+--- Parsed SUBACK packet metatable
+local suback_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_strings = function(self) -- Returns reason strings for the SUBACK packet according to its rc field
+		local human_readable = {}
+		for i, rc in ipairs(self.rc) do
+			local reason_string = suback_rc[rc]
+			if reason_string then
+				human_readable[i] = reason_string
+			else
+				human_readable[i] = "Unknown: "..tostring(rc)
+			end
+		end
+		return human_readable
+	end,
+}
+suback_packet_mt.__index = suback_packet_mt
+protocol5.suback_packet_mt = suback_packet_mt
+
 -- Parse SUBACK packet, DOC: 3.9 SUBACK – Subscribe acknowledgement
 local function parse_packet_suback(ptype, flags, input)
 	-- DOC: 3.9.1 SUBACK Fixed Header
@@ -1158,7 +1195,7 @@ local function parse_packet_suback(ptype, flags, input)
 		return false, packet_type[ptype]..": failed to parse packet_id: "..err
 	end
 	-- DOC: 3.9.2.1 SUBACK Properties
-	local packet = setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
+	local packet = setmetatable({type=ptype, packet_id=packet_id}, suback_packet_mt)
 	local ok
 	ok, err = parse_properties(ptype, read_data, input, packet)
 	if not ok then
@@ -1177,7 +1214,7 @@ local function parse_packet_suback(ptype, flags, input)
 	if not next(rcs) then
 		return false, packet_type[ptype]..": expecting at least one reason code"
 	end
-	packet.rc = rcs -- TODO: reason codes table somewhere should be placed?
+	packet.rc = rcs
 	return packet
 end
 
@@ -1218,6 +1255,38 @@ local function parse_packet_unsubscribe(ptype, flags, input)
 	return packet
 end
 
+-- UNSUBACK Reason Codes
+-- DOC[2]: Table 3‑9 - Unsubscribe Reason Codes
+local unsuback_rc = {
+	[0x00] = "Success",
+	[0x11] = "No subscription existed",
+	[0x80] = "Unspecified error",
+	[0x83] = "Implementation specific error",
+	[0x87] = "Not authorized",
+	[0x8F] = "Topic Filter invalid",
+	[0x91] = "Packet Identifier in use",
+}
+protocol5.unsuback_rc = unsuback_rc
+
+--- Parsed UNSUBACK packet metatable
+local unsuback_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_strings = function(self) -- Returns reason strings for the UNSUBACK packet according to its rc field
+		local human_readable = {}
+		for i, rc in ipairs(self.rc) do
+			local reason_string = unsuback_rc[rc]
+			if reason_string then
+				human_readable[i] = reason_string
+			else
+				human_readable[i] = "Unknown: "..tostring(rc)
+			end
+		end
+		return human_readable
+	end,
+}
+unsuback_packet_mt.__index = unsuback_packet_mt
+protocol5.unsuback_packet_mt = unsuback_packet_mt
+
 -- Parse UNSUBACK packet, DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
 local function parse_packet_unsuback(ptype, flags, input)
 	-- DOC: 3.11.1 UNSUBACK Fixed Header
@@ -1231,7 +1300,7 @@ local function parse_packet_unsuback(ptype, flags, input)
 		return false, packet_type[ptype]..": failed to parse packet_id: "..err
 	end
 	-- 3.11.2.1 UNSUBACK Properties
-	local packet = setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
+	local packet = setmetatable({type=ptype, packet_id=packet_id}, unsuback_packet_mt)
 	local ok
 	ok, err = parse_properties(ptype, read_data, input, packet)
 	if not ok then
@@ -1272,6 +1341,55 @@ local function parse_packet_pingresp(ptype, flags, input_)
 	return setmetatable({type=ptype, properties={}, user_properties={}}, packet_mt)
 end
 
+-- DISCONNECT reason codes
+-- DOC: Table 3‑10 – Disconnect Reason Code values
+local disconnect_rc = {
+	[0x00] = "Normal disconnection",
+	[0x04] = "Disconnect with Will Message",
+	[0x80] = "Unspecified error",
+	[0x81] = "Malformed Packet",
+	[0x82] = "Protocol Error",
+	[0x83] = "Implementation specific error",
+	[0x87] = "Not authorized",
+	[0x89] = "Server busy",
+	[0x8B] = "Server shutting down",
+	[0x8D] = "Keep Alive timeout",
+	[0x8E] = "Session taken over",
+	[0x8F] = "Topic Filter invalid",
+	[0x90] = "Topic Name invalid",
+	[0x93] = "Receive Maximum exceeded",
+	[0x94] = "Topic Alias invalid",
+	[0x95] = "Packet too large",
+	[0x96] = "Message rate too high",
+	[0x97] = "Quota exceeded",
+	[0x98] = "Administrative action",
+	[0x99] = "Payload format invalid",
+	[0x9A] = "Retain not supported",
+	[0x9B] = "QoS not supported",
+	[0x9C] = "Use another server",
+	[0x9D] = "Server moved",
+	[0x9E] = "Shared Subscriptions not supported",
+	[0x9F] = "Connection rate exceeded",
+	[0xA0] = "Maximum connect time",
+	[0xA1] = "Subscription Identifiers not supported",
+	[0xA2] = "Wildcard Subscriptions not supported",
+}
+protocol5.disconnect_rc = disconnect_rc
+
+--- Parsed DISCONNECT packet metatable
+local disconnect_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_string = function(self) -- Returns reason string for the DISCONNECT packet according to its rc field
+		local reason_string = disconnect_rc[self.rc]
+		if not reason_string then
+			reason_string = "Unknown: "..self.rc
+		end
+		return reason_string
+	end,
+}
+disconnect_packet_mt.__index = disconnect_packet_mt
+protocol5.disconnect_packet_mt = disconnect_packet_mt
+
 -- Parse DISCONNECT packet, DOC: 3.14 DISCONNECT – Disconnect notification
 local function parse_packet_disconnect(ptype, flags, input)
 	-- DOC: 3.14.1 DISCONNECT Fixed Header
@@ -1279,11 +1397,11 @@ local function parse_packet_disconnect(ptype, flags, input)
 		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	local read_data = input.read_func
-	local packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, packet_mt)
+	local packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, disconnect_packet_mt)
 	if input.available > 0 then
 		-- DOC: 3.14.2 DISCONNECT Variable Header
 		-- DOC: 3.14.2.1 Disconnect Reason Code
-		local rc, err = parse_uint8(read_data) -- TODO: reason codes table?
+		local rc, err = parse_uint8(read_data)
 		if not rc then
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end

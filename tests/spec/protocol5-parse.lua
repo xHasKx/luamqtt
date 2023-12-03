@@ -305,6 +305,26 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 		)
 	end)
 
+	it("CONNACK with unknown reason code, minimal params and without properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				20 					-- packet type == 2 (CONNACK), flags == 0
+				03 					-- variable length == 3 bytes
+					00 				-- 0-th bit is sp (session present) -- DOC: 3.2.2.1 Connect Acknowledge Flags
+					20 				-- connect reason code
+					00				-- properties length
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.CONNACK, sp=false, rc=32, properties={}, user_properties={},
+			},
+			packet
+		)
+		assert.are.same("Unknown: 32", packet:reason_string())
+	end)
+
 	it("CONNACK with full params and without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[
@@ -1045,7 +1065,7 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
 					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world")  -- DOC: 3.4.2.2.3 User Property
 
 					00					-- Subscribe Reason Codes, 0x00 == Granted QoS 0
-					01					-- Subscribe Reason Codes, 0x01 == Granted QoS 1
+					09					-- Subscribe Reason Codes, 0x09 == Unknown
 					80					-- Subscribe Reason Codes, 0x80 == Unspecified error
 					97					-- Subscribe Reason Codes, 0x97 == Quota exceeded
 			]]
@@ -1053,7 +1073,7 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
 		assert.is_nil(err)
 		assert.are.same(
 			{
-				type=pt.SUBACK, packet_id=0x0101, rc={0, 1, 0x80, 0x97},
+				type=pt.SUBACK, packet_id=0x0101, rc={0, 9, 0x80, 0x97},
 				properties={
 					reason_string = "it's okay",
 				},
@@ -1062,6 +1082,15 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
 				},
 			},
 			packet
+		)
+		assert.are.same(
+			{
+				"Granted QoS 0",
+				"Unknown: 9",
+				"Unspecified error",
+				"Quota exceeded",
+			},
+			packet:reason_strings()
 		)
 	end)
 end)
@@ -1219,13 +1248,13 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBACK[11]", function()
 					00					-- Unsubscribe Reason Codes, 0x00 == Success
 					11					-- Unsubscribe Reason Codes, 0x11 == No subscription existed
 					80					-- Unsubscribe Reason Codes, 0x80 == Unspecified error
-					87					-- Unsubscribe Reason Codes, 0x87 == Not authorized
+					05					-- Unsubscribe Reason Codes, 0x05 == Unknown
 			]]
 		))
 		assert.is_nil(err)
 		assert.are.same(
 			{
-				type=pt.UNSUBACK, packet_id=0x3434, rc={0, 0x11, 0x80, 0x87},
+				type=pt.UNSUBACK, packet_id=0x3434, rc={0, 0x11, 0x80, 0x5},
 				properties={
 					reason_string = "it's okay",
 				},
@@ -1234,6 +1263,15 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBACK[11]", function()
 				},
 			},
 			packet
+		)
+		assert.are.same(
+			{
+				"Success",
+				"No subscription existed",
+				"Unspecified error",
+				"Unknown: 5",
+			},
+			packet:reason_strings()
 		)
 	end)
 end)
@@ -1339,6 +1377,27 @@ describe("MQTT v5.0 protocol: parsing packets: DISCONNECT[14]", function()
 		)
 	end)
 
+	it("with unknown reason code, without properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				E0 					-- packet type == 14 (DISCONNECT), flags == 0
+				02 					-- variable length == 2 bytes
+
+					20					-- reason code == 0x20 (Unknown), DOC: 3.14.2.1 Disconnect Reason Code
+					00					-- properties length == 0
+
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.DISCONNECT, rc=32, properties={}, user_properties={},
+			},
+			packet
+		)
+		assert.are.same("Unknown: 32", packet:reason_string())
+	end)
+
 	it("with non-zero reason code, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[
@@ -1388,6 +1447,7 @@ describe("MQTT v5.0 protocol: parsing packets: DISCONNECT[14]", function()
 			},
 			packet
 		)
+		assert.are.same("Malformed Packet", packet:reason_string())
 	end)
 end)
 
