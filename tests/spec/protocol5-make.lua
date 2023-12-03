@@ -400,7 +400,7 @@ describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
 					hello = "world",
 					{"array", "item 1"},
 					{"array", "item 3"},
-					{"array", "item 2"},
+					{"array", "item 2"}, -- NOTE: the same as adding `array = "item 2"` to user_properties table
 					["To Infinity"] = "and Beyond",
 				},
 			}))
@@ -845,7 +845,59 @@ describe("MQTT v5.0 protocol: making packets: SUBSCRIBE[8]", function()
 	end)
 end)
 
--- TODO: SUBACK[9]
+describe("MQTT v5.0 protocol: making packets: SUBACK[9]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+
+	it("SUBACK minimal", function()
+		assert.are.equal(
+			extract_hex[[
+				90						-- packet type == 0x9 == 9 (SUBACK), flags == 0 (fixed value)
+				04						-- length == 0x04 == 4 bytes
+											-- next is 4 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					00						-- properties length
+											-- payload:
+					02						-- array of Reason Codes with 1 item
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 14,
+				rc = { 2, },
+			}))
+		)
+	end)
+
+	it("SUBACK with full properties", function()
+		assert.are.equal(
+			extract_hex[[
+				90						-- packet type == 0x9 == 9 (SUBACK), flags == 0 (fixed value)
+				1E						-- length == 0x1E == 30 bytes
+											-- next is 30 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					16						-- properties length - 22 bytes
+											-- properties:
+					1F 0004 6F6B6179		-- property 0x1F == "okay" -- DOC: 3.9.2.1.2 Reason String
+					26 0005 68656C6C6F 0005 7568206E6F	-- property 0x26 (user) == ("hello", "uh no") -- DOC: 3.9.2.1.3 User Property
+											-- payload:
+					02 01 00 80 87			-- array of Reason Codes with 5 items -- DOC: Table 3‑8 - Subscribe Reason Codes
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 14,
+				rc = { 2, 1, 0, 0x80, 0x87, },
+				properties = {
+					reason_string = "okay",
+				},
+				user_properties = {
+					hello = "uh no",
+				},
+			}))
+		)
+	end)
+end)
 
 describe("MQTT v5.0 protocol: making packets: UNSUBSCRIBE[10]", function()
 	local tools = require("mqtt.tools")
@@ -861,7 +913,7 @@ describe("MQTT v5.0 protocol: making packets: UNSUBSCRIBE[10]", function()
 
 											-- next is 10 bytes of variable header and payload:
 
-					000E					-- packet_id == 3
+					000E					-- packet_id == 14
 					00						-- properties length
 
 											-- payload:
@@ -882,11 +934,11 @@ describe("MQTT v5.0 protocol: making packets: UNSUBSCRIBE[10]", function()
 		assert.are.equal(
 			extract_hex[[
 				A2						-- packet type == 0xA == 10 (UNSUBSCRIBE), flags == 2 (fixed value)
-				30						-- length == 0x0A == 10 bytes
+				30						-- length == 0x30 == 48 bytes
 
-											-- next is 10 bytes of variable header and payload:
+											-- next is 48 bytes of variable header and payload:
 
-					000E					-- packet_id == 3
+					000E					-- packet_id == 14
 					20						-- properties length == 32 bytes
 
 											-- next is 32 bytes of properties:
@@ -915,7 +967,59 @@ describe("MQTT v5.0 protocol: making packets: UNSUBSCRIBE[10]", function()
 	end)
 end)
 
--- TODO: UNSUBACK[11]
+describe("MQTT v5.0 protocol: making packets: UNSUBACK[11]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+
+	it("UNSUBACK minimal", function()
+		assert.are.equal(
+			extract_hex[[
+				B0						-- packet type == 0xB == 11 (UNSUBACK), flags == 0 (fixed value)
+				04						-- length == 0x04 == 4 bytes
+											-- next is 4 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					00						-- properties length
+											-- payload:
+					02						-- array of Reason Codes with 1 item
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.UNSUBACK,
+				packet_id = 14,
+				rc = { 2, },
+			}))
+		)
+	end)
+
+	it("UNSUBACK with full properties", function()
+		assert.are.equal(
+			extract_hex[[
+				B0						-- packet type == 0xB == 11 (UNSUBACK), flags == 0 (fixed value)
+				1E						-- length == 0x1E == 30 bytes
+											-- next is 30 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					16						-- properties length - 22 bytes
+											-- properties:
+					1F 0004 6F6B6179		-- property 0x1F == "okay" -- DOC: 3.11.2.1.2 Reason String
+					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world") -- DOC: 3.11.2.1.3 User Property
+											-- payload:
+					00 00 00 80 11			-- array of Reason Codes with 5 items -- DOC: Table 3‑9 - Unsubscribe Reason Codes
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.UNSUBACK,
+				packet_id = 14,
+				rc = { 0, 0, 0, 0x80, 0x11, },
+				properties = {
+					reason_string = "okay",
+				},
+				user_properties = {
+					hello = "world",
+				},
+			}))
+		)
+	end)
+end)
 
 describe("MQTT v5.0 protocol: making packets: PINGREQ[12]", function()
 	local tools = require("mqtt.tools")
@@ -936,7 +1040,24 @@ describe("MQTT v5.0 protocol: making packets: PINGREQ[12]", function()
 	end)
 end)
 
--- TODO: PINGRESL[13]
+describe("MQTT v5.0 protocol: making packets: PINGRESP[13]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+
+	it("PINGRESP", function()
+		assert.are.equal(
+			extract_hex[[
+				D0						-- packet type == 0xD == 13 (PINGRESP), flags == 0
+				00						-- length == 0x00 == 0 bytes
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.PINGRESP,
+			}))
+		)
+	end)
+end)
 
 describe("MQTT v5.0 protocol: making packets: DISCONNECT[14]", function()
 	local tools = require("mqtt.tools")

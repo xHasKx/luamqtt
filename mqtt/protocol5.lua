@@ -672,6 +672,30 @@ local function make_packet_subscribe(args)
 	return combine(header, variable_header, payload)
 end
 
+-- Create SUBACK packet, DOC: 3.9 SUBACK – Subscribe acknowledgement
+local function make_packet_suback(args)
+	-- check args
+	assert(type(args.packet_id) == "number", "expecting .packet_id to be a number")
+	assert(check_packet_id(args.packet_id), "expecting .packet_id to be a valid Packet Identifier")
+	assert(type(args.rc) == "table", "expecting .rc to be a table")
+	assert(#args.rc > 0, "expecting .rc to be a non-empty array")
+	-- DOC: 3.9.2 SUBACK Variable Header
+	local variable_header = combine(
+		make_uint16(args.packet_id),
+		make_properties(packet_type.SUBACK, args)	-- DOC: 3.9.2.1 SUBACK Properties
+	)
+	-- DOC: 3.9.3 SUBACK Payload
+	local payload = combine()
+	for i, rc in ipairs(args.rc) do
+		assert(type(rc) == "number", "expecting .rc["..i.."] to be a number")
+		assert(rc >= 0 and rc <= 255, "expecting .rc["..i.."] to be in range [0, 255]")
+		payload:append(make_uint8(rc))
+	end
+	-- DOC: 3.9.1 SUBACK Fixed Header
+	local header = make_header(packet_type.SUBACK, 0, variable_header:len() + payload:len()) -- NOTE: fixed flags value 0x0
+	return combine(header, variable_header, payload)
+end
+
 -- Create UNSUBSCRIBE packet, DOC: 3.10 UNSUBSCRIBE – Unsubscribe request
 local function make_packet_unsubscribe(args)
 	-- check args
@@ -692,6 +716,30 @@ local function make_packet_unsubscribe(args)
 	end
 	-- DOC: 3.10.1 UNSUBSCRIBE Fixed Header
 	local header = make_header(packet_type.UNSUBSCRIBE, 2, variable_header:len() + payload:len()) -- flags: fixed 0010 bits, DOC: Figure 3.28 – UNSUBSCRIBE packet Fixed Header
+	return combine(header, variable_header, payload)
+end
+
+-- Create UNSUBACK packet, DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
+local function make_packet_unsuback(args)
+	-- check args
+	assert(type(args.packet_id) == "number", "expecting .packet_id to be a number")
+	assert(check_packet_id(args.packet_id), "expecting .packet_id to be a valid Packet Identifier")
+	assert(type(args.rc) == "table", "expecting .rc to be a table")
+	assert(#args.rc > 0, "expecting .rc to be a non-empty array")
+	-- DOC: 3.11.2 UNSUBACK Variable Header
+	local variable_header = combine(
+		make_uint16(args.packet_id),
+		make_properties(packet_type.UNSUBACK, args)	-- DOC: 3.11.2.1 UNSUBACK Properties
+	)
+	-- DOC: 3.11.3 UNSUBACK Payload
+	local payload = combine()
+	for i, rc in ipairs(args.rc) do
+		assert(type(rc) == "number", "expecting .rc["..i.."] to be a number")
+		assert(rc >= 0 and rc <= 255, "expecting .rc["..i.."] to be in range [0, 255]")
+		payload:append(make_uint8(rc))
+	end
+	-- DOC: 3.11.1 UNSUBACK Fixed Header
+	local header = make_header(packet_type.UNSUBACK, 0, variable_header:len() + payload:len()) -- NOTE: fixed flags value 0x0
 	return combine(header, variable_header, payload)
 end
 
@@ -750,14 +798,18 @@ function protocol5.make_packet(args)
 		return make_packet_pubcomp(args)
 	elseif ptype == packet_type.SUBSCRIBE then		-- 8
 		return make_packet_subscribe(args)
-	-- TODO: SUBACK
+	elseif ptype == packet_type.SUBACK then			-- 9
+		return make_packet_suback(args)
 	elseif ptype == packet_type.UNSUBSCRIBE then	-- 10
 		return make_packet_unsubscribe(args)
-	-- TODO: UNSUBACK
+	elseif ptype == packet_type.UNSUBACK then		-- 11
+		return make_packet_unsuback(args)
 	elseif ptype == packet_type.PINGREQ then		-- 12
 		-- DOC: 3.12 PINGREQ – PING request
 		return combine("\192\000") -- 192 == 0xC0, type == 12, flags == 0
-	-- TODO: PINGRESP
+	elseif ptype == packet_type.PINGRESP then		-- 12
+		-- DOC: 3.13 PINGRESP – PING response
+		return combine("\208\000") -- 208 == 0xD0, type == 13, flags == 0
 	elseif ptype == packet_type.DISCONNECT then		-- 14
 		return make_packet_disconnect(args)
 	elseif ptype == packet_type.AUTH then			-- 15
