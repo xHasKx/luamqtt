@@ -240,6 +240,30 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		)
 	end)
 
+	it("connect flags: username=true, password=true, non-empty client id", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "luamqtt",
+				username = "user", password = "secret",
+				properties = {}, user_properties = {},
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					22 										-- variable length == 34 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						C0									-- connect flags: username=true, password=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0007 6C75616D717474					-- client id length (7 bytes) and its string content ("luamqtt")
+						0004 75736572						-- username length (4 bytes) and its string content - "user"
+						0006 736563726574					-- password length (6 bytes) and its string content - "secret"
+				]]
+			))
+		)
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
