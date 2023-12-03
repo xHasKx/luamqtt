@@ -338,6 +338,8 @@ local function make_packet_unsuback(args)
 	local variable_header = combine(
 		make_uint16(args.packet_id)
 	)
+	-- DOC: 3.11.3 Payload
+	-- The UNSUBACK Packet has no payload.
 	-- DOC: 3.11.1 Fixed header
 	local header = make_header(packet_type.UNSUBACK, 0, variable_header:len()) -- NOTE: fixed flags value 0x0
 	return combine(header, variable_header)

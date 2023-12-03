@@ -642,7 +642,7 @@ local function make_packet_subscribe(args)
 	for i, subscription in ipairs(args.subscriptions) do
 		assert(type(subscription) == "table", "expecting .subscriptions["..i.."] to be a table")
 		assert(type(subscription.topic) == "string", "expecting .subscriptions["..i.."].topic to be a string")
-		if subscription.qos ~= nil then -- TODO: maybe remove that check and make .qos mandatory?
+		if subscription.qos ~= nil then
 			assert(type(subscription.qos) == "number", "expecting .subscriptions["..i.."].qos to be a number")
 			assert(check_qos(subscription.qos), "expecting .subscriptions["..i.."].qos to be a valid QoS value")
 		end
