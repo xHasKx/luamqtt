@@ -21,6 +21,14 @@ This library is written in **pure-lua** to provide maximum portability.
 * Full MQTT v5.0 client-side support
 * Support for Copas, OpenResty/Nginx, and an included lightweight ioloop.
 
+# Installation
+
+From LuaRocks:
+
+    luarocks install luamqtt
+
+[More details](./docs_topics/01-installation.md)
+
 # Documentation
 
 See [https://xhaskx.github.io/luamqtt/](https://xhaskx.github.io/luamqtt/)
