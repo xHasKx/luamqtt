@@ -12,4 +12,4 @@ in the rockspec.
 To install from source clone the repo and make sure the `./mqtt/` folder is in your
 Lua search path.
 
-Check the [dependencies](./02-dependencies.md.html) on how (and when) to install those.
+Check the [dependencies](./02-dependencies.md) on how (and when) to install those.
