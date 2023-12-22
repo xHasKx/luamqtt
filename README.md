@@ -33,6 +33,8 @@ From LuaRocks:
 
 See [https://xhaskx.github.io/luamqtt/](https://xhaskx.github.io/luamqtt/)
 
+[More details](./docs_topics/README.md)
+
 # Forum
 
 See [flespi forum thread](https://forum.flespi.com/d/97-luamqtt-mqtt-client-written-in-pure-lua)
