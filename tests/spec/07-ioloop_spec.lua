@@ -1,8 +1,8 @@
--- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/module-basics.lua
 -- DOC v3.1.1: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 -- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 
 describe("ioloop", function()
+
 	-- load MQTT lua library
 	local mqtt = require("mqtt")
 
@@ -22,9 +22,14 @@ describe("ioloop", function()
 
 		-- configure MQTT client handlers
 		client:on{
+			error = function(err)
+				print("[error] ", err)
+			end,
 			connect = function()
+				--print "connected"
 				-- subscribe, then send signal message
 				assert(client:subscribe{topic=prefix.."/ioloop/signal", callback=function()
+					--print "subscribed"
 					assert(client:publish{
 						topic = prefix.."/ioloop/signal",
 						payload = "signal",
@@ -44,6 +49,7 @@ describe("ioloop", function()
 			if signal then
 				-- disconnect MQTT client, thus it will be removed from ioloop
 				client:disconnect()
+				mqtt.get_ioloop():remove(client)
 
 				-- and remove this function from ioloop to stop it (no more clients left)
 				mqtt.get_ioloop():remove(loop_func)

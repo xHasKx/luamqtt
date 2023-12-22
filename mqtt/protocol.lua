@@ -556,14 +556,14 @@ function protocol.start_parse_packet(read_func)
 	-- DOC[v5.0]: https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901020
 	byte1, err = read_func(1)
 	if not byte1 then
-		return false, "failed to read first byte: "..err
+		return false, err
 	end
 	byte1 = str_byte(byte1, 1, 1)
 	local ptype = rshift(byte1, 4)
 	local flags = band(byte1, 0xF)
 	len, err = parse_var_length(read_func)
 	if not len then
-		return false, "failed to parse remaining length: "..err
+		return false, err
 	end
 
 	-- create packet parser instance (aka input)
@@ -574,14 +574,14 @@ function protocol.start_parse_packet(read_func)
 		data = ""
 	end
 	if not data then
-		return false, "failed to read packet data: "..err
+		return false, err
 	end
 	input.available = data:len()
 
 	-- read data function for the input instance
 	input.read_func = function(size)
 		if size > input.available then
-			return false, "not enough data to read size: "..size
+			return false, size
 		end
 		local off = input[1]
 		local res = str_sub(data, off, off + size - 1)

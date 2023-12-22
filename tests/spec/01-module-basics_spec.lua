@@ -1,4 +1,3 @@
--- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/module-basics.lua
 -- DOC v3.1.1: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 -- DOC v5.0: http://docs.oasis-open.org/mqtt/mqtt/v5.0/cos01/mqtt-v5.0-cos01.html
 
@@ -18,8 +17,9 @@ describe("MQTT lua library component test:", function()
 		require("mqtt.const")
 		require("mqtt.client")
 		require("mqtt.ioloop")
-		require("mqtt.luasocket")
-		require("mqtt.luasocket_ssl")
+		require("mqtt.connector.luasocket")
+		require("mqtt.connector.copas")
+		-- require("mqtt.connector.nginx") -- cannot load this one without nginx
 		require("mqtt.protocol4")
 		require("mqtt.protocol5")
 	end)
@@ -290,7 +290,6 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal(2097152, protocol.parse_var_length_nonzero(make_read_func("80808001")))
 		assert.are.equal(268435455, protocol.parse_var_length_nonzero(make_read_func("FFFFFF7F")))
 		assert.is_false(protocol.parse_var_length_nonzero(make_read_func("FFFFFFFF")))
-
 	end)
 
 	it("protocol.next_packet_id", function()

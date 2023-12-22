@@ -1,4 +1,5 @@
 local/
 luacov.stats.out
 luacov.report.out
+examples/openresty/logs/*.log
 *.swp

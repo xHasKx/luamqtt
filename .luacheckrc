@@ -8,21 +8,22 @@
 
 max_line_length = 200
 
-std = "min"
-
-files["mqtt/**"] = {
-	ignore = {
-		"113/unpack",
-		"212/.+_",						-- unused argument value_
-	}
+not_globals = {
+    "string.len",
+    "table.getn",
 }
 
-files["tests/spec/**"] = {
-	ignore = {
-		"113/describe",
-		"113/it",
-		"143/assert",
-	}
+include_files = {
+	"**/*.lua",
+	"*.rockspec",
+	".busted",
+	".luacheckrc",
 }
+
+files["tests/spec/**/*.lua"] = { std = "+busted" }
+files["examples/openresty/**/*.lua"] = { std = "+ngx_lua" }
+files["mqtt/loop/detect.lua"] = { std = "+ngx_lua" }
+files["mqtt/loop/nginx.lua"] = { std = "+ngx_lua" }
+files["mqtt/connector/nginx.lua"] = { std = "+ngx_lua" }
 
 -- vim: ts=4 sts=4 sw=4 noet ft=lua

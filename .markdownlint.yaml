@@ -1,3 +1,4 @@
 default: true
 single-title: false
 line-length: false
+code-block-style: false

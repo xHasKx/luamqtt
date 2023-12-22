@@ -37,6 +37,9 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
 		fi
 		luarocks install busted > /dev/null
 		luarocks install copas > /dev/null
+		luarocks install ansicolors > /dev/null
+		# using --dev since the 'defaulLogger' feature hasn't been released yet
+		luarocks install lualogging > /dev/null
 		if [ -d /usr/lib/x86_64-linux-gnu ]; then
 			# debian-based OS
 			[ -f /etc/lsb-release ] && . /etc/lsb-release
@@ -56,10 +59,10 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
 		echo "installing coveralls lib for $ver"
 		luarocks install luacov-coveralls
 		echo "running tests and collecting coverage for $ver"
-		busted -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' $BFLAGS tests/spec/*.lua
+		busted -o utfTerminal --coverage 2> /dev/null
 	else
 		echo "running tests for $ver"
-		busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' $BFLAGS tests/spec/*.lua
+		busted -o utfTerminal 2> /dev/null
 	fi
 
 done
