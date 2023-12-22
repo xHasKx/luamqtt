@@ -25,5 +25,5 @@ timer itself will go in an endless loop to do the keepalives.
 
 * [conf/nginx.conf](conf/nginx.conf): configuration for the nginx daemon to run lua scripts
 * [app/openresty.lua](app/openresty.lua): example lua script maintaining connection
-* [mqtt/loop/nginx.lua](mqtt/loop/nginx.lua): how to add a client in an Nginx environment
+* [mqtt/loop/nginx.lua](../../mqtt/loop/nginx.lua): how to add a client in an Nginx environment
 * `start.sh`, `stop.sh`, `quit.sh`, `restart.sh`: optional scripts to manage the OpenResty instance
