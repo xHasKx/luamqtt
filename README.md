@@ -60,6 +60,7 @@ luarocks install luasocket
 luarocks install luasec
 luarocks install copas
 luarocks install lualogging
+luarocks install ansicolors
 ```
 
 Running the tests:
