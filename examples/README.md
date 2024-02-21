@@ -3,6 +3,7 @@
 The simplest example are in `examples/simple.lua` file.
 
 It's performing all basic MQTT actions:
+
 1. connecting to broker
 2. subscribing to topic
 3. publishing message after subscription creation
@@ -10,7 +11,8 @@ It's performing all basic MQTT actions:
 5. disconnecting from MQTT broker
 
 Here is an expected output of such script:
-```
+
+```console
 created MQTT client     mqtt.client{id="luamqtt-v2-0-0-5807dc7"}
 running ioloop for it
 connected:      CONNACK{rc=0, sp=false, type=2}

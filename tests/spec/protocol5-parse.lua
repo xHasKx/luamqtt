@@ -26,7 +26,6 @@ local function make_read_func_hex(hex)
 	end
 end
 
-local extract_hex = require("./tools/extract_hex")
 
 describe("MQTT v5.0 protocol: parsing packets: generic", function()
 	local protocol5 = require("mqtt.protocol5")
@@ -41,10 +40,251 @@ describe("MQTT v5.0 protocol: parsing packets: generic", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: CONNACK", function()
+describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
+	local mqtt = require("mqtt")
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
+
+	it("minimal properties", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
+				properties = {}, user_properties = {},
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					0D 										-- variable length == 13 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						00									-- connect flags
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: clean=true", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = true, keep_alive = 0, id = "",
+				properties = {}, user_properties = {},
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					0D 										-- variable length == 13 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						02									-- connect flags: clean=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: clean=false, will=true, no props", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
+				properties = {}, user_properties = {},
+				will = {
+					qos = 0, retain = false,
+					topic = "bye", payload = "bye",
+					properties = {}, user_properties = {},
+				}
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					18 										-- variable length == 24 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						04									-- connect flags: clean=false, will=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+						00									-- will message properties length (0 bytes)
+						0003 627965							-- will message topic: 3 bytes length and string "bye"
+						0003 627965							-- will message payload: 3 bytes length and bytes of string "bye"
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: clean=false, will=true, will qos=2, will retain=true, and full will properties", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
+				properties = {}, user_properties = {},
+				will = {
+					qos = 2, retain = true,
+					topic = "bye", payload = "bye",
+					properties = {
+						content_type = "text/plain", correlation_data = "1234", message_expiry_interval = 10,
+						payload_format_indicator = 1, response_topic = "resp", will_delay_interval = 30,
+					}, user_properties = {
+						{"hello", "world"}, {"hello", "again"},
+						a = "b", hello = "again",
+					},
+				}
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					64 										-- variable length == 100 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						34									-- connect flags: clean=false, will=true, will qos=2, will retain=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+
+						4C									-- properties length (76 bytes)
+						18 0000001E							-- property 0x18 == 30				-- DOC: 3.1.3.2.2 Will Delay Interval
+						01 01								-- property 0x01 == 1				-- DOC: 3.1.3.2.3 Payload Format Indicator
+						02 0000000A							-- property 0x02 == 10				-- DOC: 3.1.3.2.4 Message Expiry Interval
+						03 000A 746578742F706C61696E		-- property 0x03 == "text/plain"	-- DOC: 3.1.3.2.5 Content Type
+						08 0004 72657370					-- property 0x08 == "resp"			-- DOC: 3.1.3.2.6 Response Topic
+						09 0004 31323334					-- property 0x09 == "1234"			-- DOC: 3.1.3.2.7 Correlation Data
+						26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world")	-- DOC: 3.1.3.2.8 User Property
+						26 0005 68656C6C6F 0005 616761696E	-- property 0x26 (user) == ("hello", "again")	-- DOC: 3.1.3.2.8 User Property
+						26 0001 61 0001 62					-- property 0x26 (user) == ("a", "b")			-- DOC: 3.1.3.2.8 User Property
+
+						0003 627965							-- will message topic: 3 bytes length and string "bye"
+						0003 627965							-- will message payload: 3 bytes length and bytes of string "bye"
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: password=true, keep_alive=30", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 30, id = "",
+				password = "secret",
+				properties = {}, user_properties = {},
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					15 										-- variable length == 21 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						40									-- connect flags: password=true
+						001E								-- keep alive == 30
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+						0006 736563726574					-- password length (6 bytes) and its string content - "secret"
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: username=true", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
+				username = "user",
+				properties = {}, user_properties = {},
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					13 										-- variable length == 19 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						80									-- connect flags: username=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+						0004 75736572						-- username length (4 bytes) and its string content - "user"
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: username=true, password=true", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "",
+				username = "user", password = "secret",
+				properties = {}, user_properties = {},
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					1B 										-- variable length == 27 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						C0									-- connect flags: username=true, password=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+						0004 75736572						-- username length (4 bytes) and its string content - "user"
+						0006 736563726574					-- password length (6 bytes) and its string content - "secret"
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: username=true, password=true, non-empty client id", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = false, keep_alive = 0, id = "luamqtt",
+				username = "user", password = "secret",
+				properties = {}, user_properties = {},
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					22 										-- variable length == 34 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						C0									-- connect flags: username=true, password=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0007 6C75616D717474					-- client id length (7 bytes) and its string content ("luamqtt")
+						0004 75736572						-- username length (4 bytes) and its string content - "user"
+						0006 736563726574					-- password length (6 bytes) and its string content - "secret"
+				]]
+			))
+		)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
+
+	it("CONNACK with invalid flags", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				21 					-- packet type == 2 (CONNACK), flags == 0x1
+				03 					-- variable length == 3 bytes
+					00 				-- 0-th bit is sp (session present) -- DOC: 3.2.2.1 Connect Acknowledge Flags
+					00 				-- connect reason code
+					00				-- properties length
+			]]
+		))
+		assert.are.same(packet, false)
+		assert.are.same(err, "CONNACK: unexpected flags value: 1")
+	end)
 
 	it("CONNACK with minimal params and without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -63,6 +303,26 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK", function()
 			},
 			packet
 		)
+	end)
+
+	it("CONNACK with unknown reason code, minimal params and without properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				20 					-- packet type == 2 (CONNACK), flags == 0
+				03 					-- variable length == 3 bytes
+					00 				-- 0-th bit is sp (session present) -- DOC: 3.2.2.1 Connect Acknowledge Flags
+					20 				-- connect reason code
+					00				-- properties length
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.CONNACK, sp=false, rc=32, properties={}, user_properties={},
+			},
+			packet
+		)
+		assert.are.same("Unknown: 32", packet:reason_string())
 	end)
 
 	it("CONNACK with full params and without properties", function()
@@ -93,7 +353,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK", function()
 					01 				-- 0-th bit is sp (session present) -- DOC: 3.2.2.1 Connect Acknowledge Flags
 					82 				-- connect reason code
 
-					72				-- properties length == 0x63 == 99 bytes
+					72				-- properties length == 0x72 == 114 bytes
 
 					11 00000E10		-- property 0x11 == 3600, -- DOC: 3.2.2.3.2 Session Expiry Interval
 					21 1234			-- property 0x21 == 0x1234, -- DOC: 3.2.2.3.3 Receive Maximum
@@ -148,10 +408,11 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: PUBLISH", function()
+describe("MQTT v5.0 protocol: parsing packets: PUBLISH[3]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("PUBLISH with minimal params, without payload and without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -290,10 +551,11 @@ describe("MQTT v5.0 protocol: parsing packets: PUBLISH", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: PUBACK", function()
+describe("MQTT v5.0 protocol: parsing packets: PUBACK[4]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -364,10 +626,11 @@ describe("MQTT v5.0 protocol: parsing packets: PUBACK", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: PUBREC", function()
+describe("MQTT v5.0 protocol: parsing packets: PUBREC[5]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -440,10 +703,11 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREC", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: PUBREL", function()
+describe("MQTT v5.0 protocol: parsing packets: PUBREL[6]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -452,7 +716,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREL", function()
 				02 					-- variable length == 2 bytes
 
 					0003				-- packet_id to acknowledge
-										-- no reason code and properties
+										-- no reason code and no properties
 			]]
 		))
 		assert.is_nil(err)
@@ -514,10 +778,11 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREL", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: PUBCOMP", function()
+describe("MQTT v5.0 protocol: parsing packets: PUBCOMP[7]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("with minimal params, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -588,10 +853,159 @@ describe("MQTT v5.0 protocol: parsing packets: PUBCOMP", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: SUBACK", function()
+describe("MQTT v5.0 protocol: parsing packets: SUBSCRIBE[8]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
+
+	it("with invalid empty subscription list", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				82 					-- packet type == 8 (SUBSCRIBE), flags == 0x2
+				03 					-- variable length == 3 bytes
+
+					0005			-- packet_id
+					00				-- properties length == 0
+			]]
+		))
+		assert.are.same(false, packet)
+		assert.are.same("SUBSCRIBE: empty subscriptions list", err)
+	end)
+
+	it("with minimal params, without properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				82 					-- packet type == 8 (SUBSCRIBE), flags == 0x2
+				0A 					-- variable length == 10 bytes
+
+					0005			-- packet_id
+					00				-- properties length == 0
+
+					0004 74657374	-- topic name == "test"
+					00				-- Subscription Options == 0
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.SUBSCRIBE, packet_id=5, properties={}, user_properties={},
+				subscriptions = {
+					{
+						topic = "test",
+						no_local = false,
+						qos = 0,
+						retain_as_published = false,
+						retain_handling = 0,
+					},
+				},
+			},
+			packet
+		)
+	end)
+
+	it("with properties and several subscriptions", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				82 					-- packet type == 8 (SUBSCRIBE), flags == 0x2
+				3C 					-- variable length == 60 bytes
+
+					0005			-- packet_id
+					11				-- properties length == 17
+
+					0B 01			-- property 0x0B == 1 -- DOC: 3.3.2.3.8 Subscription Identifier
+					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world")  -- DOC: 3.2.2.3.10 User Property
+
+					0005 7465737431	-- topic name == "test1"
+					00				-- Subscription Options == 0
+					0005 7465737432	-- topic name == "test2"
+					01				-- Subscription Options == 1 (qos=1)
+					0005 7465737433	-- topic name == "test3"
+					06				-- Subscription Options == 6 (qos=2, no_local=true)
+					0005 7465737434	-- topic name == "test4"
+					0A				-- Subscription Options == 12 (qos=2, retain_as_published=true)
+					0005 7465737435	-- topic name == "test5"
+					1E				-- Subscription Options == 30 (qos=2, no_local=true, retain_as_published=true, retain_handling=1)
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.SUBSCRIBE, packet_id=5,
+				properties={
+					subscription_identifiers = {1},
+				},
+				user_properties={
+					hello = "world",
+				},
+				subscriptions = {
+					{
+						topic = "test1",
+						no_local = false,
+						qos = 0,
+						retain_as_published = false,
+						retain_handling = 0,
+					},
+					{
+						topic = "test2",
+						no_local = false,
+						qos = 1,
+						retain_as_published = false,
+						retain_handling = 0,
+					},
+					{
+						topic = "test3",
+						no_local = true,
+						qos = 2,
+						retain_as_published = false,
+						retain_handling = 0,
+					},
+					{
+						topic = "test4",
+						no_local = false,
+						qos = 2,
+						retain_as_published = true,
+						retain_handling = 0,
+					},
+					{
+						topic = "test5",
+						no_local = true,
+						qos = 2,
+						retain_as_published = true,
+						retain_handling = 1,
+					},
+				},
+			},
+			packet
+		)
+	end)
+
+	it("with invalid properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				82 					-- packet type == 8 (SUBSCRIBE), flags == 0x2
+				0E 					-- variable length == 14 bytes
+
+					0005			-- packet_id
+					04				-- properties length == 0
+
+					0B 01			-- property 0x0B == 1 -- DOC: 3.3.2.3.8 Subscription Identifier
+					0B 02			-- property 0x0B == 2 -- DOC: 3.3.2.3.8 Subscription Identifier (It is a Protocol Error to include the Subscription Identifier more than once)
+
+					0004 74657374	-- topic name == "test"
+					00				-- Subscription Options == 0
+			]]
+		))
+		assert.are.same(false, packet)
+		assert.are.same('SUBSCRIBE: failed to parse packet properties: it is a Protocol Error to include the subscription_identifiers (11) property more than once', err)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
+	local protocol = require("mqtt.protocol")
+	local pt = assert(protocol.packet_type)
+	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("one subscription, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -651,7 +1065,7 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK", function()
 					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world")  -- DOC: 3.4.2.2.3 User Property
 
 					00					-- Subscribe Reason Codes, 0x00 == Granted QoS 0
-					01					-- Subscribe Reason Codes, 0x01 == Granted QoS 1
+					09					-- Subscribe Reason Codes, 0x09 == Unknown
 					80					-- Subscribe Reason Codes, 0x80 == Unspecified error
 					97					-- Subscribe Reason Codes, 0x97 == Quota exceeded
 			]]
@@ -659,7 +1073,7 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK", function()
 		assert.is_nil(err)
 		assert.are.same(
 			{
-				type=pt.SUBACK, packet_id=0x0101, rc={0, 1, 0x80, 0x97},
+				type=pt.SUBACK, packet_id=0x0101, rc={0, 9, 0x80, 0x97},
 				properties={
 					reason_string = "it's okay",
 				},
@@ -669,13 +1083,110 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK", function()
 			},
 			packet
 		)
+		assert.are.same(
+			{
+				"Granted QoS 0",
+				"Unknown: 9",
+				"Unspecified error",
+				"Quota exceeded",
+			},
+			packet:reason_strings()
+		)
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: UNSUBACK", function()
+describe("MQTT v5.0 protocol: parsing packets: UNSUBSCRIBE[10]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
+
+	it("without subscriptions", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				03 					-- variable length == 3 bytes
+
+					0001			-- packet_id
+					00				-- properties length == 0
+			]]
+		))
+		assert.are.same(false, packet)
+		assert.are.same("UNSUBSCRIBE: empty subscriptions list", err)
+	end)
+
+	it("with minimal params, without properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				09 					-- variable length == 9 bytes
+
+					0002			-- packet_id
+					00				-- properties length == 0
+
+					0004 74657374	-- topic name == "test"
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.UNSUBSCRIBE, packet_id=2, properties={}, user_properties={},
+				subscriptions = { "test" },
+			},
+			packet
+		)
+	end)
+
+	it("with invalid property", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				0C 					-- variable length == 12 bytes
+
+					0001			-- packet_id
+					02				-- properties length == 2
+
+					0B 01			-- property 0x0B == 1 -- DOC: 3.3.2.3.8 Subscription Identifier
+
+					0005 7465737431	-- topic name == "test1"
+			]]
+		))
+		assert.are.same(false, packet)
+		assert.are.same("UNSUBSCRIBE: failed to parse packet properties: property subscription_identifiers (11) is not allowed for that packet type", err)
+	end)
+
+	it("with properties and sever lsubscriptions", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				A2 					-- packet type == 10 (UNSUBSCRIBE), flags == 0x2
+				27 					-- variable length == 39 bytes
+
+					0003			-- packet_id
+					0F				-- properties length == 15
+
+					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world")  -- DOC: 3.2.2.3.10 User Property
+
+					0005 7465737431	-- topic name == "test1"
+					0005 7465737432	-- topic name == "test2"
+					0005 7465737433	-- topic name == "test3"
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.UNSUBSCRIBE, packet_id=3, properties={}, user_properties={ hello="world" },
+				subscriptions = { 'test1', 'test2', 'test3' },
+			},
+			packet
+		)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: parsing packets: UNSUBACK[11]", function()
+	local protocol = require("mqtt.protocol")
+	local pt = assert(protocol.packet_type)
+	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("one subscription, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -737,13 +1248,13 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBACK", function()
 					00					-- Unsubscribe Reason Codes, 0x00 == Success
 					11					-- Unsubscribe Reason Codes, 0x11 == No subscription existed
 					80					-- Unsubscribe Reason Codes, 0x80 == Unspecified error
-					87					-- Unsubscribe Reason Codes, 0x87 == Not authorized
+					05					-- Unsubscribe Reason Codes, 0x05 == Unknown
 			]]
 		))
 		assert.is_nil(err)
 		assert.are.same(
 			{
-				type=pt.UNSUBACK, packet_id=0x3434, rc={0, 0x11, 0x80, 0x87},
+				type=pt.UNSUBACK, packet_id=0x3434, rc={0, 0x11, 0x80, 0x5},
 				properties={
 					reason_string = "it's okay",
 				},
@@ -753,13 +1264,59 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBACK", function()
 			},
 			packet
 		)
+		assert.are.same(
+			{
+				"Success",
+				"No subscription existed",
+				"Unspecified error",
+				"Unknown: 5",
+			},
+			packet:reason_strings()
+		)
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: PINGRESP", function()
+describe("MQTT v5.0 protocol: parsing packets: PINGREQ[12]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
+
+	it("the only variant", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				C0 					-- packet type == 12 (PINGREQ), flags == 0
+				00 					-- variable length == 0 bytes
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.PINGREQ, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
+	it("invalid extra data in the packet", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				C0 					-- packet type == 12 (PINGREQ), flags == 0
+				01 					-- variable length == 0 bytes
+
+				00					-- invalid extra data
+			]]
+		))
+		assert.are.same("PINGREQ: extra data in remaining length left after packet parsing", err)
+		assert.are.same(false, packet)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: parsing packets: PINGRESP[13]", function()
+	local protocol = require("mqtt.protocol")
+	local pt = assert(protocol.packet_type)
+	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("the only variant", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -778,10 +1335,11 @@ describe("MQTT v5.0 protocol: parsing packets: PINGRESP", function()
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: DISCONNECT", function()
+describe("MQTT v5.0 protocol: parsing packets: DISCONNECT[14]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("minimal", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
@@ -817,6 +1375,27 @@ describe("MQTT v5.0 protocol: parsing packets: DISCONNECT", function()
 			},
 			packet
 		)
+	end)
+
+	it("with unknown reason code, without properties", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				E0 					-- packet type == 14 (DISCONNECT), flags == 0
+				02 					-- variable length == 2 bytes
+
+					20					-- reason code == 0x20 (Unknown), DOC: 3.14.2.1 Disconnect Reason Code
+					00					-- properties length == 0
+
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.DISCONNECT, rc=32, properties={}, user_properties={},
+			},
+			packet
+		)
+		assert.are.same("Unknown: 32", packet:reason_string())
 	end)
 
 	it("with non-zero reason code, without properties", function()
@@ -868,13 +1447,15 @@ describe("MQTT v5.0 protocol: parsing packets: DISCONNECT", function()
 			},
 			packet
 		)
+		assert.are.same("Malformed Packet", packet:reason_string())
 	end)
 end)
 
-describe("MQTT v5.0 protocol: parsing packets: AUTH", function()
+describe("MQTT v5.0 protocol: parsing packets: AUTH[15]", function()
 	local protocol = require("mqtt.protocol")
 	local pt = assert(protocol.packet_type)
 	local protocol5 = require("mqtt.protocol5")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	it("minimal", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(

@@ -12,11 +12,10 @@ describe("MQTT lua library component test:", function()
 	local tools
 	local protocol
 
-	local extract_hex = require("./tools/extract_hex")
-
 	it("modules presented", function()
 		tools = require("mqtt.tools")
 		protocol = require("mqtt.protocol")
+		require("mqtt.const")
 		require("mqtt.client")
 		require("mqtt.ioloop")
 		require("mqtt.luasocket")
@@ -34,7 +33,37 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal("FF00FF", tools.hex("\255\000\255"))
 	end)
 
+	it("tools.sortedpairs", function()
+		assert.are.equal(type(tools.sortedpairs), "function")
+		assert.error_matches(
+			function()
+				tools.sortedpairs({[false]=false})
+			end,
+			"sortedpairs failed to make a stable iteration order for key of type boolean"
+		)
+
+		-- naive table-to-string implementation with stable table key iteration order
+		local function tbl_tostring(tbl)
+			local res = {"{"}
+			for k, v in tools.sortedpairs(tbl) do
+				res[#res + 1] = string.format("%s=%s,", k, v)
+			end
+			res[#res + 1] = "}"
+			return table.concat(res)
+		end
+
+		assert.are.equal("{}", tbl_tostring{})
+		assert.are.equal('{a=1,}', tbl_tostring{a=1,})
+		assert.are.equal('{a=1,b=2,}', tbl_tostring{b=2,a=1,})
+		assert.are.equal('{a=1,b=2,}', tbl_tostring{b=2,a=1,})
+		assert.are.equal('{1=1,2=2,3=3,}', tbl_tostring{1,2,3,})
+		assert.are.equal('{1=1,2=2,3=3,}', tbl_tostring{[3]=3,[2]=2,[1]=1,})
+		assert.are.equal('{1=1,a=1,}', tbl_tostring{1,a=1,})
+		assert.are.equal('{1=1,2=2,3=3,a=1,b=2,}', tbl_tostring{b=2,a=1,[3]=3,[2]=2,[1]=1,})
+	end)
+
 	it("extract_hex", function()
+		local extract_hex = assert(tools.extract_hex)
 		assert.are.equal("", extract_hex(""))
 		assert.are.equal("", extract_hex(" "))
 		assert.are.equal("", extract_hex("\t"))
@@ -56,6 +85,9 @@ describe("MQTT lua library component test:", function()
 			02
 			03 04 -- other comment
 		]]))
+		assert.has.errors(function() extract_hex("0") end)
+		assert.has.errors(function() extract_hex("x") end)
+		assert.has.errors(function() extract_hex("xx") end)
 	end)
 
 	it("tools.div", function()
@@ -100,6 +132,8 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal("01", tools.hex(protocol.make_uint8(1)))
 		assert.are.equal("32", tools.hex(protocol.make_uint8(0x32)))
 		assert.are.equal("FF", tools.hex(protocol.make_uint8(0xFF)))
+		assert.has.errors(function() protocol.make_uint8(0 - 1) end)
+		assert.has.errors(function() protocol.make_uint8(0xFF + 1) end)
 	end)
 
 	it("protocol.make_uint8_0_or_1", function()
@@ -118,6 +152,8 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal("FF00", tools.hex(protocol.make_uint16(0xFF00)))
 		assert.are.equal("7F4A", tools.hex(protocol.make_uint16(0x7F4A)))
 		assert.are.equal("FFFF", tools.hex(protocol.make_uint16(0xFFFF)))
+		assert.has.errors(function() protocol.make_uint16(0 - 1) end)
+		assert.has.errors(function() protocol.make_uint16(0xFFFF + 1) end)
 	end)
 
 	it("protocol.make_uint16_nonzero", function()
@@ -129,6 +165,7 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal("FF00", tools.hex(protocol.make_uint16_nonzero(0xFF00)))
 		assert.are.equal("7F4A", tools.hex(protocol.make_uint16_nonzero(0x7F4A)))
 		assert.are.equal("FFFF", tools.hex(protocol.make_uint16_nonzero(0xFFFF)))
+		assert.has.errors(function() protocol.make_uint16_nonzero(0xFFFF + 1) end)
 	end)
 
 	it("protocol.make_uint32", function()
@@ -142,6 +179,8 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal("0000FFFF", tools.hex(protocol.make_uint32(0xFFFF)))
 		assert.are.equal("7FFFFFFF", tools.hex(protocol.make_uint32(0x7FFFFFFF)))
 		assert.are.equal("FFFFFFFF", tools.hex(protocol.make_uint32(0xFFFFFFFF)))
+		assert.has.errors(function() protocol.make_uint32(0 - 1) end)
+		assert.has.errors(function() protocol.make_uint32(0xFFFFFFFF + 1) end)
 	end)
 
 	it("protocol.make_string", function()
@@ -234,6 +273,7 @@ describe("MQTT lua library component test:", function()
 		assert.are.equal(2097152, protocol.parse_var_length(make_read_func("80808001")))
 		assert.are.equal(268435455, protocol.parse_var_length(make_read_func("FFFFFF7F")))
 		assert.is_false(protocol.parse_var_length(make_read_func("FFFFFFFF")))
+		assert.is_false(protocol.parse_var_length(make_read_func("FFFFFFFFFF")))
 	end)
 
 	it("protocol.parse_var_length_nonzero", function()

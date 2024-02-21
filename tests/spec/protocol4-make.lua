@@ -3,7 +3,7 @@
 
 describe("MQTT v3.1.1 protocol: making packets", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = tools.extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol4 = require("mqtt.protocol4")
 
@@ -72,6 +72,62 @@ describe("MQTT v3.1.1 protocol: making packets", function()
 				username = "TheUser",
 				password = "TopSecret",
 				keep_alive = 30,
+			}))
+		)
+	end)
+
+	it("CONNACK sp=false, rc=0", function()
+		assert.are.equal(
+			extract_hex[[
+				20 						-- packet type == 2 (CONNACK), flags == 0
+				02						-- length == 0x02 == 2 bytes
+				0000					-- variable header, session present flag == false, rc == 0
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNACK,
+				sp = false, rc = 0,
+			}))
+		)
+	end)
+
+	it("CONNACK sp=true, rc=0", function()
+		assert.are.equal(
+			extract_hex[[
+				20 						-- packet type == 2 (CONNACK), flags == 0
+				02						-- length == 0x02 == 2 bytes
+				0100					-- variable header, session present flag == true, rc == 0
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNACK,
+				sp = true, rc = 0,
+			}))
+		)
+	end)
+
+	it("CONNACK sp=false, rc=2", function()
+		assert.are.equal(
+			extract_hex[[
+				20 						-- packet type == 2 (CONNACK), flags == 0
+				02						-- length == 0x02 == 2 bytes
+				0002					-- variable header, session present flag == false, rc == 2
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNACK,
+				sp = false, rc = 2,
+			}))
+		)
+	end)
+
+	it("CONNACK sp=true, rc=2", function()
+		assert.are.equal(
+			extract_hex[[
+				20 						-- packet type == 2 (CONNACK), flags == 0
+				02						-- length == 0x02 == 2 bytes
+				0102					-- variable header, session present flag == true, rc == 2
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNACK,
+				sp = true, rc = 2,
 			}))
 		)
 	end)
@@ -423,6 +479,90 @@ describe("MQTT v3.1.1 protocol: making packets", function()
 		end)
 	end)
 
+	it("SUBACK simple", function()
+		assert.are.equal(
+			extract_hex[[
+				90 						-- packet type == 9 (SUBACK), flags == 0x0 (fixed value)
+				03						-- length == 3 bytes
+					0001				-- variable header: Packet Identifier == 1
+						00				-- one SUBACK return code (0x00)
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 1,
+				rc = { 0 },
+			}))
+		)
+		assert.are.equal(
+			extract_hex[[
+				90 						-- packet type == 9 (SUBACK), flags == 0x0 (fixed value)
+				03						-- length == 3 bytes
+					0010				-- variable header: Packet Identifier == 0x10 == 16
+						00				-- one SUBACK return code (0x00)
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 16,
+				rc = { 0 },
+			}))
+		)
+		assert.are.equal(
+			extract_hex[[
+				90 						-- packet type == 9 (SUBACK), flags == 0x0 (fixed value)
+				03						-- length == 3 bytes
+					0010				-- variable header: Packet Identifier == 0x10 == 16
+						01				-- one SUBACK return code (0x01)
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 16,
+				rc = { 1 },
+			}))
+		)
+		assert.are.equal(
+			extract_hex[[
+				90 						-- packet type == 9 (SUBACK), flags == 0x0 (fixed value)
+				03						-- length == 3 bytes
+					0010				-- variable header: Packet Identifier == 0x10 == 16
+						02				-- one SUBACK return code (0x02)
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 16,
+				rc = { 2 },
+			}))
+		)
+		assert.are.equal(
+			extract_hex[[
+				90 						-- packet type == 9 (SUBACK), flags == 0x0 (fixed value)
+				03						-- length == 3 bytes
+					0010				-- variable header: Packet Identifier == 0x10 == 16
+						80				-- one SUBACK return code (0x80)
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 16,
+				rc = { 0x80 },
+			}))
+		)
+	end)
+
+	it("SUBACK several return codes", function()
+		assert.are.equal(
+			extract_hex[[
+				90 						-- packet type == 9 (SUBACK), flags == 0x0 (fixed value)
+				07						-- length == 7 bytes
+					0001				-- variable header: Packet Identifier == 1
+						00 01 02 03 80	-- several SUBACK return codes
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 1,
+				rc = { 0, 1, 2, 3, 0x80 },
+			}))
+		)
+	end)
+
 	it("UNSUBSCRIBE", function()
 		assert.are.equal(
 			extract_hex[[
@@ -460,6 +600,31 @@ describe("MQTT v3.1.1 protocol: making packets", function()
 		)
 	end)
 
+	it("UNSUBACK", function()
+		assert.are.equal(
+			extract_hex[[
+				B0 						-- packet type == 0xB == 11 (UNSUBACK), flags == 0x0 (fixed value)
+				02 						-- length == 2 bytes
+					0001 				-- variable header: Packet Identifier == 1
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.UNSUBACK,
+				packet_id = 1,
+			}))
+		)
+		assert.are.equal(
+			extract_hex[[
+				B0 						-- packet type == 0xB == 11 (UNSUBACK), flags == 0x0 (fixed value)
+				02 						-- length == 2 bytes
+					00FF 				-- variable header: Packet Identifier == 255
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.UNSUBACK,
+				packet_id = 255,
+			}))
+		)
+	end)
+
 	it("PINGREQ", function()
 		assert.are.equal(
 			extract_hex[[
@@ -468,6 +633,18 @@ describe("MQTT v3.1.1 protocol: making packets", function()
 			]],
 			tools.hex(tostring(protocol4.make_packet{
 				type = protocol.packet_type.PINGREQ
+			}))
+		)
+	end)
+
+	it("PINGRESP", function()
+		assert.are.equal(
+			extract_hex[[
+				D0 						-- packet type == 13 (PINGRESP), flags == 0
+				00 						-- length == 0
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.PINGRESP
 			}))
 		)
 	end)

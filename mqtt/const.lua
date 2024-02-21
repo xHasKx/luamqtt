@@ -15,3 +15,5 @@ local const = {
 }
 
 return const
+
+-- vim: ts=4 sts=4 sw=4 noet ft=lua

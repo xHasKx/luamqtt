@@ -14,6 +14,7 @@ local protocol5 = {}
 local type = type
 local error = error
 local assert = assert
+local ipairs = ipairs
 local require = require
 local tostring = tostring
 local setmetatable = setmetatable
@@ -25,6 +26,12 @@ local tbl_sort = table.sort
 local string = require("string")
 local str_char = string.char
 local fmt = string.format
+
+local const = require("mqtt.const")
+local const_v50 = const.v50
+
+local tools = require("mqtt.tools")
+local sortedpairs = tools.sortedpairs
 
 local bit = require("mqtt.bitwrap")
 local bor = bit.bor
@@ -57,6 +64,7 @@ local packet_type = protocol.packet_type
 local packet_mt = protocol.packet_mt
 local connack_packet_mt = protocol.connack_packet_mt
 local start_parse_packet = protocol.start_parse_packet
+local parse_packet_connect_input = protocol.parse_packet_connect_input
 
 -- Returns true if given value is a valid Retain Handling option, DOC: 3.8.3.1 Subscription Options
 local function check_retain_handling(val)
@@ -282,7 +290,7 @@ local allowed_properties = {
 		[0x26] = true, -- DOC: 3.7.2.2.3 User Property
 	},
 	[packet_type.SUBSCRIBE] = {
-		[0x0B] = true, -- DOC: 3.8.2.1.2 Subscription Identifier
+		[0x0B] = { multiple=false }, -- DOC: 3.8.2.1.2 Subscription Identifier -- DOC: It is a Protocol Error to include the Subscription Identifier more than once.
 		[0x26] = true, -- DOC: 3.8.2.1.3 User Property
 	},
 	[packet_type.SUBACK] = {
@@ -321,12 +329,14 @@ local function make_properties(ptype, args)
 		assert(type(args.properties) == "table", "expecting .properties to be a table")
 		-- validate all properties and append them to order list
 		local order = {}
-		for name, value in pairs(args.properties) do
+		for name, value in sortedpairs(args.properties) do
 			assert(type(name) == "string", "expecting property name to be a string: "..tostring(name))
 			-- detect property identifier and check it's allowed for that packet type
 			local prop_id = assert(properties[name], "unknown property: "..tostring(name))
 			assert(prop_id ~= uprop_id, "user properties should be passed in .user_properties table")
-			assert(allowed[prop_id], "property "..name.." is not allowed for packet type "..ptype)
+			if not allowed[prop_id] then
+				error("property "..name.." is not allowed for packet type "..packet_type[ptype])
+			end
 			order[#order + 1] = { prop_id, name, value }
 		end
 		-- sort props in the identifier ascending order
@@ -360,23 +370,40 @@ local function make_properties(ptype, args)
 		assert(type(args.user_properties) == "table", "expecting .user_properties to be a table")
 		assert(allowed[uprop_id], "user_property is not allowed for packet type "..ptype)
 		local order = {}
-		for name, val in pairs(args.user_properties) do
-			local ntype = type(name)
-			if ntype == "string" then
-				if type(val) ~= "string" then
-					error(fmt("user property '%s' value should be a string", name))
+		local dups = {}
+		if args.user_properties[1] then
+			-- at first use array items as they given as {name, value} pairs with stable order
+			for i, pair in ipairs(args.user_properties) do
+				-- validate types for name and value
+				if type(pair) ~= "table" then
+					error(fmt("user property at position %d should be {name, value} table", i))
 				end
-				order[#order + 1] = {name, val, 0}
-			elseif ntype == "number" then
-				if type(val) ~= "table" or type(val[1]) ~= "string" or type(val[2]) ~= "string" then
-					error(fmt("user property at index %d should be a table with two strings", name))
+				if type(pair[1]) ~= "string" then
+					error(fmt("user property name at position %d should be a string", i))
 				end
-				order[#order + 1] = {val[1], val[2], name}
-			else
-				error(fmt("unknown user property name type passed: %s", ntype))
+				if type(pair[2]) ~= "string" then
+					error(fmt("user property '%s' value at position %d should be a string", pair[1], i))
+				end
+				order[i] = pair
+				dups[pair[1]] = pair[2]
 			end
 		end
-		tbl_sort(order, function(a, b) if a[1] == b[1] then return a[3] < b[3] else return a[1] < b[1] end end)
+		-- now add the rest of user properties given as string table keys
+		for name, val in sortedpairs(args.user_properties) do
+			if type(name) ~= "number" then -- skipping number keys as they already added above
+				-- validate types for name and value
+				if type(name) ~= "string" then
+					error(fmt("user property name '%s' should be a string", name))
+				end
+				if type(val) ~= "string" then
+					error(fmt("user property '%s' value '%s' should be a string", name, val))
+				end
+				-- check that name+value key already added
+				if dups[name] ~= val then
+					order[#order + 1] = {name, val}
+				end
+			end
+		end
 		for _, pair in ipairs(order) do
 			local name = pair[1]
 			local value = pair[2]
@@ -447,6 +474,25 @@ local function make_packet_connect(args)
 	-- DOC: 3.1.1 Fixed header
 	local header = make_header(packet_type.CONNECT, 0, variable_header:len() + payload:len())
 	return combine(header, variable_header, payload)
+end
+
+-- Create CONNACK packet, DOC: 3.2 CONNACK – Connect acknowledgement
+local function make_packet_connack(args)
+	-- check args
+	assert(type(args.sp) == "boolean", "expecting .sp to be a boolean with Session Present flag")
+	assert(type(args.rc) == "number", "expecting .rc to be a number with Connect Reason Code")
+	-- DOC: 3.2.2 CONNACK Variable Header
+	local props = make_properties(packet_type.CONNACK, args)
+	local variable_header = combine(
+		make_uint8(args.sp and 1 or 0),		-- DOC: 3.2.2.1.1 Session Present
+		make_uint8(args.rc),				-- DOC: 3.2.2.2 Connect Reason Code
+		props								-- DOC: 3.2.2.3 CONNACK Properties
+	)
+	-- DOC: 3.2.3 CONNACK Payload
+	-- DOC: The CONNACK packet has no Payload.
+	-- DOC: 3.2.1 CONNACK Fixed Header
+	local header = make_header(packet_type.CONNACK, 0, variable_header:len())
+	return combine(header, variable_header)
 end
 
 -- Create PUBLISH packet, DOC: 3.3 PUBLISH – Publish message
@@ -596,7 +642,7 @@ local function make_packet_subscribe(args)
 	for i, subscription in ipairs(args.subscriptions) do
 		assert(type(subscription) == "table", "expecting .subscriptions["..i.."] to be a table")
 		assert(type(subscription.topic) == "string", "expecting .subscriptions["..i.."].topic to be a string")
-		if subscription.qos ~= nil then -- TODO: maybe remove that check and make .qos mandatory?
+		if subscription.qos ~= nil then
 			assert(type(subscription.qos) == "number", "expecting .subscriptions["..i.."].qos to be a number")
 			assert(check_qos(subscription.qos), "expecting .subscriptions["..i.."].qos to be a valid QoS value")
 		end
@@ -626,6 +672,30 @@ local function make_packet_subscribe(args)
 	return combine(header, variable_header, payload)
 end
 
+-- Create SUBACK packet, DOC: 3.9 SUBACK – Subscribe acknowledgement
+local function make_packet_suback(args)
+	-- check args
+	assert(type(args.packet_id) == "number", "expecting .packet_id to be a number")
+	assert(check_packet_id(args.packet_id), "expecting .packet_id to be a valid Packet Identifier")
+	assert(type(args.rc) == "table", "expecting .rc to be a table")
+	assert(#args.rc > 0, "expecting .rc to be a non-empty array")
+	-- DOC: 3.9.2 SUBACK Variable Header
+	local variable_header = combine(
+		make_uint16(args.packet_id),
+		make_properties(packet_type.SUBACK, args)	-- DOC: 3.9.2.1 SUBACK Properties
+	)
+	-- DOC: 3.9.3 SUBACK Payload
+	local payload = combine()
+	for i, rc in ipairs(args.rc) do
+		assert(type(rc) == "number", "expecting .rc["..i.."] to be a number")
+		assert(rc >= 0 and rc <= 255, "expecting .rc["..i.."] to be in range [0, 255]")
+		payload:append(make_uint8(rc))
+	end
+	-- DOC: 3.9.1 SUBACK Fixed Header
+	local header = make_header(packet_type.SUBACK, 0, variable_header:len() + payload:len()) -- NOTE: fixed flags value 0x0
+	return combine(header, variable_header, payload)
+end
+
 -- Create UNSUBSCRIBE packet, DOC: 3.10 UNSUBSCRIBE – Unsubscribe request
 local function make_packet_unsubscribe(args)
 	-- check args
@@ -646,6 +716,30 @@ local function make_packet_unsubscribe(args)
 	end
 	-- DOC: 3.10.1 UNSUBSCRIBE Fixed Header
 	local header = make_header(packet_type.UNSUBSCRIBE, 2, variable_header:len() + payload:len()) -- flags: fixed 0010 bits, DOC: Figure 3.28 – UNSUBSCRIBE packet Fixed Header
+	return combine(header, variable_header, payload)
+end
+
+-- Create UNSUBACK packet, DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
+local function make_packet_unsuback(args)
+	-- check args
+	assert(type(args.packet_id) == "number", "expecting .packet_id to be a number")
+	assert(check_packet_id(args.packet_id), "expecting .packet_id to be a valid Packet Identifier")
+	assert(type(args.rc) == "table", "expecting .rc to be a table")
+	assert(#args.rc > 0, "expecting .rc to be a non-empty array")
+	-- DOC: 3.11.2 UNSUBACK Variable Header
+	local variable_header = combine(
+		make_uint16(args.packet_id),
+		make_properties(packet_type.UNSUBACK, args)	-- DOC: 3.11.2.1 UNSUBACK Properties
+	)
+	-- DOC: 3.11.3 UNSUBACK Payload
+	local payload = combine()
+	for i, rc in ipairs(args.rc) do
+		assert(type(rc) == "number", "expecting .rc["..i.."] to be a number")
+		assert(rc >= 0 and rc <= 255, "expecting .rc["..i.."] to be in range [0, 255]")
+		payload:append(make_uint8(rc))
+	end
+	-- DOC: 3.11.1 UNSUBACK Fixed Header
+	local header = make_header(packet_type.UNSUBACK, 0, variable_header:len() + payload:len()) -- NOTE: fixed flags value 0x0
 	return combine(header, variable_header, payload)
 end
 
@@ -688,28 +782,37 @@ function protocol5.make_packet(args)
 	assert(type(args) == "table", "expecting args to be a table")
 	assert(type(args.type) == "number", "expecting .type number in args")
 	local ptype = args.type
-	if ptype == packet_type.CONNECT then
+	if ptype == packet_type.CONNECT then			-- 1
 		return make_packet_connect(args)
-	elseif ptype == packet_type.PUBLISH then
+	elseif ptype == packet_type.CONNACK then		-- 3
+		return make_packet_connack(args)
+	elseif ptype == packet_type.PUBLISH then		-- 3
 		return make_packet_publish(args)
-	elseif ptype == packet_type.PUBACK then
+	elseif ptype == packet_type.PUBACK then			-- 4
 		return make_packet_puback(args)
-	elseif ptype == packet_type.PUBREC then
+	elseif ptype == packet_type.PUBREC then			-- 5
 		return make_packet_pubrec(args)
-	elseif ptype == packet_type.PUBREL then
+	elseif ptype == packet_type.PUBREL then			-- 6
 		return make_packet_pubrel(args)
-	elseif ptype == packet_type.PUBCOMP then
+	elseif ptype == packet_type.PUBCOMP then		-- 7
 		return make_packet_pubcomp(args)
-	elseif ptype == packet_type.SUBSCRIBE then
+	elseif ptype == packet_type.SUBSCRIBE then		-- 8
 		return make_packet_subscribe(args)
-	elseif ptype == packet_type.UNSUBSCRIBE then
+	elseif ptype == packet_type.SUBACK then			-- 9
+		return make_packet_suback(args)
+	elseif ptype == packet_type.UNSUBSCRIBE then	-- 10
 		return make_packet_unsubscribe(args)
-	elseif ptype == packet_type.PINGREQ then
+	elseif ptype == packet_type.UNSUBACK then		-- 11
+		return make_packet_unsuback(args)
+	elseif ptype == packet_type.PINGREQ then		-- 12
 		-- DOC: 3.12 PINGREQ – PING request
 		return combine("\192\000") -- 192 == 0xC0, type == 12, flags == 0
-	elseif ptype == packet_type.DISCONNECT then
+	elseif ptype == packet_type.PINGRESP then		-- 12
+		-- DOC: 3.13 PINGRESP – PING response
+		return combine("\208\000") -- 208 == 0xD0, type == 13, flags == 0
+	elseif ptype == packet_type.DISCONNECT then		-- 14
 		return make_packet_disconnect(args)
-	elseif ptype == packet_type.AUTH then
+	elseif ptype == packet_type.AUTH then			-- 15
 		return make_packet_auth(args)
 	else
 		error("unexpected packet type to make: "..ptype)
@@ -753,7 +856,9 @@ local function parse_properties(ptype, read_data, input, packet)
 			return false, "failed to parse property length: "..err
 		end
 		if not allowed[prop_id] then
-			return false, "property "..prop_id.." is not allowed for packet type "..ptype
+			if not allowed[prop_id] then
+				return false, "property "..tostring(properties[prop_id]).." ("..prop_id..") is not allowed for that packet type"
+			end
 		end
 		if prop_id == uprop_id then
 			-- parse name=value string pair
@@ -787,8 +892,14 @@ local function parse_properties(ptype, read_data, input, packet)
 			local value
 			value, err = property_parse[prop_id](read_data)
 			if err then
-				return false, "failed ro parse property "..prop_id.." value: "..err
+				return false, "failed to parse property "..prop_id.." value: "..err
 			end
+			if allowed[prop_id] ~= true then
+				if packet.properties[properties[prop_id]] ~= nil then
+					return false, "it is a Protocol Error to include the "..properties[prop_id].." ("..prop_id..") property more than once"
+				end
+			end
+			-- make an array of property values, if it's allowed to send multiple such properties
 			if property_multiple[prop_id] then
 				local curr = packet.properties[properties[prop_id]] or {}
 				curr[#curr + 1] = value
@@ -801,6 +912,536 @@ local function parse_properties(ptype, read_data, input, packet)
 	return true
 end
 
+-- Parse CONNACK packet, DOC: 3.2 CONNACK – Connect acknowledgement
+local function parse_packet_connack(ptype, flags, input)
+	-- DOC: 3.2.1 CONNACK Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available < 3 then
+		return false, packet_type[ptype]..": expecting data of length 3 bytes or more"
+	end
+	local read_data = input.read_func
+	-- DOC: 3.2.2 CONNACK Variable Header
+	-- DOC: 3.2.2.1.1 Session Present
+	-- DOC: 3.2.2.2 Connect Reason Code
+	local byte1, byte2 = parse_uint8(read_data), parse_uint8(read_data)
+	local sp = (band(byte1, 0x1) ~= 0)
+	local packet = setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
+	-- DOC: 3.2.2.3 CONNACK Properties
+	local ok, err = parse_properties(ptype, read_data, input, packet)
+	if not ok then
+		return false, packet_type[ptype]..": failed to parse packet properties: "..err
+	end
+	return packet
+end
+
+-- Parse PUBLISH packet, DOC: 3.3 PUBLISH – Publish message
+local function parse_packet_publish(ptype, flags, input)
+	-- DOC: 3.3.1 PUBLISH Fixed Header
+	-- DOC: 3.3.1.1 DUP
+	local dup = (band(flags, 0x8) ~= 0)
+	-- DOC: 3.3.1.2 QoS
+	local qos = band(rshift(flags, 1), 0x3)
+	-- DOC: 3.3.1.3 RETAIN
+	local retain = (band(flags, 0x1) ~= 0)
+	-- DOC: 3.3.2 PUBLISH Variable Header
+	-- DOC: 3.3.2.1 Topic Name
+	local read_data = input.read_func
+	local topic, err = parse_string(read_data)
+	if not topic then
+		return false, packet_type[ptype]..": failed to parse topic: "..err
+	end
+	-- DOC: 3.3.2.2 Packet Identifier
+	local packet_id, ok
+	if qos > 0 then
+		packet_id, err = parse_uint16(read_data)
+		if not packet_id then
+			return false, packet_type[ptype]..": failed to parse packet_id: "..err
+		end
+	end
+	-- DOC: 3.3.2.3 PUBLISH Properties
+	local packet = setmetatable({type=ptype, dup=dup, qos=qos, retain=retain, packet_id=packet_id, topic=topic}, packet_mt)
+	ok, err = parse_properties(ptype, read_data, input, packet)
+	if not ok then
+		return false, packet_type[ptype]..": failed to parse packet properties: "..err
+	end
+	if input.available > 0 then
+		-- DOC: 3.3.3 PUBLISH Payload
+		packet.payload = read_data(input.available)
+	end
+	return packet
+end
+
+-- Parse PUBACK packet, DOC: 3.4 PUBACK – Publish acknowledgement
+local function parse_packet_puback(ptype, flags, input)
+	-- DOC: 3.4.1 PUBACK Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.4.2 PUBACK Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	local packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
+	if input.available > 0 then
+		-- DOC: 3.4.2.1 PUBACK Reason Code
+		local rc, ok
+		rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse rc: "..err
+		end
+		packet.rc = rc
+		-- DOC: 3.4.2.2 PUBACK Properties
+		ok, err = parse_properties(ptype, read_data, input, packet)
+		if not ok then
+			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		end
+	end
+	return packet
+end
+
+-- Parse PUBREC packet, DOC: 3.5 PUBREC – Publish received (QoS 2 delivery part 1)
+local function parse_packet_pubrec(ptype, flags, input)
+	-- DOC: 3.5.1 PUBREC Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.5.2 PUBREC Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	local packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
+	if input.available > 0 then
+		-- DOC: 3.5.2.1 PUBREC Reason Code
+		local rc
+		rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse rc: "..err
+		end
+		packet.rc = rc
+		-- DOC: 3.5.2.2 PUBREC Properties
+		local ok
+		ok, err = parse_properties(ptype, read_data, input, packet)
+		if not ok then
+			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		end
+	end
+	return packet
+end
+
+-- Parse PUBREL packet, DOC: 3.6 PUBREL – Publish release (QoS 2 delivery part 2)
+local function parse_packet_pubrel(ptype, flags, input)
+	-- DOC: 3.6.1 PUBREL Fixed Header
+	if flags ~= 2 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.6.2 PUBREL Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	local packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
+	if input.available > 0 then
+		-- DOC: 3.6.2.1 PUBREL Reason Code
+		local rc
+		rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse rc: "..err
+		end
+		packet.rc = rc
+		-- DOC: 3.6.2.2 PUBREL Properties
+		local ok
+		ok, err = parse_properties(ptype, read_data, input, packet)
+		if not ok then
+			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		end
+	end
+	return packet
+end
+
+-- Parse PUBCOMP packet, DOC: 3.7 PUBCOMP – Publish complete (QoS 2 delivery part 3)
+local function parse_packet_pubcomp(ptype, flags, input)
+	-- DOC: 3.7.1 PUBCOMP Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.7.2 PUBCOMP Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	local packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
+	if input.available > 0 then
+		-- DOC: 3.7.2.1 PUBCOMP Reason Code
+		local rc
+		rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse rc: "..err
+		end
+		packet.rc = rc
+		-- DOC: 3.7.2.2 PUBCOMP Properties
+		local ok
+		ok, err = parse_properties(ptype, read_data, input, packet)
+		if not ok then
+			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		end
+	end
+	return packet
+end
+
+-- Parse SUBSCRIBE packet, DOC: 3.8 SUBSCRIBE - Subscribe request
+local function parse_packet_subscribe(ptype, flags, input)
+	-- DOC: 3.8.1 SUBSCRIBE Fixed Header
+	if flags ~= 2 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.8.2 SUBSCRIBE Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	local packet = setmetatable({type=ptype, packet_id=packet_id, properties={}, user_properties={}}, packet_mt)
+	-- DOC: 3.8.2.1 SUBSCRIBE Properties
+	local ok
+	ok, err = parse_properties(ptype, read_data, input, packet)
+	if not ok then
+		return false, packet_type[ptype]..": failed to parse packet properties: "..err
+	end
+	-- DOC: 3.8.3 SUBSCRIBE Payload
+	if input.available == 0 then
+		-- DOC: A SUBSCRIBE packet with no Payload is a Protocol Error.
+		return false, packet_type[ptype]..": empty subscriptions list"
+	end
+	local subscriptions = {}
+	while input.available > 0 do
+		local topic_filter
+		topic_filter, err = parse_string(input.read_func)
+		if not topic_filter then
+			return false, packet_type[ptype]..": failed to parse SUBSCRIBE topic filter: "..err
+		end
+		-- DOC: 3.8.3.1 Subscription Options
+		local subscription_options
+		subscription_options, err = parse_uint8(input.read_func)
+		if not subscription_options then
+			return false, packet_type[ptype]..": failed to parse subscription_options: "..err
+		end
+		subscriptions[#subscriptions + 1] = {
+			topic = topic_filter,
+			qos = band(subscription_options, 0x3),
+			no_local = band(subscription_options, 0x4) ~= 0,
+			retain_as_published = band(subscription_options, 0x8) ~= 0, -- Retain As Published
+			retain_handling = band(rshift(subscription_options, 4), 0x3), -- Retain Handling
+		}
+	end
+	packet.subscriptions = subscriptions
+	return packet
+end
+
+-- SUBACK return codes/reason code strings
+-- DOC: Table 3‑8 - Subscribe Reason Codes
+local suback_rc = {
+	[0x00] = "Granted QoS 0",
+	[0x01] = "Granted QoS 1",
+	[0x02] = "Granted QoS 2",
+	[0x80] = "Unspecified error",
+	[0x83] = "Implementation specific error",
+	[0x87] = "Not authorized",
+	[0x8F] = "Topic Filter invalid",
+	[0x91] = "Packet Identifier in use",
+	[0x97] = "Quota exceeded",
+	[0x9E] = "Shared Subscriptions not supported",
+	[0xA1] = "Subscription Identifiers not supported",
+	[0xA2] = "Wildcard Subscriptions not supported",
+}
+protocol5.suback_rc = suback_rc
+
+--- Parsed SUBACK packet metatable
+local suback_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_strings = function(self) -- Returns reason strings for the SUBACK packet according to its rc field
+		local human_readable = {}
+		for i, rc in ipairs(self.rc) do
+			local reason_string = suback_rc[rc]
+			if reason_string then
+				human_readable[i] = reason_string
+			else
+				human_readable[i] = "Unknown: "..tostring(rc)
+			end
+		end
+		return human_readable
+	end,
+}
+suback_packet_mt.__index = suback_packet_mt
+protocol5.suback_packet_mt = suback_packet_mt
+
+-- Parse SUBACK packet, DOC: 3.9 SUBACK – Subscribe acknowledgement
+local function parse_packet_suback(ptype, flags, input)
+	-- DOC: 3.9.1 SUBACK Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.9.2 SUBACK Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	-- DOC: 3.9.2.1 SUBACK Properties
+	local packet = setmetatable({type=ptype, packet_id=packet_id}, suback_packet_mt)
+	local ok
+	ok, err = parse_properties(ptype, read_data, input, packet)
+	if not ok then
+		return false, packet_type[ptype]..": failed to parse packet properties: "..err
+	end
+	-- DOC: 3.9.3 SUBACK Payload
+	local rcs = {}
+	while input.available > 0 do
+		local rc
+		rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse reason code: "..err
+		end
+		rcs[#rcs + 1] = rc
+	end
+	if not next(rcs) then
+		return false, packet_type[ptype]..": expecting at least one reason code"
+	end
+	packet.rc = rcs
+	return packet
+end
+
+-- Parse UNSUBSCRIBE packet, DOC: 3.10 UNSUBSCRIBE – Unsubscribe request
+local function parse_packet_unsubscribe(ptype, flags, input)
+	-- DOC: 3.10.1 UNSUBSCRIBE Fixed Header
+	if flags ~= 2 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.10.2 UNSUBSCRIBE Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	local packet = setmetatable({type=ptype, packet_id=packet_id, properties={}, user_properties={}}, packet_mt)
+	-- DOC: 3.10.2.1 UNSUBSCRIBE Properties
+	local ok
+	ok, err = parse_properties(ptype, read_data, input, packet)
+	if not ok then
+		return false, packet_type[ptype]..": failed to parse packet properties: "..err
+	end
+	-- 3.10.3 UNSUBSCRIBE Payload
+	-- DOC: An UNSUBSCRIBE packet with no Payload is a Protocol Error.
+	if input.available == 0 then
+		return false, packet_type[ptype]..": empty subscriptions list"
+	end
+	local subscriptions = {}
+	while input.available > 0 do
+		local topic_filter
+		topic_filter, err = parse_string(input.read_func)
+		if not topic_filter then
+			return false, packet_type[ptype]..": failed to parse topic filter: "..err
+		end
+		subscriptions[#subscriptions + 1] = topic_filter
+	end
+	packet.subscriptions = subscriptions
+	return packet
+end
+
+-- UNSUBACK Reason Codes
+-- DOC[2]: Table 3‑9 - Unsubscribe Reason Codes
+local unsuback_rc = {
+	[0x00] = "Success",
+	[0x11] = "No subscription existed",
+	[0x80] = "Unspecified error",
+	[0x83] = "Implementation specific error",
+	[0x87] = "Not authorized",
+	[0x8F] = "Topic Filter invalid",
+	[0x91] = "Packet Identifier in use",
+}
+protocol5.unsuback_rc = unsuback_rc
+
+--- Parsed UNSUBACK packet metatable
+local unsuback_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_strings = function(self) -- Returns reason strings for the UNSUBACK packet according to its rc field
+		local human_readable = {}
+		for i, rc in ipairs(self.rc) do
+			local reason_string = unsuback_rc[rc]
+			if reason_string then
+				human_readable[i] = reason_string
+			else
+				human_readable[i] = "Unknown: "..tostring(rc)
+			end
+		end
+		return human_readable
+	end,
+}
+unsuback_packet_mt.__index = unsuback_packet_mt
+protocol5.unsuback_packet_mt = unsuback_packet_mt
+
+-- Parse UNSUBACK packet, DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
+local function parse_packet_unsuback(ptype, flags, input)
+	-- DOC: 3.11.1 UNSUBACK Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.11.2 UNSUBACK Variable Header
+	local packet_id, err = parse_uint16(read_data)
+	if not packet_id then
+		return false, packet_type[ptype]..": failed to parse packet_id: "..err
+	end
+	-- 3.11.2.1 UNSUBACK Properties
+	local packet = setmetatable({type=ptype, packet_id=packet_id}, unsuback_packet_mt)
+	local ok
+	ok, err = parse_properties(ptype, read_data, input, packet)
+	if not ok then
+		return false, packet_type[ptype]..": failed to parse packet properties: "..err
+	end
+	-- 3.11.3 UNSUBACK Payload
+	local rcs = {}
+	while input.available > 0 do
+		local rc
+		rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse reason code: "..err
+		end
+		rcs[#rcs + 1] = rc
+	end
+	if not next(rcs) then
+		return false, packet_type[ptype]..": expecting at least one reason code in"
+	end
+	packet.rc = rcs
+	return packet
+end
+
+-- Parse PINGREQ packet, DOC: 3.12 PINGREQ – PING request
+local function parse_packet_pingreq(ptype, flags, input_)
+	-- DOC: 3.12.1 PINGREQ Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	return setmetatable({type=ptype, properties={}, user_properties={}}, packet_mt)
+end
+
+-- Parse PINGRESP packet, DOC: 3.13 PINGRESP – PING response
+local function parse_packet_pingresp(ptype, flags, input_)
+	-- DOC: 3.13.1 PINGRESP Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	return setmetatable({type=ptype, properties={}, user_properties={}}, packet_mt)
+end
+
+-- DISCONNECT reason codes
+-- DOC: Table 3‑10 – Disconnect Reason Code values
+local disconnect_rc = {
+	[0x00] = "Normal disconnection",
+	[0x04] = "Disconnect with Will Message",
+	[0x80] = "Unspecified error",
+	[0x81] = "Malformed Packet",
+	[0x82] = "Protocol Error",
+	[0x83] = "Implementation specific error",
+	[0x87] = "Not authorized",
+	[0x89] = "Server busy",
+	[0x8B] = "Server shutting down",
+	[0x8D] = "Keep Alive timeout",
+	[0x8E] = "Session taken over",
+	[0x8F] = "Topic Filter invalid",
+	[0x90] = "Topic Name invalid",
+	[0x93] = "Receive Maximum exceeded",
+	[0x94] = "Topic Alias invalid",
+	[0x95] = "Packet too large",
+	[0x96] = "Message rate too high",
+	[0x97] = "Quota exceeded",
+	[0x98] = "Administrative action",
+	[0x99] = "Payload format invalid",
+	[0x9A] = "Retain not supported",
+	[0x9B] = "QoS not supported",
+	[0x9C] = "Use another server",
+	[0x9D] = "Server moved",
+	[0x9E] = "Shared Subscriptions not supported",
+	[0x9F] = "Connection rate exceeded",
+	[0xA0] = "Maximum connect time",
+	[0xA1] = "Subscription Identifiers not supported",
+	[0xA2] = "Wildcard Subscriptions not supported",
+}
+protocol5.disconnect_rc = disconnect_rc
+
+--- Parsed DISCONNECT packet metatable
+local disconnect_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_string = function(self) -- Returns reason string for the DISCONNECT packet according to its rc field
+		local reason_string = disconnect_rc[self.rc]
+		if not reason_string then
+			reason_string = "Unknown: "..self.rc
+		end
+		return reason_string
+	end,
+}
+disconnect_packet_mt.__index = disconnect_packet_mt
+protocol5.disconnect_packet_mt = disconnect_packet_mt
+
+-- Parse DISCONNECT packet, DOC: 3.14 DISCONNECT – Disconnect notification
+local function parse_packet_disconnect(ptype, flags, input)
+	-- DOC: 3.14.1 DISCONNECT Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	local packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, disconnect_packet_mt)
+	if input.available > 0 then
+		-- DOC: 3.14.2 DISCONNECT Variable Header
+		-- DOC: 3.14.2.1 Disconnect Reason Code
+		local rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse rc: "..err
+		end
+		packet.rc = rc
+		-- DOC: 3.14.2.2 DISCONNECT Properties
+		local ok
+		ok, err = parse_properties(ptype, read_data, input, packet)
+		if not ok then
+			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		end
+	end
+	return packet
+end
+
+-- Parse AUTH packet, DOC: 3.15 AUTH – Authentication exchange
+local function parse_packet_auth(ptype, flags, input)
+	-- DOC: 3.15.1 AUTH Fixed Header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	local read_data = input.read_func
+	-- DOC: 3.15.2.1 Authenticate Reason Code
+	local packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, packet_mt)
+	if input.available > 1 then
+		-- DOC: 3.15.2 AUTH Variable Header
+		local rc, err = parse_uint8(read_data)
+		if not rc then
+			return false, packet_type[ptype]..": failed to parse Authenticate Reason Code: "..err
+		end
+		packet.rc = rc
+		-- DOC: 3.15.2.2 AUTH Properties
+		local ok
+		ok, err = parse_properties(ptype, read_data, input, packet)
+		if not ok then
+			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		end
+	end
+	return packet
+end
+
 -- Parse packet using given read_func
 -- Returns packet on success or false and error message on failure
 function protocol5.parse_packet(read_func)
@@ -808,229 +1449,119 @@ function protocol5.parse_packet(read_func)
 	if not ptype then
 		return false, flags
 	end
-	local byte1, byte2, err, rc, ok, packet, topic, packet_id
-	local read_data = input.read_func
+	local packet, err
 
-	-- parse readed data according type in fixed header
-	if ptype == packet_type.CONNACK then
-		-- DOC: 3.2 CONNACK – Connect acknowledgement
-		if input.available < 3 then
-			return false, "expecting data of length 3 bytes or more"
-		end
-		-- DOC: 3.2.2.1.1 Session Present
-		-- DOC: 3.2.2.2 Connect Reason Code
-		byte1, byte2 = parse_uint8(read_data), parse_uint8(read_data)
-		local sp = (band(byte1, 0x1) ~= 0)
-		packet = setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
-		-- DOC: 3.2.2.3 CONNACK Properties
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, "failed to parse packet properties: "..err
-		end
-	elseif ptype == packet_type.PUBLISH then
-		-- DOC: 3.3 PUBLISH – Publish message
-		-- DOC: 3.3.1.1 DUP
-		local dup = (band(flags, 0x8) ~= 0)
-		-- DOC: 3.3.1.2 QoS
-		local qos = band(rshift(flags, 1), 0x3)
-		-- DOC: 3.3.1.3 RETAIN
-		local retain = (band(flags, 0x1) ~= 0)
-		-- DOC: 3.3.2.1 Topic Name
-		topic, err = parse_string(read_data)
-		if not topic then
-			return false, "failed to parse topic: "..err
-		end
-		-- DOC: 3.3.2.2 Packet Identifier
-		if qos > 0 then
-			packet_id, err = parse_uint16(read_data)
-			if not packet_id then
-				return false, "failed to parse packet_id: "..err
-			end
-		end
-		-- DOC: 3.3.2.3 PUBLISH Properties
-		packet = setmetatable({type=ptype, dup=dup, qos=qos, retain=retain, packet_id=packet_id, topic=topic}, packet_mt)
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, "failed to parse packet properties: "..err
-		end
-		if input.available > 0 then
-			-- DOC: 3.3.3 PUBLISH Payload
-			packet.payload = read_data(input.available)
-		end
-	elseif ptype == packet_type.PUBACK then
-		-- DOC: 3.4 PUBACK – Publish acknowledgement
-		packet_id, err = parse_uint16(read_data)
-		if not packet_id then
-			return false, "failed to parse packet_id: "..err
-		end
-		packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
-		if input.available > 0 then
-			-- DOC: 3.4.2.1 PUBACK Reason Code
-			rc, err = parse_uint8(read_data)
-			if not rc then
-				return false, "failed to parse rc: "..err
-			end
-			packet.rc = rc
-			-- DOC: 3.4.2.2 PUBACK Properties
-			ok, err = parse_properties(ptype, read_data, input, packet)
-			if not ok then
-				return false, "failed to parse packet properties: "..err
-			end
-		end
-	elseif ptype == packet_type.PUBREC then
-		-- DOC: 3.5 PUBREC – Publish received (QoS 2 delivery part 1)
-		packet_id, err = parse_uint16(read_data)
-		if not packet_id then
-			return false, "failed to parse packet_id: "..err
-		end
-		packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
-		if input.available > 0 then
-			-- DOC: 3.5.2.1 PUBREC Reason Code
-			rc, err = parse_uint8(read_data)
-			if not rc then
-				return false, "failed to parse rc: "..err
-			end
-			packet.rc = rc
-			-- DOC: 3.5.2.2 PUBREC Properties
-			ok, err = parse_properties(ptype, read_data, input, packet)
-			if not ok then
-				return false, "failed to parse packet properties: "..err
-			end
-		end
-	elseif ptype == packet_type.PUBREL then
-		-- DOC: 3.6 PUBREL – Publish release (QoS 2 delivery part 2)
-		packet_id, err = parse_uint16(read_data)
-		if not packet_id then
-			return false, "failed to parse packet_id: "..err
-		end
-		packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
-		if input.available > 0 then
-			-- DOC: 3.6.2.1 PUBREL Reason Code
-			rc, err = parse_uint8(read_data)
-			if not rc then
-				return false, "failed to parse rc: "..err
-			end
-			packet.rc = rc
-			-- DOC: 3.6.2.2 PUBREL Properties
-			ok, err = parse_properties(ptype, read_data, input, packet)
-			if not ok then
-				return false, "failed to parse packet properties: "..err
-			end
-		end
-	elseif ptype == packet_type.PUBCOMP then
-		-- DOC: 3.7 PUBCOMP – Publish complete (QoS 2 delivery part 3)
-		packet_id, err = parse_uint16(read_data)
-		if not packet_id then
-			return false, "failed to parse packet_id: "..err
-		end
-		packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
-		if input.available > 0 then
-			-- DOC: 3.7.2.1 PUBCOMP Reason Code
-			rc, err = parse_uint8(read_data)
-			if not rc then
-				return false, "failed to parse rc: "..err
-			end
-			packet.rc = rc
-			-- DOC: 3.7.2.2 PUBCOMP Properties
-			ok, err = parse_properties(ptype, read_data, input, packet)
-			if not ok then
-				return false, "failed to parse packet properties: "..err
-			end
-		end
-	elseif ptype == packet_type.SUBACK then
-		-- DOC: 3.9 SUBACK – Subscribe acknowledgement
-		-- DOC: 3.9.2 SUBACK Variable Header
-		packet_id, err = parse_uint16(read_data)
-		if not packet_id then
-			return false, "failed to parse packet_id: "..err
-		end
-		-- DOC: 3.9.2.1 SUBACK Properties
-		packet = setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, "failed to parse packet properties: "..err
-		end
-		-- DOC: 3.9.3 SUBACK Payload
-		local rcs = {}
-		while input.available > 0 do
-			rc, err = parse_uint8(read_data)
-			if not rc then
-				return false, "failed to parse reason code: "..err
-			end
-			rcs[#rcs + 1] = rc
-		end
-		if not next(rcs) then
-			return false, "expecting at least one reason code in SUBACK"
-		end
-		packet.rc = rcs -- TODO: reason codes table somewhere should be placed
-	elseif ptype == packet_type.UNSUBACK then
-		-- DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
-		-- DOC: 3.11.2 UNSUBACK Variable Header
-		packet_id, err = parse_uint16(read_data)
-		if not packet_id then
-			return false, "failed to parse packet_id: "..err
-		end
-		-- 3.11.2.1 UNSUBACK Properties
-		packet = setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, "failed to parse packet properties: "..err
-		end
-		-- 3.11.3 UNSUBACK Payload
-		local rcs = {}
-		while input.available > 0 do
-			rc, err = parse_uint8(read_data)
-			if not rc then
-				return false, "failed to parse reason code: "..err
-			end
-			rcs[#rcs + 1] = rc
-		end
-		if not next(rcs) then
-			return false, "expecting at least one reason code in UNSUBACK"
-		end
-		packet.rc = rcs
-	elseif ptype == packet_type.PINGRESP then
-		-- DOC: 3.13 PINGRESP – PING response
-		packet = setmetatable({type=ptype, properties={}, user_properties={}}, packet_mt)
-	elseif ptype == packet_type.DISCONNECT then
-		-- DOC: 3.14 DISCONNECT – Disconnect notification
-		packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, packet_mt)
-		if input.available > 0 then
-			-- DOC: 3.14.2.1 Disconnect Reason Code
-			rc, err = parse_uint8(read_data) -- TODO: reason codes table
-			if not rc then
-				return false, "failed to parse rc: "..err
-			end
-			packet.rc = rc
-			-- DOC: 3.14.2.2 DISCONNECT Properties
-			ok, err = parse_properties(ptype, read_data, input, packet)
-			if not ok then
-				return false, "failed to parse packet properties: "..err
-			end
-		end
-	elseif ptype == packet_type.AUTH then
-		-- DOC: 3.15 AUTH – Authentication exchange
-		-- DOC: 3.15.2.1 Authenticate Reason Code
-		packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, packet_mt)
-		if input.available > 1 then
-			rc, err = parse_uint8(read_data)
-			if not rc then
-				return false, "failed to parse Authenticate Reason Code: "..err
-			end
-			packet.rc = rc
-			-- DOC: 3.15.2.2 AUTH Properties
-			ok, err = parse_properties(ptype, read_data, input, packet)
-			if not ok then
-				return false, "failed to parse packet properties: "..err
-			end
-		end
+	-- parse read data according type in fixed header
+	if ptype == packet_type.CONNECT then			-- 1
+		packet, err = parse_packet_connect_input(input, const_v50)
+	elseif ptype == packet_type.CONNACK then		-- 2
+		packet, err = parse_packet_connack(ptype, flags, input)
+	elseif ptype == packet_type.PUBLISH then		-- 3
+		packet, err = parse_packet_publish(ptype, flags, input)
+	elseif ptype == packet_type.PUBACK then			-- 4
+		packet, err = parse_packet_puback(ptype, flags, input)
+	elseif ptype == packet_type.PUBREC then			-- 5
+		packet, err = parse_packet_pubrec(ptype, flags, input)
+	elseif ptype == packet_type.PUBREL then			-- 6
+		packet, err = parse_packet_pubrel(ptype, flags, input)
+	elseif ptype == packet_type.PUBCOMP then		-- 7
+		packet, err = parse_packet_pubcomp(ptype, flags, input)
+	elseif ptype == packet_type.SUBSCRIBE then		-- 8
+		packet, err = parse_packet_subscribe(ptype, flags, input)
+	elseif ptype == packet_type.SUBACK then			-- 9
+		packet, err = parse_packet_suback(ptype, flags, input)
+	elseif ptype == packet_type.UNSUBSCRIBE then	-- 10
+		packet, err = parse_packet_unsubscribe(ptype, flags, input)
+	elseif ptype == packet_type.UNSUBACK then		-- 11
+		packet, err = parse_packet_unsuback(ptype, flags, input)
+	elseif ptype == packet_type.PINGREQ then		-- 12
+		packet, err = parse_packet_pingreq(ptype, flags, input)
+	elseif ptype == packet_type.PINGRESP then		-- 13
+		packet, err = parse_packet_pingresp(ptype, flags, input)
+	elseif ptype == packet_type.DISCONNECT then		-- 14
+		packet, err = parse_packet_disconnect(ptype, flags, input)
+	elseif ptype == packet_type.AUTH then			-- 15
+		packet, err = parse_packet_auth(ptype, flags, input)
 	else
 		return false, "unexpected packet type received: "..tostring(ptype)
 	end
-	if input.available > 0 then
-		return false, "extra data in remaining length left after packet parsing"
+	if packet and input.available > 0 then
+		return false, packet_type[ptype]..": extra data in remaining length left after packet parsing"
 	end
-	return packet
+	return packet, err
+end
+
+-- Continue parsing of the MQTT v5.0 CONNECT packet
+-- Internally called from the protocol.parse_packet_connect_input() function
+-- Returns packet on success or false and error message on failure
+function protocol5._parse_packet_connect_continue(input, packet)
+	local read_func = input.read_func
+	local ok, client_id, err
+
+	-- DOC: 3.1.2.11 CONNECT Properties
+	ok, err = parse_properties(packet_type.CONNECT, read_func, input, packet)
+	if not ok then
+		return false, "CONNECT: failed to parse packet properties: "..err
+	end
+
+	-- DOC: 3.1.3 CONNECT Payload
+
+	-- DOC: 3.1.3.1 Client Identifier (ClientID)
+	client_id, err = parse_string(read_func)
+	if not client_id then
+		return false, "CONNECT: failed to parse client_id: "..err
+	end
+	packet.id = client_id
+
+	local will = packet.will
+	if will then
+		-- DOC: 3.1.3.2 Will Properties
+		ok, err = parse_properties("will", read_func, input, will)
+		if not ok then
+			return false, "CONNECT: failed to parse will message properties: "..err
+		end
+
+		-- DOC: 3.1.3.3 Will Topic
+		local will_topic, will_payload
+		will_topic, err = parse_string(read_func)
+		if not will_topic then
+			return false, "CONNECT: failed to parse will_topic: "..err
+		end
+		will.topic = will_topic
+
+		-- DOC: 3.1.3.4 Will Payload
+		will_payload, err = parse_string(read_func)
+		if not will_payload then
+			return false, "CONNECT: failed to parse will_payload: "..err
+		end
+		will.payload = will_payload
+	end
+
+	-- DOC: 3.1.3.5 User Name
+	if packet.username then
+		local username
+		username, err = parse_string(read_func)
+		if not username then
+			return false, "CONNECT: failed to parse username: "..err
+		end
+		packet.username = username
+	else
+		packet.username = nil
+	end
+
+	-- DOC: 3.1.3.6 Password
+	if packet.password then
+		local password
+		password, err = parse_string(read_func)
+		if not password then
+			return false, "CONNECT: failed to parse password: "..err
+		end
+		packet.password = password
+	else
+		packet.password = nil
+	end
+
+	return setmetatable(packet, packet_mt)
 end
 
 -- export module table

@@ -15,7 +15,7 @@ To reproduce you have to start `client-1.lua` and then `client-2.lua`.
 
 Here is an example output of both scripts:
 
-```
+```console
 $ lua examples/last-will/client-1.lua
 connected:      CONNACK{rc=0, type=2, sp=false}
 subscribed to luamqtt/close, waiting for connection close command from client-2
@@ -23,7 +23,7 @@ received:       PUBLISH{qos=1, retain=false, topic="luamqtt/close", payload="Dea
 closing connection without DISCONNECT and stopping client-1
 ```
 
-```
+```console
 $ lua examples/last-will/client-2.lua
 connected:      CONNACK{rc=0, sp=false, type=2}
 subscribed to luamqtt/lost

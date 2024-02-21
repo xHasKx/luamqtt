@@ -22,9 +22,6 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
 
 	# busted flags
 	BFLAGS=""
-	if [ "$ver" == "-l5.4" ]; then
-		BFLAGS="--exclude-tags=copas"
-	fi
 
 	if [ "$deps" == "1" ]; then
 		echo "installing deps for $ver"
@@ -39,9 +36,7 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
 			popd >/dev/null
 		fi
 		luarocks install busted > /dev/null
-		if [ "$ver" != "-l5.4" ]; then
-			luarocks install copas > /dev/null
-		fi
+		luarocks install copas > /dev/null
 		if [ -d /usr/lib/x86_64-linux-gnu ]; then
 			# debian-based OS
 			[ -f /etc/lsb-release ] && . /etc/lsb-release

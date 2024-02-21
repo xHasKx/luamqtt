@@ -133,6 +133,31 @@ local function make_packet_connect(args)
 	return combine(header, variable_header, payload)
 end
 
+-- Create CONNACK packet, DOC: 3.2 CONNACK – Acknowledge connection request
+local function make_packet_connack(args)
+	-- check args
+	assert(type(args.sp) == "boolean", "expecting .sp to be a boolean")
+	assert(type(args.rc) == "number", "expecting .rc to be a boolean")
+	-- DOC: 3.2.2.1 Connect Acknowledge Flags
+	-- DOC: 3.2.2.2 Session Present
+	local byte1
+	if args.sp then
+		byte1 = 1 -- bit 0 of the Connect Acknowledge Flags.
+	else
+		byte1 = 0
+	end
+	-- DOC: 3.2.2.3 Connect Return code
+	local byte2 = args.rc
+	-- DOC: 3.2.2 Variable header
+	local variable_header = combine(
+		make_uint8(byte1),
+		make_uint8(byte2)
+	)
+	-- DOC: 3.2.1 Fixed header
+	local header = make_header(packet_type.CONNACK, 0, variable_header:len()) -- NOTE: fixed flags value 0x0
+	return combine(header, variable_header)
+end
+
 -- Create PUBLISH packet, DOC: 3.3 PUBLISH – Publish message
 local function make_packet_publish(args)
 	-- check args
@@ -259,6 +284,29 @@ local function make_packet_subscribe(args)
 	return combine(header, variable_header, payload)
 end
 
+-- Create SUBACK packet, DOC: 3.9 SUBACK – Subscribe acknowledgement
+local function make_packet_suback(args)
+	-- check args
+	assert(type(args.packet_id) == "number", "expecting .packet_id to be a number")
+	assert(check_packet_id(args.packet_id), "expecting .packet_id to be a valid Packet Identifier")
+	assert(type(args.rc) == "table", "expecting .rc to be a table")
+	assert(#args.rc > 0, "expecting .rc to be a non-empty array")
+	-- DOC: 3.9.2 Variable header
+	local variable_header = combine(
+		make_uint16(args.packet_id)
+	)
+	-- DOC: 3.9.3 Payload
+	local payload = combine()
+	for i, rc in ipairs(args.rc) do
+		assert(type(rc) == "number", "expecting .rc["..i.."] to be a number")
+		assert(rc >= 0 and rc <= 255, "expecting .rc["..i.."] to be in range [0, 255]")
+		payload:append(make_uint8(rc))
+	end
+	-- DOC: 3.9.1 Fixed header
+	local header = make_header(packet_type.SUBACK, 0, variable_header:len() + payload:len()) -- NOTE: fixed flags value 0x0
+	return combine(header, variable_header, payload)
+end
+
 -- Create UNSUBSCRIBE packet, DOC: 3.10 UNSUBSCRIBE – Unsubscribe from topics
 local function make_packet_unsubscribe(args)
 	-- check args
@@ -281,36 +329,320 @@ local function make_packet_unsubscribe(args)
 	return combine(header, variable_header, payload)
 end
 
+-- Create UNSUBACK packet, DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
+local function make_packet_unsuback(args)
+	-- check args
+	assert(type(args.packet_id) == "number", "expecting .packet_id to be a number")
+	assert(check_packet_id(args.packet_id), "expecting .packet_id to be a valid Packet Identifier")
+	-- DOC: 3.11.2 Variable header
+	local variable_header = combine(
+		make_uint16(args.packet_id)
+	)
+	-- DOC: 3.11.3 Payload
+	-- The UNSUBACK Packet has no payload.
+	-- DOC: 3.11.1 Fixed header
+	local header = make_header(packet_type.UNSUBACK, 0, variable_header:len()) -- NOTE: fixed flags value 0x0
+	return combine(header, variable_header)
+end
+
 -- Create packet of given {type: number} in args
 function protocol4.make_packet(args)
 	assert(type(args) == "table", "expecting args to be a table")
 	assert(type(args.type) == "number", "expecting .type number in args")
 	local ptype = args.type
-	if ptype == packet_type.CONNECT then
+	if ptype == packet_type.CONNECT then			-- 1
 		return make_packet_connect(args)
-	elseif ptype == packet_type.PUBLISH then
+	elseif ptype == packet_type.CONNACK then		-- 2
+		return make_packet_connack(args)
+	elseif ptype == packet_type.PUBLISH then		-- 3
 		return make_packet_publish(args)
-	elseif ptype == packet_type.PUBACK then
+	elseif ptype == packet_type.PUBACK then			-- 4
 		return make_packet_puback(args)
-	elseif ptype == packet_type.PUBREC then
+	elseif ptype == packet_type.PUBREC then			-- 5
 		return make_packet_pubrec(args)
-	elseif ptype == packet_type.PUBREL then
+	elseif ptype == packet_type.PUBREL then			-- 6
 		return make_packet_pubrel(args)
-	elseif ptype == packet_type.PUBCOMP then
+	elseif ptype == packet_type.PUBCOMP then		-- 7
 		return make_packet_pubcomp(args)
-	elseif ptype == packet_type.SUBSCRIBE then
+	elseif ptype == packet_type.SUBSCRIBE then		-- 8
 		return make_packet_subscribe(args)
-	elseif ptype == packet_type.UNSUBSCRIBE then
+	elseif ptype == packet_type.SUBACK then			-- 9
+		return make_packet_suback(args)
+	elseif ptype == packet_type.UNSUBSCRIBE then	-- 10
 		return make_packet_unsubscribe(args)
-	elseif ptype == packet_type.PINGREQ then
+	elseif ptype == packet_type.UNSUBACK then		-- 11
+		return make_packet_unsuback(args)
+	elseif ptype == packet_type.PINGREQ then		-- 12
 		-- DOC: 3.12 PINGREQ – PING request
 		return combine("\192\000") -- 192 == 0xC0, type == 12, flags == 0
-	elseif ptype == packet_type.DISCONNECT then
+	elseif ptype == packet_type.PINGRESP then		-- 13
+		-- DOC: 3.13 PINGRESP – PING response
+		return combine("\208\000") -- 208 == 0xD0, type == 13, flags == 0
+	elseif ptype == packet_type.DISCONNECT then		-- 14
 		-- DOC: 3.14 DISCONNECT – Disconnect notification
 		return combine("\224\000") -- 224 == 0xD0, type == 14, flags == 0
 	else
-		error("unexpected packet type to make: "..ptype)
+		error("unexpected protocol4 packet type to make: "..ptype)
 	end
+end
+
+-- Parse CONNACK packet, DOC: 3.2 CONNACK – Acknowledge connection request
+local function parse_packet_connack(ptype, flags, input)
+	-- DOC: 3.2.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 2 then
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
+	end
+	local byte1, byte2 = parse_uint8(input.read_func), parse_uint8(input.read_func)
+	local sp = (band(byte1, 0x1) ~= 0)
+	return setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
+end
+
+-- Parse PUBLISH packet, DOC: 3.3 PUBLISH – Publish message
+local function parse_packet_publish(ptype, flags, input)
+	-- DOC: 3.3.1.1 DUP
+	local dup = (band(flags, 0x8) ~= 0)
+	-- DOC: 3.3.1.2 QoS
+	local qos = band(rshift(flags, 1), 0x3)
+	-- DOC: 3.3.1.3 RETAIN
+	local retain = (band(flags, 0x1) ~= 0)
+	-- DOC: 3.3.2.1 Topic Name
+	if input.available < 2 then
+		return false, packet_type[ptype]..": expecting data of length at least 2 bytes"
+	end
+	local topic_len = parse_uint16(input.read_func)
+	if input.available < topic_len then
+		return false, packet_type[ptype]..": malformed packet: not enough data to parse topic"
+	end
+	local topic = input.read_func(topic_len)
+	-- DOC: 3.3.2.2 Packet Identifier
+	local packet_id
+	if qos > 0 then
+		-- DOC: 3.3.2.2 Packet Identifier
+		if input.available < 2 then
+			return false, packet_type[ptype]..": malformed packet: not enough data to parse packet_id"
+		end
+		packet_id = parse_uint16(input.read_func)
+	end
+	-- DOC: 3.3.3 Payload
+	local payload
+	if input.available > 0 then
+		payload = input.read_func(input.available)
+	end
+	return setmetatable({type=ptype, dup=dup, qos=qos, retain=retain, packet_id=packet_id, topic=topic, payload=payload}, packet_mt)
+end
+
+-- Parse PUBACK packet, DOC: 3.4 PUBACK – Publish acknowledgement
+local function parse_packet_puback(ptype, flags, input)
+	-- DOC: 3.4.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 2 then
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
+	end
+	-- DOC: 3.4.2 Variable header
+	local packet_id = parse_uint16(input.read_func)
+	return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
+end
+
+-- Parse PUBREC packet, DOC: 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
+local function parse_packet_pubrec(ptype, flags, input)
+	-- DOC: 3.4.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 2 then
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
+	end
+	-- DOC: 3.5.2 Variable header
+	local packet_id = parse_uint16(input.read_func)
+	return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
+end
+
+-- Parse PUBREL packet, DOC: 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
+local function parse_packet_pubrel(ptype, flags, input)
+	if flags ~= 2 then
+		-- DOC: The Server MUST treat any other value as malformed and close the Network Connection [MQTT-3.6.1-1].
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 2 then
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
+	end
+	-- DOC: 3.6.2 Variable header
+	local packet_id = parse_uint16(input.read_func)
+	return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
+end
+
+-- Parse PUBCOMP packet, DOC: 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
+local function parse_packet_pubcomp(ptype, flags, input)
+	-- DOC: 3.7.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 2 then
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
+	end
+	-- DOC: 3.7.2 Variable header
+	local packet_id = parse_uint16(input.read_func)
+	return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
+end
+
+-- Parse SUBSCRIBE packet, DOC: 3.8 SUBSCRIBE - Subscribe to topics
+local function parse_packet_subscribe(ptype, flags, input)
+	if flags ~= 2 then
+		-- DOC: The Server MUST treat any other value as malformed and close the Network Connection [MQTT-3.8.1-1].
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available < 5 then -- variable header (2) + payload: topic length (2) + qos (1)
+		-- DOC: The payload of a SUBSCRIBE packet MUST contain at least one Topic Filter / QoS pair. A SUBSCRIBE packet with no payload is a protocol violation [MQTT-3.8.3-3]
+		return false, packet_type[ptype]..": expecting data of length 5 bytes at least"
+	end
+	-- DOC: 3.8.2 Variable header
+	local packet_id = parse_uint16(input.read_func)
+	-- DOC: 3.8.3 Payload
+	local subscriptions = {}
+	while input.available > 0 do
+		local topic_filter, qos, err
+		topic_filter, err = parse_string(input.read_func)
+		if not topic_filter then
+			return false, packet_type[ptype]..": failed to parse topic filter: "..err
+		end
+		qos, err = parse_uint8(input.read_func)
+		if not qos then
+			return false, packet_type[ptype]..": failed to parse qos: "..err
+		end
+		subscriptions[#subscriptions + 1] = {
+			topic = topic_filter,
+			qos = qos,
+		}
+	end
+	return setmetatable({type=ptype, packet_id=packet_id, subscriptions=subscriptions}, packet_mt)
+end
+
+-- SUBACK return codes
+-- DOC: 3.9.3 Payload
+local suback_rc = {
+	[0x00] = "Success - Maximum QoS 0",
+	[0x01] = "Success - Maximum QoS 1",
+	[0x02] = "Success - Maximum QoS 2",
+	[0x80] = "Failure",
+}
+protocol4.suback_rc = suback_rc
+
+--- Parsed SUBACK packet metatable
+local suback_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_strings = function(self) -- Returns return codes descriptions for the SUBACK packet according to its rc field
+		local human_readable = {}
+		for i, rc in ipairs(self.rc) do
+			local return_code = suback_rc[rc]
+			if return_code then
+				human_readable[i] = return_code
+			else
+				human_readable[i] = "Unknown: "..tostring(rc)
+			end
+		end
+		return human_readable
+	end,
+}
+suback_packet_mt.__index = suback_packet_mt
+protocol4.suback_packet_mt = suback_packet_mt
+
+-- Parse SUBACK packet, DOC: 3.9 SUBACK – Subscribe acknowledgement
+local function parse_packet_suback(ptype, flags, input)
+	-- DOC: 3.9.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available < 3 then
+		return false, packet_type[ptype]..": expecting data of length at least 3 bytes"
+	end
+	-- DOC: 3.9.2 Variable header
+	-- DOC: 3.9.3 Payload
+	local packet_id = parse_uint16(input.read_func)
+	local rc = {} -- DOC: The payload contains a list of return codes.
+	while input.available > 0 do
+		rc[#rc + 1] = parse_uint8(input.read_func)
+	end
+	return setmetatable({type=ptype, packet_id=packet_id, rc=rc}, suback_packet_mt)
+end
+
+-- Parse UNSUBSCRIBE packet, DOC: 3.10 UNSUBSCRIBE – Unsubscribe from topics
+local function parse_packet_unsubscribe(ptype, flags, input)
+	-- DOC: 3.10.1 Fixed header
+	if flags ~= 2 then
+		-- DOC: The Server MUST treat any other value as malformed and close the Network Connection [MQTT-3.10.1-1].
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available < 4 then -- variable header (2) + payload: topic length (2)
+		-- DOC: The Payload of an UNSUBSCRIBE packet MUST contain at least one Topic Filter. An UNSUBSCRIBE packet with no payload is a protocol violation [MQTT-3.10.3-2].
+		return false, packet_type[ptype]..": expecting data of length at least 4 bytes"
+	end
+	-- DOC: 3.10.2 Variable header
+	local packet_id = parse_uint16(input.read_func)
+	-- DOC: 3.10.3 Payload
+	local subscriptions = {}
+	while input.available > 0 do
+		local topic_filter, err = parse_string(input.read_func)
+		if not topic_filter then
+			return false, packet_type[ptype]..": failed to parse topic filter: "..err
+		end
+		subscriptions[#subscriptions + 1] = topic_filter
+	end
+	return setmetatable({type=ptype, packet_id=packet_id, subscriptions=subscriptions}, packet_mt)
+end
+
+-- Parse UNSUBACK packet, DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
+local function parse_packet_unsuback(ptype, flags, input)
+	-- DOC: 3.11.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 2 then
+		return false, packet_type[ptype]..": expecting data of length 2 bytes"
+	end
+	-- DOC: 3.11.2 Variable header
+	local packet_id = parse_uint16(input.read_func)
+	return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
+end
+
+-- Parse PINGREQ packet, DOC: 3.12 PINGREQ – PING request
+local function parse_packet_pingreq(ptype, flags, input)
+	-- DOC: 3.12.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 0 then
+		return false, packet_type[ptype]..": expecting data of length 0 bytes"
+	end
+	return setmetatable({type=ptype}, packet_mt)
+end
+
+-- Parse PINGRESP packet, DOC: 3.13 PINGRESP – PING response
+local function parse_packet_pingresp(ptype, flags, input)
+	-- DOC: 3.13.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 0 then
+		return false, packet_type[ptype]..": expecting data of length 0 bytes"
+	end
+	return setmetatable({type=ptype}, packet_mt)
+end
+
+-- Parse DISCONNECT packet, DOC: 3.14 DISCONNECT – Disconnect notification
+local function parse_packet_disconnect(ptype, flags, input)
+	-- DOC: 3.14.1 Fixed header
+	if flags ~= 0 then -- Reserved
+		return false, packet_type[ptype]..": unexpected flags value: "..flags
+	end
+	if input.available ~= 0 then
+		return false, packet_type[ptype]..": expecting data of length 0 bytes"
+	end
+	return setmetatable({type=ptype}, packet_mt)
 end
 
 -- Parse packet using given read_func
@@ -318,111 +650,37 @@ end
 function protocol4.parse_packet(read_func)
 	local ptype, flags, input = start_parse_packet(read_func)
 	if not ptype then
-		return false, flags
+		return false, flags -- flags is error message in this case
 	end
-	-- parse readed data according type in fixed header
-	if ptype == packet_type.CONNECT then
+	-- parse read data according type in fixed header
+	if ptype == packet_type.CONNECT then			-- 1
 		return parse_packet_connect_input(input, const_v311)
-	elseif ptype == packet_type.CONNACK then
-		-- DOC: 3.2 CONNACK – Acknowledge connection request
-		if input.available ~= 2 then
-			return false, "expecting data of length 2 bytes"
-		end
-		local byte1, byte2 = parse_uint8(input.read_func), parse_uint8(input.read_func)
-		local sp = (band(byte1, 0x1) ~= 0)
-		return setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
-	elseif ptype == packet_type.PUBLISH then
-		-- DOC: 3.3 PUBLISH – Publish message
-		-- DOC: 3.3.1.1 DUP
-		local dup = (band(flags, 0x8) ~= 0)
-		-- DOC: 3.3.1.2 QoS
-		local qos = band(rshift(flags, 1), 0x3)
-		-- DOC: 3.3.1.3 RETAIN
-		local retain = (band(flags, 0x1) ~= 0)
-		-- DOC: 3.3.2.1 Topic Name
-		if input.available < 2 then
-			return false, "expecting data of length at least 2 bytes"
-		end
-		local topic_len = parse_uint16(input.read_func)
-		if input.available < topic_len then
-			return false, "malformed PUBLISH packet: not enough data to parse topic"
-		end
-		local topic = input.read_func(topic_len)
-		-- DOC: 3.3.2.2 Packet Identifier
-		local packet_id
-		if qos > 0 then
-			-- DOC: 3.3.2.2 Packet Identifier
-			if input.available < 2 then
-				return false, "malformed PUBLISH packet: not enough data to parse packet_id"
-			end
-			packet_id = parse_uint16(input.read_func)
-		end
-		-- DOC: 3.3.3 Payload
-		local payload
-		if input.available > 0 then
-			payload = input.read_func(input.available)
-		end
-		return setmetatable({type=ptype, dup=dup, qos=qos, retain=retain, packet_id=packet_id, topic=topic, payload=payload}, packet_mt)
-	elseif ptype == packet_type.PUBACK then
-		-- DOC: 3.4 PUBACK – Publish acknowledgement
-		if input.available ~= 2 then
-			return false, "expecting data of length 2 bytes"
-		end
-		-- DOC: 3.4.2 Variable header
-		local packet_id = parse_uint16(input.read_func)
-		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
-	elseif ptype == packet_type.PUBREC then
-		-- DOC: 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
-		if input.available ~= 2 then
-			return false, "expecting data of length 2 bytes"
-		end
-		-- DOC: 3.5.2 Variable header
-		local packet_id = parse_uint16(input.read_func)
-		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
-	elseif ptype == packet_type.PUBREL then
-		-- DOC: 3.6 PUBREL – Publish release (QoS 2 publish received, part 2)
-		if input.available ~= 2 then
-			return false, "expecting data of length 2 bytes"
-		end
-		-- also flags should be checked to equals 2 by the server
-		-- DOC: 3.6.2 Variable header
-		local packet_id = parse_uint16(input.read_func)
-		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
-	elseif ptype == packet_type.PUBCOMP then
-		-- 3.7 PUBCOMP – Publish complete (QoS 2 publish received, part 3)
-		if input.available ~= 2 then
-			return false, "expecting data of length 2 bytes"
-		end
-		-- DOC: 3.7.2 Variable header
-		local packet_id = parse_uint16(input.read_func)
-		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
-	elseif ptype == packet_type.SUBACK then
-		-- DOC: 3.9 SUBACK – Subscribe acknowledgement
-		if input.available < 3 then
-			return false, "expecting data of length at least 3 bytes"
-		end
-		-- DOC: 3.9.2 Variable header
-		-- DOC: 3.9.3 Payload
-		local packet_id = parse_uint16(input.read_func)
-		local rc = {} -- DOC: The payload contains a list of return codes.
-		while input.available > 0 do
-			rc[#rc + 1] = parse_uint8(input.read_func)
-		end
-		return setmetatable({type=ptype, packet_id=packet_id, rc=rc}, packet_mt)
-	elseif ptype == packet_type.UNSUBACK then
-		-- DOC: 3.11 UNSUBACK – Unsubscribe acknowledgement
-		if input.available ~= 2 then
-			return false, "expecting data of length 2 bytes"
-		end
-		-- DOC: 3.11.2 Variable header
-		local packet_id = parse_uint16(input.read_func)
-		return setmetatable({type=ptype, packet_id=packet_id}, packet_mt)
-	elseif ptype == packet_type.PINGRESP then
-		-- DOC: 3.13 PINGRESP – PING response
-		if input.available ~= 0 then
-			return false, "expecting data of length 0 bytes"
-		end
-		return setmetatable({type=ptype}, packet_mt)
+	elseif ptype == packet_type.CONNACK then		-- 2
+		return parse_packet_connack(ptype, flags, input)
+	elseif ptype == packet_type.PUBLISH then		-- 3
+		return parse_packet_publish(ptype, flags, input)
+	elseif ptype == packet_type.PUBACK then			-- 4
+		return parse_packet_puback(ptype, flags, input)
+	elseif ptype == packet_type.PUBREC then			-- 5
+		return parse_packet_pubrec(ptype, flags, input)
+	elseif ptype == packet_type.PUBREL then			-- 6
+		return parse_packet_pubrel(ptype, flags, input)
+	elseif ptype == packet_type.PUBCOMP then		-- 7
+		return parse_packet_pubcomp(ptype, flags, input)
+	elseif ptype == packet_type.SUBSCRIBE then		-- 8
+		return parse_packet_subscribe(ptype, flags, input)
+	elseif ptype == packet_type.SUBACK then			-- 9
+		return parse_packet_suback(ptype, flags, input)
+	elseif ptype == packet_type.UNSUBSCRIBE then	-- 10
+		return parse_packet_unsubscribe(ptype, flags, input)
+	elseif ptype == packet_type.UNSUBACK then		-- 11
+		return parse_packet_unsuback(ptype, flags, input)
+	elseif ptype == packet_type.PINGREQ then		-- 12
+		return parse_packet_pingreq(ptype, flags, input)
+	elseif ptype == packet_type.PINGRESP then		-- 13
+		return parse_packet_pingresp(ptype, flags, input)
+	elseif ptype == packet_type.DISCONNECT then		-- 14
+		return parse_packet_disconnect(ptype, flags, input)
 	else
 		return false, "unexpected packet type received: "..tostring(ptype)
 	end
@@ -440,9 +698,9 @@ function protocol4._parse_packet_connect_continue(input, packet)
 	-- DOC: 3.1.3.1 Client Identifier
 	client_id, err = parse_string(read_func)
 	if not client_id then
-		return false, "failed to parse client_id: "..err
+		return false, "CONNECT: failed to parse client_id: "..err
 	end
-	packet.client_id = client_id
+	packet.id = client_id
 
 	local will = packet.will
 	if will then
@@ -450,14 +708,14 @@ function protocol4._parse_packet_connect_continue(input, packet)
 		local will_topic, will_payload
 		will_topic, err = parse_string(read_func)
 		if not will_topic then
-			return false, "failed to parse will_topic: "..err
+			return false, "CONNECT: failed to parse will_topic: "..err
 		end
 		will.topic = will_topic
 
 		-- DOC: 3.1.3.3 Will Message
 		will_payload, err = parse_string(read_func)
 		if not will_payload then
-			return false, "failed to parse will_payload: "..err
+			return false, "CONNECT: failed to parse will_payload: "..err
 		end
 		will.payload = will_payload
 	end
@@ -467,7 +725,7 @@ function protocol4._parse_packet_connect_continue(input, packet)
 		local username
 		username, err = parse_string(read_func)
 		if not username then
-			return false, "failed to parse username: "..err
+			return false, "CONNECT: failed to parse username: "..err
 		end
 		packet.username = username
 	else
@@ -477,12 +735,12 @@ function protocol4._parse_packet_connect_continue(input, packet)
 	if packet.password then
 		-- DOC: 3.1.3.5 Password
 		if not packet.username then
-			return false, "MQTT v3.1.1 does not allow providing password without username"
+			return false, "CONNECT: MQTT v3.1.1 does not allow providing password without username"
 		end
 		local password
 		password, err = parse_string(read_func)
 		if not password then
-			return false, "failed to parse password: "..err
+			return false, "CONNECT: failed to parse password: "..err
 		end
 		packet.password = password
 	else

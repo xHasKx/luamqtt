@@ -6,10 +6,10 @@
 Here is a generic implementation of MQTT protocols of all supported versions.
 
 MQTT v3.1.1 documentation (DOCv3.1.1):
-	http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
+	DOC[1]: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
 MQTT v5.0 documentation (DOCv5.0):
-	http://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html
+	DOC[2]: http://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html
 
 CONVENTIONS:
 
@@ -56,6 +56,7 @@ local rshift = bit.rshift
 
 local tools = require("mqtt.tools")
 local div = tools.div
+local sortedpairs = tools.sortedpairs
 
 --- Create bytes of the uint8 value
 -- @tparam number val - integer value to convert to bytes
@@ -157,9 +158,9 @@ function protocol.make_var_length_nonzero(value)
 	return make_var_length(value)
 end
 
---- Read string using given read_func function
+--- Read string (or bytes) using given read_func function
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn string parsed string on success
+-- @treturn string parsed string (or bytes) on success
 -- @return OR false and error message on failure
 function protocol.parse_string(read_func)
 	assert(type(read_func) == "function", "expecting read_func to be a function")
@@ -167,10 +168,10 @@ function protocol.parse_string(read_func)
 	if not len then
 		return false, "failed to read string length: "..err
 	end
-	-- convert len string from 2-byte integer
+	-- convert string length from 2 bytes
 	local byte1, byte2 = str_byte(len, 1, 2)
 	len = bor(lshift(byte1, 8), byte2)
-	-- and return string if parsed length
+	-- and return string/bytes of the parsed length
 	return read_func(len)
 end
 local parse_string = protocol.parse_string
@@ -262,6 +263,8 @@ local max_mult = 128 * 128 * 128
 -- @treturn number parser value
 -- @return OR false and error message on failure
 function protocol.parse_var_length(read_func)
+	-- DOC[1]: 2.2.3 Remaining Length
+	-- DOC[2]: 1.5.5 Variable Byte Integer
 	assert(type(read_func) == "function", "expecting read_func to be a function")
 	local mult = 1
 	local val = 0
@@ -476,7 +479,7 @@ combined_packet_mt.__index = function(_, key)
 end
 
 --- Combine several data parts into one
--- @tparam combined_packet_mt/string ... any amout of strings of combined_packet_mt tables to combine into one packet
+-- @tparam combined_packet_mt/string ... any amount of strings of combined_packet_mt tables to combine into one packet
 -- @treturn combined_packet_mt table suitable to append packet parts or to stringify it into raw packet bytes
 function protocol.combine(...)
 	return setmetatable({...}, combined_packet_mt)
@@ -489,7 +492,7 @@ local function value_tostring(value)
 		return str_format("%q", value)
 	elseif t == "table" then
 		local res = {}
-		for k, v in pairs(value) do
+		for k, v in sortedpairs(value) do
 			if type(k) == "number" then
 				res[#res + 1] = value_tostring(v)
 			else
@@ -511,7 +514,7 @@ end
 -- @treturn string human-readable string representation of the packet
 function protocol.packet_tostring(packet)
 	local res = {}
-	for k, v in pairs(packet) do
+	for k, v in sortedpairs(packet) do
 		res[#res + 1] = str_format("%s=%s", k, value_tostring(v))
 	end
 	return str_format("%s{%s}", tostring(packet_type[packet.type]), tbl_concat(res, ", "))
@@ -527,7 +530,11 @@ protocol.packet_mt = {
 protocol.connack_packet_mt = {
 	__tostring = packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
 	reason_string = function(self) -- Returns reason string for the CONNACK packet according to its rc field
-		return connack_rc[self.rc]
+		local reason_string = connack_rc[self.rc]
+		if not reason_string then
+			reason_string = "Unknown: "..self.rc
+		end
+		return reason_string
 	end,
 }
 protocol.connack_packet_mt.__index = protocol.connack_packet_mt

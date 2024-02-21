@@ -1,9 +1,9 @@
 -- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/protocol5-make.lua
 -- DOC: https://docs.oasis-open.org/mqtt/mqtt/v5.0/cos02/mqtt-v5.0-cos02.html
 
-describe("MQTT v5.0 protocol: making packets", function()
+describe("MQTT v5.0 protocol: making packets: CONNECT[1]", function()
 	local tools = require("mqtt.tools")
-	local extract_hex = require("./tools/extract_hex")
+	local extract_hex = require("mqtt.tools").extract_hex
 	local protocol = require("mqtt.protocol")
 	local protocol5 = require("mqtt.protocol5")
 
@@ -189,6 +189,96 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: CONNACK[2]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+
+	it("CONNACK with minimum params", function()
+		assert.are.equal(
+			extract_hex[[
+				20						-- packet type == 2 (CONNACK), flags == 0
+				03						-- length == 3 bytes
+
+					00					-- Connect Acknowledge Flags, sp=false
+					00					-- Connect Reason Code == 0
+					00					-- no props
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.CONNACK,
+				sp = false, rc = 0,
+			}))
+		)
+	end)
+
+	it("CONNACK with flags, rc, and full properties", function()
+		assert.are.equal(
+			extract_hex[[
+				20					-- packet type == 2 (CONNACK), flags == 0
+				75					-- variable length == 117 bytes
+
+					01				-- Connect Acknowledge Flags, sp=true
+					82				-- Connect Reason Code == 0x82
+					72				-- properties length
+
+					11 00000E10		-- property 0x11 == 3600, -- DOC: 3.2.2.3.2 Session Expiry Interval
+					12 0005 736C617665	-- property 0x12 == "slave", -- DOC: 3.2.2.3.7 Assigned Client Identifier
+					13 0078			-- property 0x13 == 120, -- DOC: 3.2.2.3.14 Server Keep Alive
+					15 0005 6775657373	-- property 0x15 == "guess", -- DOC: 3.2.2.3.17 Authentication Method
+					16 0002 3130		-- property 0x16 == "10", -- DOC: 3.2.2.3.18 Authentication Data
+					1A 0005 686572652F	-- property 0x1A == "here/", -- DOC: 3.2.2.3.15 Response Information
+					1C 000D 736565202F6465762F6E756C6C	-- property 0x1C == "see /dev/null", -- DOC: 3.2.2.3.16 Server Reference
+					1F 0007 70726F63656564	-- property 0x1F == "proceed", -- DOC: 3.2.2.3.9 Reason String
+					21 1234			-- property 0x21 == 0x1234, -- DOC: 3.2.2.3.3 Receive Maximum
+					22 4321			-- property 0x22 == 0x4321, -- DOC: 3.2.2.3.8 Topic Alias Maximum
+					24 01			-- property 0x24 == 1, -- DOC: 3.2.2.3.4 Maximum QoS
+					25 01			-- property 0x25 == 1, -- DOC: 3.2.2.3.5 Retain Available
+					27 00004567		-- property 0x27 == 0x4567, -- DOC: 3.2.2.3.6 Maximum Packet Size
+					28 01			-- property 0x28 == 1, -- DOC: 3.2.2.3.11 Wildcard Subscription Available
+					29 00			-- property 0x29 == 0, -- DOC: 3.2.2.3.12 Subscription Identifiers Available
+					2A 01			-- property 0x2A == 1, -- DOC: 3.2.2.3.13 Shared Subscription Available
+					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world")  -- DOC: 3.2.2.3.10 User Property
+					26 0005 68656C6C6F 0005 616761696E	-- property 0x26 (user) == ("hello", "again")  -- DOC: 3.2.2.3.10 User Property
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.CONNACK,
+				sp = true, rc = 0x82,
+				properties={
+					session_expiry_interval = 3600,
+					receive_maximum = 0x1234,
+					maximum_qos = 1,
+					retain_available = 1,
+					maximum_packet_size = 0x4567,
+					assigned_client_identifier = "slave",
+					topic_alias_maximum = 0x4321,
+					reason_string = "proceed",
+					wildcard_subscription_available = 1,
+					subscription_identifiers_available = 0,
+					shared_subscription_available = 1,
+					server_keep_alive = 120,
+					response_information = "here/",
+					server_reference = "see /dev/null",
+					authentication_method = "guess",
+					authentication_data = "10",
+				},
+				user_properties={
+					hello = "again", -- NOTE: that key+value pair is equivalent of {"hello", "again"} below, thus that pair will be skipped
+					{"hello", "world"},
+					{"hello", "again"},
+				},
+			}))
+		)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBLISH with minimum params", function()
 		assert.are.equal(
@@ -281,10 +371,10 @@ describe("MQTT v5.0 protocol: making packets", function()
 					09 0004 736F6D65		-- property 0x09 == "some" -- DOC: 3.3.2.3.6 Correlation Data
 					0B 05					-- property 0x0B == 5 -- DOC: 3.3.2.3.8 Subscription Identifier
 					23 1234					-- property 0x23 == 0x1234 -- DOC: 3.3.2.3.4 Topic Alias
-					26 000B 546F20496E66696E697479 000A 616E64204265796F6E64	-- property 0x26 (user) == ("To Infinity", "and Beyond") -- DOC: 3.3.2.3.7 User Property
 					26 0005 6172726179 0006 6974656D2031	-- property 0x26 (user) == ("array", "item 1") -- DOC: 3.3.2.3.7 User Property
 					26 0005 6172726179 0006 6974656D2033	-- property 0x26 (user) == ("array", "item 3") -- DOC: 3.3.2.3.7 User Property
 					26 0005 6172726179 0006 6974656D2032	-- property 0x26 (user) == ("array", "item 2") -- DOC: 3.3.2.3.7 User Property
+					26 000B 546F20496E66696E697479 000A 616E64204265796F6E64	-- property 0x26 (user) == ("To Infinity", "and Beyond") -- DOC: 3.3.2.3.7 User Property
 					26 0005 68656C6C6F 0005 776F726C64		-- property 0x26 (user) == ("hello", "world") -- DOC: 3.3.2.3.7 User Property
 
 					686579204D51545421		-- payload == "hey MQTT!"
@@ -310,12 +400,19 @@ describe("MQTT v5.0 protocol: making packets", function()
 					hello = "world",
 					{"array", "item 1"},
 					{"array", "item 3"},
-					{"array", "item 2"},
+					{"array", "item 2"}, -- NOTE: the same as adding `array = "item 2"` to user_properties table
 					["To Infinity"] = "and Beyond",
 				},
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBACK[4]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBACK with minimum params", function()
 		assert.are.equal(
@@ -385,6 +482,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBREC[5]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBREC with minimum params", function()
 		assert.are.equal(
@@ -454,6 +558,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBREL[6]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBREL with minimum params", function()
 		assert.are.equal(
@@ -523,6 +634,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PUBCOMP[7]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PUBCOMP with minimum params", function()
 		assert.are.equal(
@@ -592,6 +710,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: SUBSCRIBE[8]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("SUBSCRIBE with minimum params", function()
 		assert.are.equal(
@@ -718,6 +843,67 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: SUBACK[9]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+
+	it("SUBACK minimal", function()
+		assert.are.equal(
+			extract_hex[[
+				90						-- packet type == 0x9 == 9 (SUBACK), flags == 0 (fixed value)
+				04						-- length == 0x04 == 4 bytes
+											-- next is 4 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					00						-- properties length
+											-- payload:
+					02						-- array of Reason Codes with 1 item
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 14,
+				rc = { 2, },
+			}))
+		)
+	end)
+
+	it("SUBACK with full properties", function()
+		assert.are.equal(
+			extract_hex[[
+				90						-- packet type == 0x9 == 9 (SUBACK), flags == 0 (fixed value)
+				1E						-- length == 0x1E == 30 bytes
+											-- next is 30 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					16						-- properties length - 22 bytes
+											-- properties:
+					1F 0004 6F6B6179		-- property 0x1F == "okay" -- DOC: 3.9.2.1.2 Reason String
+					26 0005 68656C6C6F 0005 7568206E6F	-- property 0x26 (user) == ("hello", "uh no") -- DOC: 3.9.2.1.3 User Property
+											-- payload:
+					02 01 00 80 87			-- array of Reason Codes with 5 items -- DOC: Table 3‑8 - Subscribe Reason Codes
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.SUBACK,
+				packet_id = 14,
+				rc = { 2, 1, 0, 0x80, 0x87, },
+				properties = {
+					reason_string = "okay",
+				},
+				user_properties = {
+					hello = "uh no",
+				},
+			}))
+		)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: UNSUBSCRIBE[10]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("UNSUBSCRIBE with full params", function()
 		assert.are.equal(
@@ -727,7 +913,7 @@ describe("MQTT v5.0 protocol: making packets", function()
 
 											-- next is 10 bytes of variable header and payload:
 
-					000E					-- packet_id == 3
+					000E					-- packet_id == 14
 					00						-- properties length
 
 											-- payload:
@@ -748,11 +934,11 @@ describe("MQTT v5.0 protocol: making packets", function()
 		assert.are.equal(
 			extract_hex[[
 				A2						-- packet type == 0xA == 10 (UNSUBSCRIBE), flags == 2 (fixed value)
-				30						-- length == 0x0A == 10 bytes
+				30						-- length == 0x30 == 48 bytes
 
-											-- next is 10 bytes of variable header and payload:
+											-- next is 48 bytes of variable header and payload:
 
-					000E					-- packet_id == 3
+					000E					-- packet_id == 14
 					20						-- properties length == 32 bytes
 
 											-- next is 32 bytes of properties:
@@ -779,6 +965,67 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: UNSUBACK[11]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+
+	it("UNSUBACK minimal", function()
+		assert.are.equal(
+			extract_hex[[
+				B0						-- packet type == 0xB == 11 (UNSUBACK), flags == 0 (fixed value)
+				04						-- length == 0x04 == 4 bytes
+											-- next is 4 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					00						-- properties length
+											-- payload:
+					02						-- array of Reason Codes with 1 item
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.UNSUBACK,
+				packet_id = 14,
+				rc = { 2, },
+			}))
+		)
+	end)
+
+	it("UNSUBACK with full properties", function()
+		assert.are.equal(
+			extract_hex[[
+				B0						-- packet type == 0xB == 11 (UNSUBACK), flags == 0 (fixed value)
+				1E						-- length == 0x1E == 30 bytes
+											-- next is 30 bytes of variable header and payload:
+					000E					-- packet_id == 14
+					16						-- properties length - 22 bytes
+											-- properties:
+					1F 0004 6F6B6179		-- property 0x1F == "okay" -- DOC: 3.11.2.1.2 Reason String
+					26 0005 68656C6C6F 0005 776F726C64	-- property 0x26 (user) == ("hello", "world") -- DOC: 3.11.2.1.3 User Property
+											-- payload:
+					00 00 00 80 11			-- array of Reason Codes with 5 items -- DOC: Table 3‑9 - Unsubscribe Reason Codes
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.UNSUBACK,
+				packet_id = 14,
+				rc = { 0, 0, 0, 0x80, 0x11, },
+				properties = {
+					reason_string = "okay",
+				},
+				user_properties = {
+					hello = "world",
+				},
+			}))
+		)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PINGREQ[12]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("PINGREQ", function()
 		assert.are.equal(
@@ -791,6 +1038,32 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: PINGRESP[13]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
+
+	it("PINGRESP", function()
+		assert.are.equal(
+			extract_hex[[
+				D0						-- packet type == 0xD == 13 (PINGRESP), flags == 0
+				00						-- length == 0x00 == 0 bytes
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.PINGRESP,
+			}))
+		)
+	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: DISCONNECT[14]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("DISCONNECT with minimum params", function()
 		assert.are.equal(
@@ -855,6 +1128,13 @@ describe("MQTT v5.0 protocol: making packets", function()
 			}))
 		)
 	end)
+end)
+
+describe("MQTT v5.0 protocol: making packets: AUTH[15]", function()
+	local tools = require("mqtt.tools")
+	local extract_hex = require("mqtt.tools").extract_hex
+	local protocol = require("mqtt.protocol")
+	local protocol5 = require("mqtt.protocol5")
 
 	it("AUTH with minimum params", function()
 		assert.are.equal(

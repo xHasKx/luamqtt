@@ -2,10 +2,10 @@
 -- DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 
 describe("MQTT v3.1.1 protocol: parsing packets", function()
-	local extract_hex = require("./tools/extract_hex")
 	local mqtt = require("mqtt")
 	local protocol = require("mqtt.protocol")
 	local protocol4 = require("mqtt.protocol4")
+	local extract_hex = require("mqtt.tools").extract_hex
 
 	-- returns read_func-compatible function
 	local function make_read_func_hex(hex)
@@ -46,7 +46,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 0, client_id = "",
+				version = mqtt.v311, clean = false, keep_alive = 0, id = "",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -63,7 +63,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = true, keep_alive = 30, client_id = "",
+				version = mqtt.v311, clean = true, keep_alive = 30, id = "",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -77,11 +77,10 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				]]
 			))
 		)
-		-- client_id
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "test",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "test",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -98,7 +97,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "",
 				will = { topic = "bye", payload = "bye", retain = false, qos = 0, },
 			},
 			protocol4.parse_packet(make_read_func_hex(
@@ -118,7 +117,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "",
 				will = { topic = "bye", payload = "", retain = true, qos = 2, },
 			},
 			protocol4.parse_packet(make_read_func_hex(
@@ -138,7 +137,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "", username = "user",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "", username = "user",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -156,7 +155,7 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,
-				version = mqtt.v311, clean = false, keep_alive = 30, client_id = "", username = "user", password = "1234",
+				version = mqtt.v311, clean = false, keep_alive = 30, id = "", username = "user", password = "1234",
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
@@ -197,14 +196,26 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				extract_hex("20 02 0100")
 			))
 		)
+		local packet = protocol4.parse_packet(make_read_func_hex(
+			extract_hex("20 02 0001")
+		))
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNACK, sp=false, rc=1
 			},
-			protocol4.parse_packet(make_read_func_hex(
-				extract_hex("20 02 0001")
-			))
+			packet
 		)
+		assert.are.same("Connection Refused, unacceptable protocol version", packet:reason_string())
+		packet = protocol4.parse_packet(make_read_func_hex(
+			extract_hex("20 02 0020")
+		))
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNACK, sp=false, rc=32
+			},
+			packet
+		)
+		assert.are.same("Unknown: 32", packet:reason_string())
 	end)
 
 	it("PUBLISH", function()
@@ -355,7 +366,59 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			))
 		)
 	end)
-	-- TODO: SUBSCRIBE, UNSUBSCRIBE, PINGREQ, DISCONNECT
+
+	it("SUBSCRIBE", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.SUBSCRIBE, packet_id=1, subscriptions={
+					{
+						topic = "some",
+						qos = 0,
+					},
+				},
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					82 						-- packet type == 8 (SUBSCRIBE), flags == 0x2 (fixed value)
+					09 						-- length == 9 bytes
+						0001 				-- variable header: Packet Identifier == 1
+							0004 736F6D65 	-- topic filter #1 == string "some"
+							00 				-- QoS #1 == 0
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.SUBSCRIBE, packet_id=2, subscriptions={
+					{
+						topic = "some/#",
+						qos = 0,
+					},
+					{
+						topic = "other/+/topic/#",
+						qos = 1,
+					},
+					{
+						topic = "#",
+						qos = 2,
+					},
+				},
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					82 						-- packet type == 8 (SUBSCRIBE), flags == 0x2 (fixed value)
+					21 						-- length == 0x21 == 33 bytes
+						0002 				-- variable header: Packet Identifier == 2
+							0006 736F6D652F23 						-- topic filter #1 == string "some/#"
+							00 										-- QoS #1
+							000F 6F746865722F2B2F746F7069632F23 	-- topic filter #2 == string "other/+/topic/#"
+							01 										-- QoS #2
+							0001 23 								-- topic filter #3 == string "#"
+							02 										-- QoS #3
+				]]
+			))
+		)
+	end)
 
 	it("SUBACK", function()
 		assert.are.same(
@@ -384,16 +447,62 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				]]
 			))
 		)
+		local packet = protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				90 					-- packet type == 9 (SUBACK), flags == 0
+				05 					-- variable length == 5 bytes
+					1234 			-- packet id of acknowledged SUBSCRIBE packet
+						02 03 80	-- payload: return code, array of maximum allowed QoS-es
+			]]
+		))
 		assert.are.same(
 			{
-				type=protocol.packet_type.SUBACK, packet_id=0x1234, rc={3, 3, 0x80},
+				type=protocol.packet_type.SUBACK, packet_id=0x1234, rc={2, 3, 0x80},
+			},
+			packet
+		)
+		assert.are.same(
+			{
+				"Success - Maximum QoS 2",
+				"Unknown: 3",
+				"Failure",
+			},
+			packet:reason_strings()
+		)
+	end)
+
+	it("UNSUBSCRIBE", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.UNSUBSCRIBE, packet_id=1, subscriptions={
+					"some"
+				},
 			},
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
-					90 					-- packet type == 9 (SUBACK), flags == 0
-					05 					-- variable length == 5 bytes
-						1234 			-- packet id of acknowledged SUBSCRIBE packet
-							03 03 80	-- payload: return code, array of maximum allowed QoS-es
+					A2 						-- packet type == 0xA == 10 (UNSUBSCRIBE), flags == 0x2 (fixed value)
+					08 						-- length == 8 bytes
+						0001 				-- variable header: Packet Identifier == 1
+							0004 736F6D65 	-- topic filter #1 == string "some"
+				]]
+			))
+		)
+		assert.are.same(
+			{
+				type=protocol.packet_type.UNSUBSCRIBE, packet_id=0x1234, subscriptions = {
+					"some/#",
+					"other/+/topic/#",
+					"#",
+				},
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					A2 						-- packet type == 0xA == 10 (UNSUBSCRIBE), flags == 0x2 (fixed value)
+					1E 						-- length == 0x1E == 30 bytes
+						1234 				-- variable header: Packet Identifier == 0x1234
+							0006 736F6D652F23 						-- topic filter #1 == string "some/#"
+							000F 6F746865722F2B2F746F7069632F23 	-- topic filter #1 == string "other/+/topic/#"
+							0001 23 								-- topic filter #1 == string "#"
 				]]
 			))
 		)
@@ -426,6 +535,20 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		)
 	end)
 
+	it("PINGREQ", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.PINGREQ,
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					C0 					-- packet type == 0xC == 12 (PINGREQ), flags == 0
+					00 					-- variable length == 0 bytes
+				]]
+			))
+		)
+	end)
+
 	it("PINGRESP", function()
 		assert.are.same(
 			{
@@ -434,6 +557,20 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			protocol4.parse_packet(make_read_func_hex(
 				extract_hex[[
 					D0 					-- packet type == 0xD == 13 (PINGRESP), flags == 0
+					00 					-- variable length == 0 bytes
+				]]
+			))
+		)
+	end)
+
+	it("DISCONNECT", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.DISCONNECT,
+			},
+			protocol4.parse_packet(make_read_func_hex(
+				extract_hex[[
+					E0 					-- packet type == 0xE == 14 (DISCONNECT), flags == 0
 					00 					-- variable length == 0 bytes
 				]]
 			))

@@ -1,0 +1,26 @@
+name: validate (lint) markdown files
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out repository code
+        uses: actions/checkout@v4
+
+      # NOTE: heavy node.js is used only to run markdownlint - the same tool as in my editor (Visual Studio Code)
+
+      # source: https://github.com/nodesource/distributions#debian-and-ubuntu-based-distributions
+      - name: add node.js deb source
+        run: |
+          sudo apt-get install -y ca-certificates curl gnupg && sudo mkdir -p /etc/apt/keyrings \
+          && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+          && NODE_MAJOR=20 \
+          && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+      - name: install node.js
+        run: sudo apt-get update && sudo apt-get install nodejs -y
+
+      - name: install markdownlint-cli
+        run: sudo npm install -g markdownlint-cli
+
+      - name: validate all markdown files
+        run: cd "${{ github.workspace }}" && ./tests/run-markdownlint.sh
