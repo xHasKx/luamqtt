@@ -118,8 +118,10 @@ function luasocket:plain_receive(size)
 
 	sock:settimeout(0)
 
-	local data, err = sock:receive(size)
-	if data then
+	local data, err, partial = sock:receive(size)
+
+	data = data or partial or ""
+	if #data > 0 then
 		return data
 	end
 

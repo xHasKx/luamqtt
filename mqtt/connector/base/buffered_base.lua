@@ -74,6 +74,9 @@ end
 -- is no data to read. If there is no data, then it MUST return
 -- `nil, self.signal_idle` to indicate it no data was there and we need to retry later.
 --
+-- If there is partial data, it should return that data (less than the requested
+-- number of bytes), with no error/signal.
+--
 -- If the receive errors, because of a closed connection it should return
 -- `nil, self.signal_closed` to indicate this. Any other errors can be returned
 -- as a regular `nil, err`.
