@@ -46,7 +46,7 @@ function buffered:receive(size)
 
 	while size > (#buf - idx) do
 		-- buffer is lacking bytes, read more...
-		local data, err = self:plain_receive(#buf - idx + size)
+		local data, err = self:plain_receive(size - (#buf - idx))
 		if not data then
 			if err == self.signal_idle then
 				-- read timedout, retry entire packet later, reset buffer
