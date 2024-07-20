@@ -1,5 +1,11 @@
 --- MQTT module
 -- @module mqtt
+-- @usage
+-- local client = mqtt.client {
+-- 	uri = "mqtts://aladdin:soopersecret@mqttbroker.com",
+-- 	clean = true,
+-- 	version = mqtt.v50,	-- specify constant for MQTT version
+-- }
 
 --[[
 MQTT protocol DOC: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
@@ -18,13 +24,6 @@ CONVENTIONS:
 -- @tfield number v50  MQTT v5.0   protocol version constant
 -- @tfield string _VERSION luamqtt library version string
 -- @table mqtt
--- @see mqtt.const
--- @usage
--- local client = mqtt.client {
--- 	uri = "mqtts://aladdin:soopersecret@mqttbroker.com",
--- 	clean = true,
--- 	version = mqtt.v50,	-- specify constant for MQTT version
--- }
 local mqtt = {}
 
 -- copy all values from const module
@@ -47,6 +46,7 @@ local ioloop_get = ioloop.get
 
 --- Create new MQTT client instance
 -- @param ... Same as for `Client.create`(...)
+-- @treturn Client new client instance
 -- @see Client:__init
 function mqtt.client(...)
 	return client_create(...)
@@ -76,8 +76,10 @@ end
 
 
 --- Validates a topic with wildcards.
--- @param t (string) wildcard topic to validate
--- @return topic, or false+error
+-- @tparam string t wildcard-topic to validate
+-- @treturn[1] string the input topic if valid
+-- @treturn[2] boolean false if invalid
+-- @treturn[2] string error description
 -- @usage local t = assert(mqtt.validate_subscribe_topic("base/+/thermostat/#"))
 function mqtt.validate_subscribe_topic(t)
 	if type(t) ~= "string" then
@@ -114,8 +116,10 @@ function mqtt.validate_subscribe_topic(t)
 end
 
 --- Validates a topic without wildcards.
--- @param t (string) topic to validate
--- @return topic, or false+error
+-- @tparam string t topic to validate
+-- @treturn[1] string the input topic if valid
+-- @treturn[2] boolean false if invalid
+-- @treturn[2] string error description
 -- @usage local t = assert(mqtt.validate_publish_topic("base/living/thermostat/setpoint"))
 function mqtt.validate_publish_topic(t)
 	if type(t) ~= "string" then
@@ -133,8 +137,10 @@ end
 --- Returns a Lua pattern from topic.
 -- Takes a wildcarded-topic and returns a Lua pattern that can be used
 -- to validate if a received topic matches the wildcard-topic
--- @param t (string) the wildcard topic
--- @return Lua-pattern (string) or false+err
+-- @tparam string t the wildcard topic
+-- @treturn[1] string Lua-pattern that matches the topic and returns the captures
+-- @treturn[2] boolean false if the topic was invalid
+-- @treturn[2] string error description
 -- @usage
 -- local patt = compile_topic_pattern("homes/+/+/#")
 --
@@ -171,7 +177,7 @@ function mqtt.compile_topic_pattern(t)
 end
 
 --- Parses wildcards in a topic into a table.
--- @tparam topic string incoming topic string
+-- @tparam string topic incoming topic string
 -- @tparam table opts parsing options table
 -- @tparam string opts.topic the wild-carded topic to match against (optional if `opts.pattern` is given)
 -- @tparam string opts.pattern the compiled pattern for the wild-carded topic (optional if `opts.topic`

@@ -19,7 +19,7 @@
 --   loaded to another thread.
 --
 -- * Nginx timers should be short lived because memory is only released after
---   the context is destroyed. In this case we're using the fro prolonged periods
+--   the context is destroyed. In this case we're using them for prolonged periods
 --   of time, so be aware of this and implement client restarts if required.
 --
 -- thanks to @irimiab: https://github.com/xHasKx/luamqtt/issues/13
