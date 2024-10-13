@@ -1,4 +1,3 @@
--- busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/protocol5-make.lua
 -- DOC: https://docs.oasis-open.org/mqtt/mqtt/v5.0/cos02/mqtt-v5.0-cos02.html
 
 describe("MQTT v5.0 protocol: making packets: CONNECT[1]", function()

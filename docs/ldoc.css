@@ -120,6 +120,7 @@ pre {
     margin: 10px 0 10px 0;
     overflow: auto;
     font-family: "Andale Mono", monospace;
+    tab-size: 2;
 }
 
 pre.example {

@@ -189,8 +189,8 @@ local property_pairs = {
 		make = make_uint8_0_or_1,
 		parse = parse_uint8_0_or_1, },
 	{ 0x26, "user_property", -- NOTE: not implemented intentionally
-		make = function(value_) error("not implemented") end,
-		parse = function(read_func_) error("not implemented") end, },
+		make = function(value_) error("not implemented") end, -- luacheck: ignore
+		parse = function(read_func_) error("not implemented") end, }, -- luacheck: ignore
 	{ 0x27, "maximum_packet_size",
 		make = make_uint32,
 		parse = parse_uint32, },
@@ -1324,7 +1324,7 @@ local function parse_packet_unsuback(ptype, flags, input)
 end
 
 -- Parse PINGREQ packet, DOC: 3.12 PINGREQ – PING request
-local function parse_packet_pingreq(ptype, flags, input_)
+local function parse_packet_pingreq(ptype, flags, _)
 	-- DOC: 3.12.1 PINGREQ Fixed Header
 	if flags ~= 0 then -- Reserved
 		return false, packet_type[ptype]..": unexpected flags value: "..flags
@@ -1333,7 +1333,7 @@ local function parse_packet_pingreq(ptype, flags, input_)
 end
 
 -- Parse PINGRESP packet, DOC: 3.13 PINGRESP – PING response
-local function parse_packet_pingresp(ptype, flags, input_)
+local function parse_packet_pingresp(ptype, flags, _)
 	-- DOC: 3.13.1 PINGRESP Fixed Header
 	if flags ~= 0 then -- Reserved
 		return false, packet_type[ptype]..": unexpected flags value: "..flags

@@ -1,4 +1,6 @@
-# luamqtt - Pure-lua MQTT v3.1.1 and v5.0 client
+# luamqtt
+
+Pure-lua MQTT v3.1.1 and v5.0 client
 
 ![luamqtt logo](./logo.svg)
 
@@ -17,11 +19,21 @@ This library is written in **pure-lua** to provide maximum portability.
 
 * Full MQTT v3.1.1 client-side support
 * Full MQTT v5.0 client-side support
-* Several long-living MQTT clients in one script thanks to ioloop
+* Support for Copas, OpenResty/Nginx, and an included lightweight ioloop.
+
+# Installation
+
+From LuaRocks:
+
+    luarocks install luamqtt
+
+[More details](./docs_topics/01-installation.md)
 
 # Documentation
 
 See [https://xhaskx.github.io/luamqtt/](https://xhaskx.github.io/luamqtt/)
+
+[More details](./docs_topics/README.md)
 
 # Forum
 
@@ -31,127 +43,6 @@ See [flespi forum thread](https://forum.flespi.com/d/97-luamqtt-mqtt-client-writ
 
 [https://github.com/xHasKx/luamqtt](https://github.com/xHasKx/luamqtt)
 
-# Dependencies
-
-The only main dependency is a [**luasocket**](https://luarocks.org/modules/luasocket/luasocket) to establishing TCP connection to the MQTT broker. Install it like this:
-
-```sh
-luarocks install luasocket
-```
-
-On Lua 5.1 it also depends on [**LuaBitOp**](http://bitop.luajit.org/) (**bit**) library to perform bitwise operations.
-It's not listed in package dependencies, please install it manually like this:
-
-```sh
-luarocks install luabitop
-```
-
-## luasec (SSL/TLS)
-
-To establish secure network connection (SSL/TSL) to MQTT broker
-you also need [**luasec**](https://github.com/brunoos/luasec) module, please install it manually like this:
-
-```sh
-luarocks install luasec
-```
-
-This stage is optional and may be skipped if you don't need the secure network connection (e.g. broker is located in your local network).
-
-# Lua versions
-
-It's tested to work on Debian 9 GNU/Linux with Lua versions:
-
-* Lua 5.1 ... Lua 5.4 (**i.e. any modern Lua version**)
-* LuaJIT 2.0.0 ... LuaJIT 2.1.0 beta3
-* It may also work on other Lua versions without any guarantees
-
-Also I've successfully run it under **Windows** and it was ok, but installing luarock-modules may be a non-trivial task on this OS.
-
-# Installation
-
-As the luamqtt is almost zero-dependency you have to install required Lua libraries by yourself, before using the luamqtt library:
-
-```sh
-luarocks install luasocket # optional if you will use your own connectors (see below)
-luarocks install luabitop  # you don't need this for lua 5.3 and above
-luarocks install luasec    # you don't need this if you don't want to use SSL connections
-```
-
-Then you may install the luamqtt library itself:
-
-```sh
-luarocks install luamqtt
-```
-
-Or for development purposes;
-
-```sh
-# development branch:
-luarocks install luamqtt --dev
-
-# or from the cloned repo:
-luarocks make
-```
-
-[LuaRocks page](http://luarocks.org/modules/xhaskx/luamqtt)
-
-# Examples
-
-Here is a short version of [`examples/simple.lua`](examples/simple.lua):
-
-```lua
--- load mqtt library
-local mqtt = require("mqtt")
-
--- create MQTT client, flespi tokens info: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
-local client = mqtt.client{ uri = "mqtt.flespi.io", username = os.getenv("FLESPI_TOKEN"), clean = true }
-
--- assign MQTT client event handlers
-client:on{
-    connect = function(connack)
-        if connack.rc ~= 0 then
-            print("connection to broker failed:", connack:reason_string(), connack)
-            return
-        end
-
-        -- connection established, now subscribe to test topic and publish a message after
-        assert(client:subscribe{ topic="luamqtt/#", qos=1, callback=function()
-            assert(client:publish{ topic = "luamqtt/simpletest", payload = "hello" })
-        end})
-    end,
-
-    message = function(msg)
-        assert(client:acknowledge(msg))
-
-        -- receive one message and disconnect
-        print("received message", msg)
-        client:disconnect()
-    end,
-}
-
--- run ioloop for client
-mqtt.run_ioloop(client)
-```
-
-More examples placed in [`examples/`](examples/) directory. Also checkout tests in [`tests/spec/mqtt-client.lua`](tests/spec/mqtt-client.lua)
-
-Also you can learn MQTT protocol by reading [`tests/spec/protocol4-make.lua`](tests/spec/protocol4-make.lua) and [`tests/spec/protocol4-parse.lua`](tests/spec/protocol4-parse.lua) tests
-
-# Connectors
-
-Connector is a network connection layer for luamqtt. There is a three standard connectors included:
-
-* [`luasocket`](mqtt/luasocket.lua)
-* [`luasocket_ssl`](mqtt/luasocket_ssl.lua)
-* [`ngxsocket`](mqtt/ngxsocket.lua) - for using in [openresty environment](examples/openresty)
-
-The `luasocket` or `luasocket_ssl` connector will be used by default, if not specified, according `secure=true/false` option per MQTT client.
-
-In simple terms, connector is a set of functions to establish a network stream (TCP connection usually) and send/receive data through it.
-Every MQTT client instance may have their own connector.
-
-And it's very simple to implement your own connector to make luamqtt works in your environment.
-
 # Bugs & contributing
 
 Please [file a GitHub issue](https://github.com/xHasKx/luamqtt/issues) if you found any bug.
@@ -160,10 +51,24 @@ And of course, any contribution are welcome!
 
 # Tests
 
-To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted):
+To run tests in this git repo you need [**busted**](https://luarocks.org/modules/olivine-labs/busted) as well as some dependencies:
+
+Prepare:
 
 ```sh
-busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' tests/spec/*.lua
+luarocks install busted
+luarocks install luacov
+luarocks install luasocket
+luarocks install luasec
+luarocks install copas
+luarocks install lualogging
+luarocks install ansicolors
+```
+
+Running the tests:
+
+```sh
+busted
 ```
 
 There is a script to run all tests for all supported lua versions, using [hererocks](https://github.com/mpeterv/hererocks):
@@ -180,7 +85,7 @@ To collect code coverage stats - install luacov using luarocks and then execute:
 
 ```sh
 # collect stats during tests
-busted -v -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' tests/spec/*.lua
+busted --coverage
 
 # generate report into luacov.report.out file
 luacov
