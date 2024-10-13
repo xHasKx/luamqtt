@@ -240,7 +240,7 @@ function Client:__init(opts)
 		self:on(self.opts.on)
 	end
 
-	log:info("MQTT client '%s' created", a.id)
+	log:info("[LuaMQTT] client '%s' created", a.id)
 end
 
 --- Add functions as handlers of given events.
@@ -393,13 +393,13 @@ function Client:subscribe(opts)
 	local packet_id = pargs.packet_id
 	local subscribe = self._make_packet(pargs)
 
-	log:info("subscribing client '%s' to topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
+	log:info("[LuaMQTT] subscribing client '%s' to topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
 
 	-- send SUBSCRIBE packet
 	local ok, err = self:_send_packet(subscribe)
 	if not ok then
 		err = "failed to send SUBSCRIBE: "..err
-		log:error("client '%s': %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s': %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -453,13 +453,13 @@ function Client:unsubscribe(opts)
 	local packet_id = pargs.packet_id
 	local unsubscribe = self._make_packet(pargs)
 
-	log:info("unsubscribing client '%s' from topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
+	log:info("[LuaMQTT] unsubscribing client '%s' from topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
 
 	-- send UNSUBSCRIBE packet
 	local ok, err = self:_send_packet(unsubscribe)
 	if not ok then
 		err = "failed to send UNSUBSCRIBE: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -519,13 +519,13 @@ function Client:publish(opts)
 	local packet_id = opts.packet_id
 	local publish = self._make_packet(opts)
 
-	log:debug("client '%s' publishing to topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
+	log:debug("[LuaMQTT] client '%s' publishing to topic '%s' (packet: %s)", self.opts.id, opts.topic, packet_id or "n.a.")
 
 	-- send PUBLISH packet
 	local ok, err = self:_send_packet(publish)
 	if not ok then
 		err = "failed to send PUBLISH: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -580,7 +580,7 @@ function Client:acknowledge(msg, rc, properties, user_properties)
 		return true
 	end
 
-	log:debug("client '%s' acknowledging packet %s", self.opts.id, packet_id or "n.a.")
+	log:debug("[LuaMQTT] client '%s' acknowledging packet %s", self.opts.id, packet_id or "n.a.")
 
 	if msg.qos == 1 then
 		-- PUBACK should be sent
@@ -598,7 +598,7 @@ function Client:acknowledge(msg, rc, properties, user_properties)
 		local ok, err = self:_send_packet(puback)
 		if not ok then
 			err = "failed to send PUBACK: "..err
-			log:error("client '%s' %s", self.opts.id, err)
+			log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 			self:handle("error", err, self)
 			self:close_connection("error")
 			return false, err
@@ -619,7 +619,7 @@ function Client:acknowledge(msg, rc, properties, user_properties)
 		local ok, err = self:_send_packet(pubrec)
 		if not ok then
 			err = "failed to send PUBREC: "..err
-			log:error("client '%s' %s", self.opts.id, err)
+			log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 			self:handle("error", err, self)
 			self:close_connection("error")
 			return false, err
@@ -658,13 +658,13 @@ function Client:disconnect(rc, properties, user_properties)
 		user_properties = user_properties,
 	}
 
-	log:info("client '%s' disconnecting (rc = %d)", self.opts.id, rc or 0)
+	log:info("[LuaMQTT] client '%s' disconnecting (rc = %d)", self.opts.id, rc or 0)
 
 	-- send DISCONNECT packet
 	local ok, err = self:_send_packet(disconnect)
 	if not ok then
 		err = "failed to send DISCONNECT: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -683,7 +683,7 @@ end
 -- @param ... see `Client:disconnect`
 -- @return `true`
 function Client:shutdown(...)
-	log:debug("client '%s' shutting down", self.opts.id)
+	log:debug("[LuaMQTT] client '%s' shutting down", self.opts.id)
 	self.first_connect = false
 	self.opts.reconnect = false
 	self:disconnect(...)
@@ -716,13 +716,13 @@ function Client:auth(rc, properties, user_properties)
 		user_properties = user_properties,
 	}
 
-	log:info("client '%s' authenticating")
+	log:info("[LuaMQTT] client '%s' authenticating")
 
 	-- send AUTH packet
 	local ok, err = self:_send_packet(auth)
 	if not ok then
 		err = "failed to send AUTH: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -742,7 +742,7 @@ function Client:close_connection(reason)
 
 	reason = reason or "unspecified"
 
-	log:info("client '%s' closing connection (reason: %s)", self.opts.id, reason)
+	log:info("[LuaMQTT] client '%s' closing connection (reason: %s)", self.opts.id, reason)
 
 	conn:shutdown()
 	self.connection = nil
@@ -788,13 +788,13 @@ function Client:send_pingreq()
 		type = packet_type.PINGREQ,
 	}
 
-	log:debug("client '%s' sending PINGREQ", self.opts.id)
+	log:debug("[LuaMQTT] client '%s' sending PINGREQ", self.opts.id)
 
 	-- send PINGREQ packet
 	local ok, err = self:_send_packet(pingreq)
 	if not ok then
 		err = "failed to send PINGREQ: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -824,12 +824,12 @@ function Client:open_connection()
 	}, connector)
 	Client._parse_connection_opts(opts, conn)
 
-	log:info("client '%s' connecting to broker '%s' (using: %s)", self.opts.id, opts.uri, conn.type or "unknown")
+	log:info("[LuaMQTT] client '%s' connecting to broker '%s' (using: %s)", self.opts.id, opts.uri, conn.type or "unknown")
 
 	-- perform connect
 	local ok, err = conn:connect()
 	if not ok then
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		err = "failed to open network connection: "..err
 		self:handle("error", err, self)
 		return false, err
@@ -867,13 +867,13 @@ function Client:send_connect()
 		user_properties = opts.user_properties,
 	}
 
-	log:info("client '%s' sending CONNECT (user '%s')", self.opts.id, opts.username or "not specified")
+	log:info("[LuaMQTT] client '%s' sending CONNECT (user '%s')", self.opts.id, opts.username or "not specified")
 
 	-- send CONNECT packet
 	local ok, err = self:_send_packet(connect)
 	if not ok then
 		err = "failed to send CONNECT: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -915,7 +915,7 @@ function Client:check_keep_alive()
 	if t_timeout and t_timeout <= t_now then
 		-- we timed-out, close and exit
 		local err = str_format("failed to receive PINGRESP within %d seconds", interval)
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return interval, err
@@ -948,13 +948,13 @@ function Client:acknowledge_pubrel(packet_id)
 	-- create PUBREL packet
 	local pubrel = self._make_packet{type=packet_type.PUBREL, packet_id=packet_id, rc=0}
 
-	log:debug("client '%s' sending PUBREL (packet: %s)", self.opts.id, packet_id or "n.a.")
+	log:debug("[LuaMQTT] client '%s' sending PUBREL (packet: %s)", self.opts.id, packet_id or "n.a.")
 
 	-- send PUBREL packet
 	local ok, err = self:_send_packet(pubrel)
 	if not ok then
 		err = "failed to send PUBREL: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -974,13 +974,13 @@ function Client:acknowledge_pubcomp(packet_id)
 	-- create PUBCOMP packet
 	local pubcomp = self._make_packet{type=packet_type.PUBCOMP, packet_id=packet_id, rc=0}
 
-	log:debug("client '%s' sending PUBCOMP (packet: %s)", self.opts.id,  packet_id or "n.a.")
+	log:debug("[LuaMQTT] client '%s' sending PUBCOMP (packet: %s)", self.opts.id,  packet_id or "n.a.")
 
 	-- send PUBCOMP packet
 	local ok, err = self:_send_packet(pubcomp)
 	if not ok then
 		err = "failed to send PUBCOMP: "..err
-		log:error("client '%s' %s", self.opts.id, err)
+		log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 		self:handle("error", err, self)
 		self:close_connection("error")
 		return false, err
@@ -1028,13 +1028,13 @@ function Client:handle_received_packet(packet)
 	local conn = self.connection
 	local err
 
-	log:debug("client '%s' received '%s' (packet: %s)", self.opts.id, packet_type[packet.type], packet.packet_id or "n.a.")
+	log:debug("[LuaMQTT] client '%s' received '%s' (packet: %s)", self.opts.id, packet_type[packet.type], packet.packet_id or "n.a.")
 
 	if not conn.connack then
 		-- expecting only CONNACK packet here
 		if packet.type ~= packet_type.CONNACK then
 			err = "expecting CONNACK but received "..packet.type
-			log:error("client '%s' %s", self.opts.id, err)
+			log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 			self:handle("error", err, self)
 			self:close_connection("error")
 			self.first_connect = false
@@ -1047,7 +1047,7 @@ function Client:handle_received_packet(packet)
 		-- check CONNACK rc
 		if packet.rc ~= 0 then
 			err = str_format("CONNECT failed with CONNACK [rc=%d]: %s", packet.rc, packet:reason_string())
-			log:error("client '%s' %s", self.opts.id, err)
+			log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 			self:handle("error", err, self, packet)
 			self:handle("connect", packet, self)
 			self:close_connection("connection failed")
@@ -1055,12 +1055,12 @@ function Client:handle_received_packet(packet)
 			return false, err
 		end
 
-		log:info("client '%s' connected successfully to '%s:%s'", self.opts.id, conn.host, conn.port)
+		log:info("[LuaMQTT] client '%s' connected successfully to '%s:%s'", self.opts.id, conn.host, conn.port)
 
 		-- fire connect event
 		if self.opts.clean == "first" then
 			self.opts.clean = false  -- reset clean flag to false, so next connection resumes previous session
-			log:debug("client '%s'; switching clean flag to false (was 'first')", self.opts.id)
+			log:debug("[LuaMQTT] client '%s'; switching clean flag to false (was 'first')", self.opts.id)
 		end
 		self:handle("connect", packet, self)
 		self.first_connect = false
@@ -1108,7 +1108,7 @@ function Client:handle_received_packet(packet)
 		elseif ptype == packet_type.AUTH then
 			self:handle("auth", packet, self)
 		else
-			log:warn("client '%s' don't know how to handle %s", self.opts.id, ptype)
+			log:warn("[LuaMQTT] client '%s' don't know how to handle %s", self.opts.id, ptype)
 		end
 	end
 	return true
@@ -1121,7 +1121,7 @@ do
 
 		if not self.first_connect and not reconnect then
 			-- this would be a re-connect, but we're not supposed to auto-reconnect
-			log:debug("client '%s' was disconnected and not set to auto-reconnect", self.opts.id)
+			log:debug("[LuaMQTT] client '%s' was disconnected and not set to auto-reconnect", self.opts.id)
 			return false, "network connection is not opened"
 		end
 
@@ -1182,7 +1182,7 @@ do
 				return reconnect and 0, err
 			else
 				err = "failed to receive next packet: "..tostring(err)
-				log:error("client '%s' %s", self.opts.id, err)
+				log:error("[LuaMQTT] client '%s' %s", self.opts.id, err)
 				self:handle("error", err, self)
 				self:close_connection("error")
 				return reconnect and 0, err

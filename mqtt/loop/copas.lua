@@ -20,7 +20,7 @@ local _M = {}
 -- @return `true` on success or `false` and error message on failure
 function _M.add(cl)
 	if client_registry[cl] then
-		log:warn("MQTT client '%s' was already added to Copas", cl.opts.id)
+		log:warn("[LuaMQTT] client '%s' was already added to Copas", cl.opts.id)
 		return false, "MQTT client was already added to Copas"
 	end
 	client_registry[cl] = true
@@ -52,7 +52,7 @@ function _M.add(cl)
 			local timeout = cl:step()
 			if not timeout then
 				client_registry[cl] = nil -- exiting
-				log:debug("MQTT client '%s' exited, removed from Copas", cl.opts.id)
+				log:debug("[LuaMQTT] client '%s' exited, removed from Copas", cl.opts.id)
 				copas.wakeup(timer)
 			else
 				if timeout > 0 then

@@ -65,7 +65,7 @@ mqtt.get_ioloop = ioloop_get
 -- @usage
 -- mqtt.run_ioloop(client1, client2, func1)
 function mqtt.run_ioloop(...)
-	log:info("starting default ioloop instance")
+	log:info("[LuaMQTT] starting default ioloop instance")
 	local loop = ioloop_get()
 	for i = 1, select("#", ...) do
 		local cl = select(i, ...)

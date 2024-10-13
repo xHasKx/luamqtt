@@ -47,7 +47,7 @@ Ioloop.__index = Ioloop
 -- @tparam[opt=luasocket.sleep] function opts.sleep_function	custom sleep function to call after each iteration
 -- @treturn Ioloop ioloop instance
 function Ioloop:__init(opts)
-	log:debug("initializing ioloop instance '%s'", tostring(self))
+	log:debug("[LuaMQTT] initializing ioloop instance '%s'", tostring(self))
 	opts = opts or {}
 	opts.sleep_min = opts.sleep_min or 0
 	opts.sleep_step = opts.sleep_step or 0.002
@@ -88,10 +88,10 @@ function Ioloop:add(client)
 	local clients = self.clients
 	if clients[client] then
 		if type(client) == "table" then
-			log:warn("MQTT client '%s' was already added to ioloop '%s'", client.opts.id, tostring(self))
+			log:warn("[LuaMQTT] client '%s' was already added to ioloop '%s'", client.opts.id, tostring(self))
 			return false, "MQTT client was already added to this ioloop"
 		else
-			log:warn("MQTT loop function '%s' was already added to this ioloop '%s'", tostring(client), tostring(self))
+			log:warn("[LuaMQTT] loop function '%s' was already added to this ioloop '%s'", tostring(client), tostring(self))
 			return false, "MQTT loop function was already added to this ioloop"
 		end
 	end
@@ -100,7 +100,7 @@ function Ioloop:add(client)
 	self.timeouts[client] = self.opts.sleep_min
 
 	if type(client) == "table" then
-		log:info("adding client '%s' to ioloop '%s'", client.opts.id, tostring(self))
+		log:info("[LuaMQTT] adding client '%s' to ioloop '%s'", client.opts.id, tostring(self))
 		-- create and add function for PINGREQ
 		local function f()
 			if not clients[client] then
@@ -112,7 +112,7 @@ function Ioloop:add(client)
 		-- add it to start doing keepalive checks
 		self:add(f)
 	else
-		log:info("adding function '%s' to ioloop '%s'", tostring(client), tostring(self))
+		log:info("[LuaMQTT] adding function '%s' to ioloop '%s'", tostring(client), tostring(self))
 	end
 
 	return true
@@ -125,10 +125,10 @@ function Ioloop:remove(client)
 	local clients = self.clients
 	if not clients[client] then
 		if type(client) == "table" then
-			log:warn("MQTT client not found '%s' in ioloop '%s'", client.opts.id, tostring(self))
+			log:warn("[LuaMQTT] client not found '%s' in ioloop '%s'", client.opts.id, tostring(self))
 			return false, "MQTT client not found"
 		else
-			log:warn("MQTT loop function not found '%s' in ioloop '%s'", tostring(client), tostring(self))
+			log:warn("[LuaMQTT] loop function not found '%s' in ioloop '%s'", tostring(client), tostring(self))
 			return false, "MQTT loop function not found"
 		end
 	end
@@ -144,9 +144,9 @@ function Ioloop:remove(client)
 	end
 
 	if type(client) == "table" then
-		log:info("removed client '%s' from ioloop '%s'", client.opts.id, tostring(self))
+		log:info("[LuaMQTT] removed client '%s' from ioloop '%s'", client.opts.id, tostring(self))
 	else
-		log:info("removed loop function '%s' from ioloop '%s'", tostring(client), tostring(self))
+		log:info("[LuaMQTT] removed loop function '%s' from ioloop '%s'", tostring(client), tostring(self))
 	end
 
 	return true
@@ -175,12 +175,12 @@ function Ioloop:iteration()
 			-- an error from a client was returned
 			if not client.opts.reconnect then
 				-- error and not reconnecting, remove the client
-				log:info("client '%s' returned '%s', no re-connect set, removing client", client.opts.id, err)
+				log:info("[LuaMQTT] client '%s' returned '%s', no re-connect set, removing client", client.opts.id, err)
 				self:remove(client)
 				t = opts.sleep_max
 			else
 				-- error, but will reconnect
-				log:error("client '%s' failed with '%s', will try re-connecting", client.opts.id, err)
+				log:error("[LuaMQTT] client '%s' failed with '%s', will try re-connecting", client.opts.id, err)
 				t = opts.sleep_min -- try asap
 			end
 		else
@@ -200,7 +200,7 @@ end
 -- While there is at least one client/function in the ioloop it will continue
 -- iterating. After all clients/functions are gone, it will return.
 function Ioloop:run_until_clients()
-	log:info("ioloop started with %d clients/functions", #self.clients)
+	log:info("[LuaMQTT] ioloop started with %d clients/functions", #self.clients)
 
 	self.running = true
 	while next(self.clients) do
@@ -208,7 +208,7 @@ function Ioloop:run_until_clients()
 	end
 	self.running = false
 
-	log:info("ioloop finished with %d clients/functions", #self.clients)
+	log:info("[LuaMQTT] ioloop finished with %d clients/functions", #self.clients)
 end
 
 --- Exported functions
@@ -238,7 +238,7 @@ function _M.get(autocreate, opts)
 		autocreate = true
 	end
 	if autocreate and not ioloop_instance then
-		log:info("auto-creating default ioloop instance")
+		log:info("[LuaMQTT] auto-creating default ioloop instance")
 		ioloop_instance = _M.create(opts)
 	end
 	return ioloop_instance
