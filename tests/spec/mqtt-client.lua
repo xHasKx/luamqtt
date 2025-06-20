@@ -234,7 +234,8 @@ describe("MQTT client", function()
 			local prefix = "luamqtt/"..tostring(math.floor(math.random()*1e13))
 
 			-- set on-connect handler
-			client:on("connect", function()
+			client:on("connect", function(packet)
+				assert(packet.rc == 0, "connected with non-zero rc")
 				assert(client:send_pingreq()) -- NOTE: not required, it's here only to improve code coverage
 				assert(client:subscribe{topic=prefix.."/0/test", callback=function()
 					assert(client:publish{
