@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>luamqtt</h1>
+
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+
+
+<h2>Examples</h2>
+<ul class="nowrap">
+  <li><a href="../examples/simple.lua.html">simple.lua</a></li>
+  <li><a href="../examples/sync.lua.html">sync.lua</a></li>
+  <li><a href="../examples/mqtt5-simple.lua.html">mqtt5-simple.lua</a></li>
+  <li><strong>copas-example.lua</strong></li>
+</ul>
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/mqtt.html">mqtt</a></li>
+  <li><a href="../modules/mqtt.const.html">mqtt.const</a></li>
+  <li><a href="../modules/mqtt.client.html">mqtt.client</a></li>
+  <li><a href="../modules/mqtt.ioloop.html">mqtt.ioloop</a></li>
+  <li><a href="../modules/mqtt.protocol.html">mqtt.protocol</a></li>
+</ul>
+<h2>Topics</h2>
+<ul class="">
+  <li><a href="https://github.com/xHasKx/luamqtt#readme">README</a></li>
+  <li><a href="../topics/LICENSE.html">LICENSE</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+    <h2>copas-example.lua</h2>
+<pre>
+<span class="comment">-- example of using luamqtt inside copas ioloop: http://keplerproject.github.io/copas/index.html
+</span>
+<span class="keyword">local</span> mqtt = <span class="global">require</span>(<span class="string">"mqtt"</span>)
+<span class="keyword">local</span> copas = <span class="global">require</span>(<span class="string">"copas"</span>)
+<span class="keyword">local</span> mqtt_ioloop = <span class="global">require</span>(<span class="string">"mqtt.ioloop"</span>)
+
+<span class="keyword">local</span> num_pings = <span class="number">10</span> <span class="comment">-- total number of ping-pongs
+</span><span class="keyword">local</span> timeout = <span class="number">1</span> <span class="comment">-- timeout between ping-pongs
+</span><span class="keyword">local</span> suffix = <span class="global">tostring</span>(<span class="global">math</span>.<span class="function-name">random</span>(<span class="number">1000000</span>)) <span class="comment">-- mqtt topic suffix to distinct simultaneous running of this script
+</span>
+<span class="comment">-- NOTE: more about flespi tokens: https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+</span><span class="keyword">local</span> token = <span class="string">"stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"</span>
+
+<span class="keyword">local</span> ping = mqtt.<span class="function-name">client</span>{
+	uri = <span class="string">"mqtt.flespi.io"</span>,
+	username = token,
+	clean = <span class="keyword">true</span>,
+	version = mqtt.v50,
+}
+
+<span class="keyword">local</span> pong = mqtt.<span class="function-name">client</span>{
+	uri = <span class="string">"mqtt.flespi.io"</span>,
+	username = token,
+	clean = <span class="keyword">true</span>,
+	version = mqtt.v50,
+}
+
+ping:<span class="function-name">on</span>{
+	connect = <span class="keyword">function</span>(connack)
+		<span class="global">assert</span>(connack.rc == <span class="number">0</span>)
+		<span class="global">print</span>(<span class="string">"ping connected"</span>)
+
+		<span class="keyword">for</span> i = <span class="number">1</span>, num_pings <span class="keyword">do</span>
+			copas.<span class="function-name">sleep</span>(timeout)
+			<span class="global">print</span>(<span class="string">"ping"</span>, i)
+			<span class="global">assert</span>(ping:<span class="function-name">publish</span>{ topic = <span class="string">"luamqtt/copas-ping/"</span>..suffix, payload = <span class="string">"ping"</span>..i, qos = <span class="number">1</span> })
+		<span class="keyword">end</span>
+
+		copas.<span class="function-name">sleep</span>(timeout)
+
+		<span class="global">print</span>(<span class="string">"ping done"</span>)
+		<span class="global">assert</span>(ping:<span class="function-name">publish</span>{ topic = <span class="string">"luamqtt/copas-ping/"</span>..suffix, payload = <span class="string">"done"</span>, qos = <span class="number">1</span> })
+		ping:<span class="function-name">disconnect</span>()
+	<span class="keyword">end</span>,
+	<span class="global">error</span> = <span class="keyword">function</span>(err)
+		<span class="global">print</span>(<span class="string">"ping MQTT client error:"</span>, err)
+	<span class="keyword">end</span>,
+}
+
+pong:<span class="function-name">on</span>{
+	connect = <span class="keyword">function</span>(connack)
+		<span class="global">assert</span>(connack.rc == <span class="number">0</span>)
+		<span class="global">print</span>(<span class="string">"pong connected"</span>)
+
+		<span class="global">assert</span>(pong:<span class="function-name">subscribe</span>{ topic=<span class="string">"luamqtt/copas-ping/"</span>..suffix, qos=<span class="number">1</span>, callback=<span class="keyword">function</span>(suback)
+			<span class="global">assert</span>(suback.rc[<span class="number">1</span>] &gt; <span class="number">0</span>)
+			<span class="global">print</span>(<span class="string">"pong subscribed"</span>)
+		<span class="keyword">end</span> })
+	<span class="keyword">end</span>,
+
+	message = <span class="keyword">function</span>(msg)
+		<span class="global">print</span>(<span class="string">"pong: received"</span>, msg.payload)
+		<span class="global">assert</span>(pong:<span class="function-name">acknowledge</span>(msg))
+
+		<span class="keyword">if</span> msg.payload == <span class="string">"done"</span> <span class="keyword">then</span>
+			<span class="global">print</span>(<span class="string">"pong done"</span>)
+			pong:<span class="function-name">disconnect</span>()
+		<span class="keyword">end</span>
+	<span class="keyword">end</span>,
+	<span class="global">error</span> = <span class="keyword">function</span>(err)
+		<span class="global">print</span>(<span class="string">"pong MQTT client error:"</span>, err)
+	<span class="keyword">end</span>,
+}
+
+<span class="global">print</span>(<span class="string">"running copas loop..."</span>)
+
+copas.<span class="function-name">addthread</span>(<span class="keyword">function</span>()
+	<span class="keyword">local</span> ioloop = mqtt_ioloop.<span class="function-name">create</span>{ sleep = <span class="number">0.01</span>, sleep_function = copas.sleep }
+	ioloop:<span class="function-name">add</span>(ping)
+	ioloop:<span class="function-name">run_until_clients</span>()
+<span class="keyword">end</span>)
+
+copas.<span class="function-name">addthread</span>(<span class="keyword">function</span>()
+	<span class="keyword">local</span> ioloop = mqtt_ioloop.<span class="function-name">create</span>{ sleep = <span class="number">0.01</span>, sleep_function = copas.sleep }
+	ioloop:<span class="function-name">add</span>(pong)
+	ioloop:<span class="function-name">run_until_clients</span>()
+<span class="keyword">end</span>)
+
+copas.<span class="function-name">loop</span>()
+
+<span class="global">print</span>(<span class="string">"done, copas loop is stopped"</span>)</pre>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
+<i style="float:right;">Last updated 2025-06-20 19:38:49 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

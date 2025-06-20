@@ -1,0 +1,1160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>luamqtt</h1>
+
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/mqtt.html">mqtt</a></li>
+  <li><a href="../modules/mqtt.const.html">mqtt.const</a></li>
+  <li><a href="../modules/mqtt.client.html">mqtt.client</a></li>
+  <li><a href="../modules/mqtt.ioloop.html">mqtt.ioloop</a></li>
+  <li><strong>mqtt.protocol</strong></li>
+</ul>
+<h2>Topics</h2>
+<ul class="">
+  <li><a href="https://github.com/xHasKx/luamqtt#readme">README</a></li>
+  <li><a href="../topics/LICENSE.html">LICENSE</a></li>
+</ul>
+<h2>Examples</h2>
+<ul class="nowrap">
+  <li><a href="../examples/simple.lua.html">simple.lua</a></li>
+  <li><a href="../examples/sync.lua.html">sync.lua</a></li>
+  <li><a href="../examples/mqtt5-simple.lua.html">mqtt5-simple.lua</a></li>
+  <li><a href="../examples/copas-example.lua.html">copas-example.lua</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>mqtt.protocol</code></h1>
+<p>MQTT generic protocol components module</p>
+<p></p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#make_uint8">make_uint8 (val)</a></td>
+	<td class="summary">Create bytes of the uint8 value</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_uint16">make_uint16 (val)</a></td>
+	<td class="summary">Create bytes of the uint16 value</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_uint32">make_uint32 (val)</a></td>
+	<td class="summary">Create bytes of the uint32 value</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_string">make_string (str)</a></td>
+	<td class="summary">Create bytes of the UTF-8 string value according to the MQTT spec.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_var_length">make_var_length (len)</a></td>
+	<td class="summary">Create bytes of the integer value encoded as variable length field
+ For MQTT v3.1.1:	<b>2.2.3 Remaining Length</b>,
+ For MQTT v5.0:	<b>2.1.4 Remaining Length</b>.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_uint8_0_or_1">make_uint8_0_or_1 (value)</a></td>
+	<td class="summary">Make bytes for 1-byte value with only 0 or 1 value allowed</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_uint16_nonzero">make_uint16_nonzero (value)</a></td>
+	<td class="summary">Make bytes for 2-byte value with nonzero check</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_var_length_nonzero">make_var_length_nonzero (value)</a></td>
+	<td class="summary">Make bytes for variable length value with nonzero value check</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_string">parse_string (read_func)</a></td>
+	<td class="summary">Read string (or bytes) using given read_func function</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_uint8">parse_uint8 (read_func)</a></td>
+	<td class="summary">Parse uint8 value using given read_func</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_uint8_0_or_1">parse_uint8_0_or_1 (read_func)</a></td>
+	<td class="summary">Parse uint8 value using given read_func with only 0 or 1 value allowed</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_uint16">parse_uint16 (read_func)</a></td>
+	<td class="summary">Parse uint16 value using given read_func</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_uint16_nonzero">parse_uint16_nonzero (read_func)</a></td>
+	<td class="summary">Parse uint16 non-zero value using given read_func</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_uint32">parse_uint32 (read_func)</a></td>
+	<td class="summary">Parse uint32 value using given read_func</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_var_length">parse_var_length (read_func)</a></td>
+	<td class="summary">Parse variable length field value using given read_func.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_var_length_nonzero">parse_var_length_nonzero (read_func)</a></td>
+	<td class="summary">Parse variable length field value using given read_func with non-zero constraint.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#make_header">make_header (ptype, flags, len)</a></td>
+	<td class="summary">Create bytes of the MQTT fixed packet header
+ For MQTT v3.1.1:	<b>2.2 Fixed header</b>,
+ For MQTT v5.0:	<b>2.1.1 Fixed Header</b>.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#check_qos">check_qos (val)</a></td>
+	<td class="summary">Check if given value is a valid PUBLISH message QoS value</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#check_packet_id">check_packet_id (val)</a></td>
+	<td class="summary">Check if given value is a valid Packet Identifier
+ For MQTT v3.1.1:	<b>2.3.1 Packet Identifier</b>,
+ For MQTT v5.0:	<b>2.2.1 Packet Identifier</b>.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#next_packet_id">next_packet_id ([curr])</a></td>
+	<td class="summary">Returns the next Packet Identifier value relative to given current value.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#packet_id_required">packet_id_required (args)</a></td>
+	<td class="summary">Check if Packet Identifier field are required for given packet</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#combine">combine (...)</a></td>
+	<td class="summary">Combine several data parts into one</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#packet_tostring">packet_tostring (packet)</a></td>
+	<td class="summary">Render packet to string representation</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#start_parse_packet">start_parse_packet (read_func)</a></td>
+	<td class="summary">Start parsing a new packet</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_packet_connect">parse_packet_connect (read_func[, version])</a></td>
+	<td class="summary">Parse CONNECT packet with read_func</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#parse_packet_connect_input">parse_packet_connect_input (input[, version])</a></td>
+	<td class="summary">Parse CONNECT packet from already received stream-like packet input table</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#packet_type">packet_type</a></td>
+	<td class="summary">MQTT protocol fixed header packet types.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#packet_mt">packet_mt</a></td>
+	<td class="summary">Parsed packet metatable</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#connack_packet_mt">connack_packet_mt</a></td>
+	<td class="summary">Parsed CONNACK packet metatable</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#max_variable_length">max_variable_length</a></td>
+	<td class="summary">Maximum integer value (268435455) that can be encoded using variable-length encoding</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "make_uint8"></a>
+    <strong>make_uint8 (val)</strong>
+    </dt>
+    <dd>
+    Create bytes of the uint8 value
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">val</span>
+            <span class="types"><span class="type">number</span></span>
+         - integer value to convert to bytes
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_uint16"></a>
+    <strong>make_uint16 (val)</strong>
+    </dt>
+    <dd>
+    Create bytes of the uint16 value
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">val</span>
+            <span class="types"><span class="type">number</span></span>
+         - integer value to convert to bytes
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_uint32"></a>
+    <strong>make_uint32 (val)</strong>
+    </dt>
+    <dd>
+    Create bytes of the uint32 value
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">val</span>
+            <span class="types"><span class="type">number</span></span>
+         - integer value to convert to bytes
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_string"></a>
+    <strong>make_string (str)</strong>
+    </dt>
+    <dd>
+    Create bytes of the UTF-8 string value according to the MQTT spec.
+ Basically it's the same string with its length prefixed as uint16 value.
+ For MQTT v3.1.1:	<b>1.5.3 UTF-8 encoded strings</b>,
+ For MQTT v5.0:	<b>1.5.4 UTF-8 Encoded String</b>.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">str</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+         - string value to convert to bytes
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_var_length"></a>
+    <strong>make_var_length (len)</strong>
+    </dt>
+    <dd>
+    Create bytes of the integer value encoded as variable length field
+ For MQTT v3.1.1:	<b>2.2.3 Remaining Length</b>,
+ For MQTT v5.0:	<b>2.1.4 Remaining Length</b>.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">len</span>
+            <span class="types"><span class="type">number</span></span>
+         - integer value to be encoded
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_uint8_0_or_1"></a>
+    <strong>make_uint8_0_or_1 (value)</strong>
+    </dt>
+    <dd>
+    Make bytes for 1-byte value with only 0 or 1 value allowed
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">value</span>
+            <span class="types"><span class="type">number</span></span>
+         - integer value to convert to bytes
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_uint16_nonzero"></a>
+    <strong>make_uint16_nonzero (value)</strong>
+    </dt>
+    <dd>
+    Make bytes for 2-byte value with nonzero check
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">value</span>
+            <span class="types"><span class="type">number</span></span>
+         - integer value to convert to bytes
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_var_length_nonzero"></a>
+    <strong>make_var_length_nonzero (value)</strong>
+    </dt>
+    <dd>
+    Make bytes for variable length value with nonzero value check
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">value</span>
+            <span class="types"><span class="type">number</span></span>
+         - integer value to convert to bytes
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_string"></a>
+    <strong>parse_string (read_func)</strong>
+    </dt>
+    <dd>
+    Read string (or bytes) using given read_func function
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        parsed string (or bytes) on success</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_uint8"></a>
+    <strong>parse_uint8 (read_func)</strong>
+    </dt>
+    <dd>
+    Parse uint8 value using given read_func
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        parser value</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_uint8_0_or_1"></a>
+    <strong>parse_uint8_0_or_1 (read_func)</strong>
+    </dt>
+    <dd>
+    Parse uint8 value using given read_func with only 0 or 1 value allowed
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        parser value</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_uint16"></a>
+    <strong>parse_uint16 (read_func)</strong>
+    </dt>
+    <dd>
+    Parse uint16 value using given read_func
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        parser value</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_uint16_nonzero"></a>
+    <strong>parse_uint16_nonzero (read_func)</strong>
+    </dt>
+    <dd>
+    Parse uint16 non-zero value using given read_func
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        parser value</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_uint32"></a>
+    <strong>parse_uint32 (read_func)</strong>
+    </dt>
+    <dd>
+    Parse uint32 value using given read_func
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        parser value</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_var_length"></a>
+    <strong>parse_var_length (read_func)</strong>
+    </dt>
+    <dd>
+    Parse variable length field value using given read_func.
+ For MQTT v3.1.1:	<b>2.2.3 Remaining Length</b>,
+ For MQTT v5.0:	<b>2.1.4 Remaining Length</b>.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        parser value</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_var_length_nonzero"></a>
+    <strong>parse_var_length_nonzero (read_func)</strong>
+    </dt>
+    <dd>
+    Parse variable length field value using given read_func with non-zero constraint.
+ For MQTT v3.1.1:	<b>2.2.3 Remaining Length</b>,
+ For MQTT v5.0:	<b>2.1.4 Remaining Length</b>.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read some bytes from the network layer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        parser value</li>
+        <li>
+        OR false and error message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "make_header"></a>
+    <strong>make_header (ptype, flags, len)</strong>
+    </dt>
+    <dd>
+    Create bytes of the MQTT fixed packet header
+ For MQTT v3.1.1:	<b>2.2 Fixed header</b>,
+ For MQTT v5.0:	<b>2.1.1 Fixed Header</b>.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">ptype</span>
+            <span class="types"><span class="type">number</span></span>
+         - MQTT packet type
+        </li>
+        <li><span class="parameter">flags</span>
+            <span class="types"><span class="type">number</span></span>
+         - MQTT packet flags
+        </li>
+        <li><span class="parameter">len</span>
+            <span class="types"><span class="type">number</span></span>
+         - MQTT packet length
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        bytes of the fixed packet header
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "check_qos"></a>
+    <strong>check_qos (val)</strong>
+    </dt>
+    <dd>
+    Check if given value is a valid PUBLISH message QoS value
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">val</span>
+            <span class="types"><span class="type">number</span></span>
+         - QoS value
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">boolean</span></span>
+        true for valid QoS value, otherwise false
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "check_packet_id"></a>
+    <strong>check_packet_id (val)</strong>
+    </dt>
+    <dd>
+    Check if given value is a valid Packet Identifier
+ For MQTT v3.1.1:	<b>2.3.1 Packet Identifier</b>,
+ For MQTT v5.0:	<b>2.2.1 Packet Identifier</b>.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">val</span>
+            <span class="types"><span class="type">number</span></span>
+         - Packet ID value
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">boolean</span></span>
+        true for valid Packet ID value, otherwise false
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "next_packet_id"></a>
+    <strong>next_packet_id ([curr])</strong>
+    </dt>
+    <dd>
+    Returns the next Packet Identifier value relative to given current value.
+ If current is nil - returns 1 as the first possible Packet ID.
+ For MQTT v3.1.1:	<b>2.3.1 Packet Identifier</b>,
+ For MQTT v5.0:	<b>2.2.1 Packet Identifier</b>.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">curr</span>
+            <span class="types"><span class="type">number</span></span>
+         - current Packet ID value
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        next Packet ID value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "packet_id_required"></a>
+    <strong>packet_id_required (args)</strong>
+    </dt>
+    <dd>
+    Check if Packet Identifier field are required for given packet
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">args</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.6">table</a></span>
+         - args for creating packet
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">boolean</span></span>
+        true if Packet Identifier are required for the packet
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "combine"></a>
+    <strong>combine (...)</strong>
+    </dt>
+    <dd>
+    Combine several data parts into one
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">...</span>
+            <span class="types"><span class="type">combined_packet_mt/string</span></span>
+         any amount of strings of combined_packet_mt tables to combine into one packet
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">combined_packet_mt</span></span>
+        table suitable to append packet parts or to stringify it into raw packet bytes
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "packet_tostring"></a>
+    <strong>packet_tostring (packet)</strong>
+    </dt>
+    <dd>
+    Render packet to string representation
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">packet</span>
+            <span class="types"><span class="type">packet_mt</span></span>
+         table to convert to string
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.4">string</a></span>
+        human-readable string representation of the packet
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "start_parse_packet"></a>
+    <strong>start_parse_packet (read_func)</strong>
+    </dt>
+    <dd>
+    Start parsing a new packet
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read data from the network connection
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        packet_type</li>
+        <li>
+           <span class="types"><span class="type">number</span></span>
+        flags</li>
+        <li>
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.6">table</a></span>
+        input - a table with fields "read_func" and "available" representing a stream-like object
+ to read already received packet data in chunks</li>
+        <li>
+        OR false and error_message on failure</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_packet_connect"></a>
+    <strong>parse_packet_connect (read_func[, version])</strong>
+    </dt>
+    <dd>
+    Parse CONNECT packet with read_func
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">read_func</span>
+            <span class="types"><span class="type">function</span></span>
+         - function to read data from the network connection
+        </li>
+        <li><span class="parameter">version</span>
+            <span class="types"><span class="type">number</span></span>
+         - expected protocol version constant or nil to accept both versions
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        packet on success or false and error message on failure
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "parse_packet_connect_input"></a>
+    <strong>parse_packet_connect_input (input[, version])</strong>
+    </dt>
+    <dd>
+    Parse CONNECT packet from already received stream-like packet input table
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">input</span>
+            <span class="types"><a class="type" href="https://www.lua.org/manual/5.4/manual.html#6.6">table</a></span>
+         - a table with fields "read_func" and "available" representing a stream-like object
+        </li>
+        <li><span class="parameter">version</span>
+            <span class="types"><span class="type">number</span></span>
+         - expected protocol version constant or nil to accept both versions
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        packet on success or false and error message on failure
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "packet_type"></a>
+    <strong>packet_type</strong>
+    </dt>
+    <dd>
+    MQTT protocol fixed header packet types.
+ For MQTT v3.1.1:	<b>2.2.1 MQTT Control Packet type</b>,
+ For MQTT v5.0:	<b>2.1.2 MQTT Control Packet type</b>.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">CONNECT</span>
+        1
+        </li>
+        <li><span class="parameter">CONNACK</span>
+        2
+        </li>
+        <li><span class="parameter">PUBLISH</span>
+        3
+        </li>
+        <li><span class="parameter">PUBACK</span>
+        4
+        </li>
+        <li><span class="parameter">PUBREC</span>
+        5
+        </li>
+        <li><span class="parameter">PUBREL</span>
+        6
+        </li>
+        <li><span class="parameter">PUBCOMP</span>
+        7
+        </li>
+        <li><span class="parameter">SUBSCRIBE</span>
+        8
+        </li>
+        <li><span class="parameter">SUBACK</span>
+        9
+        </li>
+        <li><span class="parameter">UNSUBSCRIBE</span>
+        10
+        </li>
+        <li><span class="parameter">UNSUBACK</span>
+        11
+        </li>
+        <li><span class="parameter">PINGREQ</span>
+        12
+        </li>
+        <li><span class="parameter">PINGRESP</span>
+        13
+        </li>
+        <li><span class="parameter">DISCONNECT</span>
+        14
+        </li>
+        <li><span class="parameter">AUTH</span>
+        15
+        </li>
+        <li><span class="parameter">[1]</span>
+        "CONNECT"
+        </li>
+        <li><span class="parameter">[2]</span>
+        "CONNACK"
+        </li>
+        <li><span class="parameter">[3]</span>
+        "PUBLISH"
+        </li>
+        <li><span class="parameter">[4]</span>
+        "PUBACK"
+        </li>
+        <li><span class="parameter">[5]</span>
+        "PUBREC"
+        </li>
+        <li><span class="parameter">[6]</span>
+        "PUBREL"
+        </li>
+        <li><span class="parameter">[7]</span>
+        "PUBCOMP"
+        </li>
+        <li><span class="parameter">[8]</span>
+        "SUBSCRIBE"
+        </li>
+        <li><span class="parameter">[9]</span>
+        "SUBACK"
+        </li>
+        <li><span class="parameter">[10]</span>
+        "UNSUBSCRIBE"
+        </li>
+        <li><span class="parameter">[11]</span>
+        "UNSUBACK"
+        </li>
+        <li><span class="parameter">[12]</span>
+        "PINGREQ"
+        </li>
+        <li><span class="parameter">[13]</span>
+        "PINGRESP"
+        </li>
+        <li><span class="parameter">[14]</span>
+        "DISCONNECT"
+        </li>
+        <li><span class="parameter">[15]</span>
+        "AUTH"
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "packet_mt"></a>
+    <strong>packet_mt</strong>
+    </dt>
+    <dd>
+    Parsed packet metatable
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">__tostring</span>
+        packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "connack_packet_mt"></a>
+    <strong>connack_packet_mt</strong>
+    </dt>
+    <dd>
+    Parsed CONNACK packet metatable
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">__tostring</span>
+        packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+        </li>
+        <li><span class="parameter">reason_string</span>
+        Returns reason string for the CONNACK packet according to its rc field
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Fields"></a>Fields</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "max_variable_length"></a>
+    <strong>max_variable_length</strong>
+    </dt>
+    <dd>
+    Maximum integer value (268435455) that can be encoded using variable-length encoding
+
+
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
+<i style="float:right;">Last updated 2025-06-20 19:38:49 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
