@@ -11,7 +11,7 @@ jobs:
         run: sudo apt-get install -y lua-check && cd "${{ github.workspace }}" && ./tests/run-luacheck.sh -q
 
       - name: install hererocks to build any lua version
-        run: sudo apt-get install -y libreadline-dev unzip && pip install hererocks
+        run: sudo apt-get install -y libreadline-dev unzip curl && pip install hererocks
 
       - name: run tests and collect code coverage
         run: cd "${{ github.workspace }}" && COVERAGE=1 ./tests/run-for-all-lua-versions.sh download

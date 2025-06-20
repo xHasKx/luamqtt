@@ -34,6 +34,17 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
 			sed -i 's/git:/git+https:/' luabitop-1.0.2-3.rockspec
 			luarocks install ./luabitop-1.0.2-3.rockspec > /dev/null
 			popd >/dev/null
+		elif [ "$ver" == "-j2.0" ] || [ "$ver" == "-j2.1" ]; then
+			# issue: https://github.com/luarocks/luarocks/issues/1797
+			# solution: https://github.com/Kong/kong-pongo/pull/672/commits/c085bf6a90a3357487b276c426c5cff492be0c57
+			echo "installing luarocks from luarocks-3.12.1-1.rockspec"
+			pushd . >/dev/null
+			cd "$env"
+			curl -LO https://luarocks.org/manifests/hisham/luarocks-3.12.1-1.rockspec
+			luarocks install luarocks-3.12.1-1.rockspec
+			rm luarocks-3.12.1-1.rockspec
+			popd >/dev/null
+			luarocks install luarocks 3.12.1-1
 		fi
 		luarocks install busted > /dev/null
 		luarocks install copas > /dev/null
