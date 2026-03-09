@@ -100,7 +100,7 @@ function connector:receive(size)
 	local sock = self.sock
 	local data, err = sock:receive(size)
 	if data then
-		-- bytes received, so change from idefinite timeout to regular until
+		-- bytes received, so change from indefinite timeout to regular until
 		-- packet is complete (see buffer_clear method)
 		self.sock:settimeouts(nil, nil, self.timeout)
 		return data

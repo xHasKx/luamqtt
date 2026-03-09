@@ -355,8 +355,38 @@ end
 -- @tparam boolean opts.retain_handling			for MQTT v5.0 only: retain_handling flag for subscription
 -- @tparam[opt] table opts.properties			for MQTT v5.0 only: properties for subscribe operation
 -- @tparam[opt] table opts.user_properties		for MQTT v5.0 only: user properties for subscribe operation
--- @tparam[opt] function opts.callback			callback function to be called when subscription is acknowledged by broker
+-- @tparam[opt] function opts.callback			callback function to be called when subscription is acknowledged by
+-- broker (NOTE: if specified again on a resend, it will be called multiple times)
+-- @tparam[opt] number opts.packet_id			packet id to assign to the SUBSCRIBE packet (ONLY specify on a resend!)
 -- @return packet id on success or false and error message on failure
+-- @usage
+-- local timeout = 15
+-- local tries = 5
+-- local function subscribe(client)
+--   local opts = {
+-- 	    topic = "some/topic",
+-- 	    qos = 1,
+--      packet_id = nil, -- not specified on first try
+--   }
+--   opts.callback = function(suback, ...)
+--     -- called when SUBACK is received, mark the subscription as acknowledged
+--     opts.acknowledged = true
+--   end
+--   local tried = 0
+--   while not opts.acknowledged do
+-- 	   local packet_id = client:subscribe(opts)
+-- 	   if packet_id then -- ignore errors
+-- 	     opts.packet_id = packet_id
+-- 	   end
+-- 	   sleep(timeout) -- wait for SUBACK timeout before retrying
+-- 	   tried = tried + 1
+-- 	   if tried >= tries then
+-- 	     return false, "failed to subscribe after "..tries.." tries"
+-- 	   end
+--   end
+--   return true
+-- end
+
 function Client:subscribe(opts)
 	-- fetch and validate opts
 	assert(type(opts) == "table", "expecting opts to be a table")
@@ -368,6 +398,7 @@ function Client:subscribe(opts)
 	assert(opts.properties == nil or type(opts.properties) == "table", "expecting opts.properties to be a table")
 	assert(opts.user_properties == nil or type(opts.user_properties) == "table", "expecting opts.user_properties to be a table")
 	assert(opts.callback == nil or type(opts.callback) == "function", "expecting opts.callback to be a function")
+	assert(opts.packet_id == nil or type(opts.packet_id) == "number", "expecting opts.packet_id to be a number")
 
 	-- check connection is alive
 	if not self.connection then
@@ -388,6 +419,7 @@ function Client:subscribe(opts)
 		},
 		properties = opts.properties,
 		user_properties = opts.user_properties,
+		packet_id = opts.packet_id,
 	}
 	self:_assign_packet_id(pargs)
 	local packet_id = pargs.packet_id
@@ -426,7 +458,9 @@ end
 -- @tparam string opts.topic				topic to unsubscribe
 -- @tparam[opt] table opts.properties		properties for unsubscribe operation
 -- @tparam[opt] table opts.user_properties	user properties for unsubscribe operation
--- @tparam[opt] function opts.callback		callback function to be called when the unsubscribe is acknowledged by the broker
+-- @tparam[opt] function opts.callback		callback function to be called when the unsubscribe is acknowledged by the
+-- broker (NOTE: if specified again on a resend, it will be called multiple times)
+-- @tparam[opt] number opts.packet_id		packet id to assign to the UNSUBSCRIBE packet (ONLY specify on a resend!)
 -- @return packet id on success or false and error message on failure
 function Client:unsubscribe(opts)
 	-- fetch and validate opts
@@ -435,6 +469,7 @@ function Client:unsubscribe(opts)
 	assert(opts.properties == nil or type(opts.properties) == "table", "expecting opts.properties to be a table")
 	assert(opts.user_properties == nil or type(opts.user_properties) == "table", "expecting opts.user_properties to be a table")
 	assert(opts.callback == nil or type(opts.callback) == "function", "expecting opts.callback to be a function")
+	assert(opts.packet_id == nil or type(opts.packet_id) == "number", "expecting opts.packet_id to be a number")
 
 
 	-- check connection is alive
@@ -448,6 +483,7 @@ function Client:unsubscribe(opts)
 		subscriptions = {opts.topic},
 		properties = opts.properties,
 		user_properties = opts.user_properties,
+		packet_id = opts.packet_id,
 	}
 	self:_assign_packet_id(pargs)
 	local packet_id = pargs.packet_id
@@ -491,6 +527,8 @@ end
 -- @tparam[opt] table opts.properties		properties for publishing message
 -- @tparam[opt] table opts.user_properties	user properties for publishing message
 -- @tparam[opt] function opts.callback		callback to call when published message has been acknowledged by the broker
+-- (NOTE: if specified again on a resend, it will be called multiple times)
+-- @tparam[opt] number opts.packet_id		packet id to assign to the PUBLISH packet (ONLY specify on a resend!)
 -- @return true or packet id on success or false and error message on failure
 function Client:publish(opts)
 	-- fetch and validate opts
@@ -506,6 +544,7 @@ function Client:publish(opts)
 	assert(opts.properties == nil or type(opts.properties) == "table", "expecting opts.properties to be a table")
 	assert(opts.user_properties == nil or type(opts.user_properties) == "table", "expecting opts.user_properties to be a table")
 	assert(opts.callback == nil or type(opts.callback) == "function", "expecting opts.callback to be a function")
+	assert(opts.packet_id == nil or type(opts.packet_id) == "number", "expecting opts.packet_id to be a number")
 
 	-- check connection is alive
 	local conn = self.connection
@@ -556,7 +595,9 @@ function Client:publish(opts)
 	return packet_id or true
 end
 
---- Acknowledge given received message
+--- Acknowledge given received message.
+-- It can be safely called for QoS 0 messages, as it will not have any effect, only packages with QoS 1 or 2
+-- will be acknowledged.
 -- @tparam packet_mt msg				PUBLISH message to acknowledge
 -- @tparam[opt=0] number rc				The reason code field of PUBACK packet in MQTT v5.0 protocol
 -- @tparam[opt] table properties		properties for PUBACK/PUBREC packets
