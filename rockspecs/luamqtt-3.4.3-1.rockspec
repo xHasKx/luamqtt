@@ -15,7 +15,7 @@ No C-dependencies.
 	license = "MIT",
 }
 dependencies = {
-	"lua >= 5.1, <= 5.4",
+	"lua >= 5.1, <= 5.5",
 	"luasocket >= 3.0rc1-2",
 }
 build = {

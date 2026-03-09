@@ -75,7 +75,8 @@ function tools.extract_hex(str)
 	local res = {}
 	-- iterate through lines
 	local n = 0
-	for line in str:gmatch("[^\n]+") do
+	for _line in str:gmatch("[^\n]+") do
+		local line = _line
 		n = n + 1
 		-- find a comment start
 		local comment_begin = line:find("--", 1, true)
