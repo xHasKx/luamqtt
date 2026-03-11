@@ -31,7 +31,11 @@ function _M.add(cl)
 		-- replace packet handler; create a new thread for each packet received
 		cl.handle_received_packet = function(mqttdevice, packet)
 			count = count + 1
-			copas.addnamedthread(handle_received_packet, cl.opts.id..":receive_"..count, mqttdevice, packet)
+			-- name the thread after the received id if possible
+			local packet_id = (packet or {}).packet_id
+			local threadname = packet_id and (cl.opts.id .. ":receive_packet_id_" .. tostring(packet_id))
+										or (cl.opts.id .. ":count_" .. tostring(count))
+			copas.addnamedthread(handle_received_packet, threadname, mqttdevice, packet)
 			return true
 		end
 	end

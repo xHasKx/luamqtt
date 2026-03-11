@@ -81,20 +81,24 @@ function connector:send(data)
 
 	local time, err = lock:get()
 	if not time then
-		return nil, "failed acquiring send_lock: "..tostring(err)
+		local owner = lock.owner and copas.getthreadname(lock.owner) or "n.a."
+		return nil, "failed acquiring send_lock: " .. tostring(err) .. " current owner: " .. owner
 	end
+	log:debug("[LuaMQTT.connector.copas] send_lock acquired by %s", copas.getthreadname())
 	if time > 1 then
-		log:warn("[mqtt.connector.copas] send_lock wait time above 1 second: %s seconds", time)
+		log:warn("[LuaMQTT.connector.copas] send_lock wait time above 1 second: %s seconds", time)
 	end
 
 	local i = 1
 	while i < #data do
 		i, err = sock:send(data, i)
 		if not i then
+			log:debug("[LuaMQTT.connector.copas] send_lock released after error by %s: %s", copas.getthreadname(), tostring(err))
 			lock:release()
 			return false, err
 		end
 	end
+	log:debug("[LuaMQTT.connector.copas] send_lock released after send by %s", copas.getthreadname())
 	lock:release()
 	return true
 end
