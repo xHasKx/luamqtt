@@ -30,6 +30,7 @@ local socket = require("socket")
 local copas = require("copas")
 local new_lock = require("copas.lock").new
 local validate_luasec = require("mqtt.connector.base.luasec")
+local log = require("mqtt.log")
 
 
 -- validate connection options
@@ -78,9 +79,12 @@ function connector:send(data)
 	local sock = self.sock
 	local lock = self.send_lock
 
-	local ok, err = lock:get()
-	if not ok then
+	local time, err = lock:get()
+	if not time then
 		return nil, "failed acquiring send_lock: "..tostring(err)
+	end
+	if time > 1 then
+		log:warn("[mqtt.connector.copas] send_lock wait time above 1 second: %s seconds", time)
 	end
 
 	local i = 1
