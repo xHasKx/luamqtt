@@ -576,6 +576,26 @@ describe("MQTT v5.0 protocol: parsing packets: PUBACK[4]", function()
 		)
 	end)
 
+	it("with non-zero reason code, without property length -- DOC: 3.4.2.2.1", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				40 					-- packet type == 4 (PUBACK), flags == 0
+				03 					-- variable length == 3 bytes
+
+					0001				-- packet_id to acknowledge
+					10					-- reason code: 0x10 (No matching subscribers)
+										-- no property length field (Remaining Length < 4)
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.PUBACK, rc=0x10, packet_id=1, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
 	it("with non-zero reason code, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[
@@ -647,6 +667,26 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREC[5]", function()
 		assert.are.same(
 			{
 				type=pt.PUBREC, rc=0, packet_id=2, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
+	it("with non-zero reason code, without property length -- DOC: 3.5.2.2.1", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				50 					-- packet type == 5 (PUBREC), flags == 0
+				03 					-- variable length == 3 bytes
+
+					0002				-- packet_id to acknowledge
+					80					-- reason code: 0x80 (Unspecified error)
+										-- no property length field (Remaining Length < 4)
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.PUBREC, rc=0x80, packet_id=2, properties={}, user_properties={},
 			},
 			packet
 		)
@@ -728,6 +768,26 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREL[6]", function()
 		)
 	end)
 
+	it("with non-zero reason code, without property length -- DOC: 3.6.2.2.1", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				62 					-- packet type == 6 (PUBREL), flags == 0x2
+				03 					-- variable length == 3 bytes
+
+					0003				-- packet_id to acknowledge
+					92					-- reason code: 0x92 (Packet Identifier not found)
+										-- no property length field (Remaining Length < 4)
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.PUBREL, rc=0x92, packet_id=3, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
 	it("with non-zero reason code, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[
@@ -798,6 +858,26 @@ describe("MQTT v5.0 protocol: parsing packets: PUBCOMP[7]", function()
 		assert.are.same(
 			{
 				type=pt.PUBCOMP, rc=0, packet_id=4, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
+	it("with non-zero reason code, without property length -- DOC: 3.7.2.2.1", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				70 					-- packet type == 7 (PUBCOMP), flags == 0
+				03 					-- variable length == 3 bytes
+
+					0004				-- packet_id to acknowledge
+					92					-- reason code: 0x92 (Packet Identifier not found)
+										-- no property length field (Remaining Length < 4)
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.PUBCOMP, rc=0x92, packet_id=4, properties={}, user_properties={},
 			},
 			packet
 		)
