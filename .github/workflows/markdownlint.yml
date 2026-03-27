@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # NOTE: heavy node.js is used only to run markdownlint - the same tool as in my editor (Visual Studio Code)
 
