@@ -31,6 +31,152 @@ describe("MQTT v3.1.1 protocol: making packets", function()
 		)
 	end)
 
+	it("CONNECT with will and empty payload", function()
+		assert.are.equal(
+			extract_hex[[
+				10 						-- packet type == 1 (CONNECT), flags == 0
+				13 						-- length == 0x13 == 19 bytes
+
+											-- next is 19 bytes for variable header and payload:
+
+					0004 4D515454 			-- protocol name == "MQTT"
+					04 						-- protocol level (4 == v3.1.1)
+					06 						-- connect flags: 0x06 == 0000 0110:
+												-- reserved == 0
+												-- clean == 1 (true),
+												-- will flag == 1
+												-- will qos == 00 == 0
+												-- will retain == 0 (false)
+												-- password flag == 0
+												-- username flag == 0
+					0000 					-- keep alive == 0
+
+												-- next is payload:
+
+						0000 							-- client id == "" (empty)
+						0003 627965 					-- will topic == "bye"
+						0000 							-- will payload == "" (empty)
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNECT,
+				id = "",
+				clean = true,
+				will = {
+					topic = "bye",
+					payload = "",
+					qos = 0,
+					retain = false,
+				},
+			}))
+		)
+	end)
+
+	it("CONNECT with will qos=2 and retain", function()
+		assert.are.equal(
+			extract_hex[[
+				10 						-- packet type == 1 (CONNECT), flags == 0
+				15 						-- length == 0x15 == 21 bytes
+
+											-- next is 21 bytes for variable header and payload:
+
+					0004 4D515454 			-- protocol name == "MQTT"
+					04 						-- protocol level (4 == v3.1.1)
+					34 						-- connect flags: 0x34 == 0011 0100:
+												-- reserved == 0
+												-- clean == 0 (false),
+												-- will flag == 1
+												-- will qos == 10 == 2
+												-- will retain == 1 (true)
+												-- password flag == 0
+												-- username flag == 0
+					0000 					-- keep alive == 0
+
+												-- next is payload:
+
+						0000 							-- client id == "" (empty)
+						0003 627965 					-- will topic == "bye"
+						0002 6F6B 						-- will payload == "ok"
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNECT,
+				id = "",
+				will = {
+					topic = "bye",
+					payload = "ok",
+					qos = 2,
+					retain = true,
+				},
+			}))
+		)
+	end)
+
+	it("CONNECT with username only, no password", function()
+		assert.are.equal(
+			extract_hex[[
+				10 						-- packet type == 1 (CONNECT), flags == 0
+				15 						-- length == 0x15 == 21 bytes
+
+											-- next is 21 bytes for variable header and payload:
+
+					0004 4D515454 			-- protocol name == "MQTT"
+					04 						-- protocol level (4 == v3.1.1)
+					80 						-- connect flags: 0x80 == 1000 0000:
+												-- reserved == 0
+												-- clean == 0 (false),
+												-- will flag == 0
+												-- password flag == 0
+												-- username flag == 1
+					001E 					-- keep alive == 30
+
+												-- next is payload:
+
+						0003 636C69 					-- client id == "cli"
+						0004 75736572 					-- username == "user"
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNECT,
+				id = "cli",
+				username = "user",
+				keep_alive = 30,
+			}))
+		)
+	end)
+
+	it("CONNECT with clean=false explicit", function()
+		assert.are.equal(
+			extract_hex[[
+				10 						-- packet type == 1 (CONNECT), flags == 0
+				11 						-- length == 0x11 == 17 bytes
+
+											-- next is 17 bytes for variable header and payload:
+
+					0004 4D515454 			-- protocol name == "MQTT"
+					04 						-- protocol level (4 == v3.1.1)
+					00 						-- connect flags: 0x00 == clean=false, no will, no username, no password
+					0000 					-- keep alive == 0
+
+												-- next is payload:
+
+						0005 68656C6C6F 				-- client id == "hello"
+			]],
+			tools.hex(tostring(protocol4.make_packet{
+				type = protocol.packet_type.CONNECT,
+				id = "hello",
+				clean = false,
+			}))
+		)
+	end)
+
+	it("CONNECT failures: password without username", function()
+		assert.has.errors(function()
+			protocol4.make_packet{
+				type = protocol.packet_type.CONNECT,
+				id = "test",
+				password = "secret",
+			}
+		end)
+	end)
+
 	it("CONNECT with full params", function()
 		assert.are.equal(
 			extract_hex[[

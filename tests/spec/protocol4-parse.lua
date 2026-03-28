@@ -134,6 +134,100 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 				]]
 			))
 		)
+		-- CONNECT with will qos=0 and retain=false is already covered above (line 97)
+
+		-- CONNECT: reserved bit set in connect flags
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0C 							-- variable length == 12 bytes
+					0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+					04						-- protocol version: 4 (v3.1.1)
+					01						-- connect flags: reserved bit 0 is set (invalid)
+					0000					-- keep alive == 0
+					0000					-- client id length (0 bytes) and its string content (empty)
+			]]
+		)))
+
+		-- CONNECT: invalid protocol name
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0C 							-- variable length == 12 bytes
+					0004 4D515858			-- protocol name length (4 bytes) and "MQXX" string (invalid)
+					04						-- protocol version: 4 (v3.1.1)
+					00						-- connect flags
+					0000					-- keep alive == 0
+					0000					-- client id length (0 bytes) and its string content (empty)
+			]]
+		)))
+
+		-- CONNECT: invalid protocol version (not 4)
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0C 							-- variable length == 12 bytes
+					0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+					03						-- protocol version: 3 (invalid, expected 4)
+					00						-- connect flags
+					0000					-- keep alive == 0
+					0000					-- client id length (0 bytes) and its string content (empty)
+			]]
+		)))
+
+		-- CONNECT: will flag set with will QoS=3 (invalid per [MQTT-3.1.2-14])
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0C 							-- variable length == 12 bytes
+					0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+					04						-- protocol version: 4 (v3.1.1)
+					1C						-- connect flags: will=true, will_qos=3 (0x1C == 0001 1100)
+					0000					-- keep alive == 0
+					0000					-- client id length (0 bytes)
+			]]
+		)))
+
+		-- CONNECT: will flag=0 but will QoS non-zero (invalid per [MQTT-3.1.2-13])
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0C 							-- variable length == 12 bytes
+					0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+					04						-- protocol version: 4 (v3.1.1)
+					08						-- connect flags: will=false, will_qos=1 (0x08 == 0000 1000)
+					0000					-- keep alive == 0
+					0000					-- client id length (0 bytes)
+			]]
+		)))
+
+		-- CONNECT: will flag=0 but will retain set (invalid per [MQTT-3.1.2-15])
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0C 							-- variable length == 12 bytes
+					0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+					04						-- protocol version: 4 (v3.1.1)
+					20						-- connect flags: will=false, will_retain=true (0x20 == 0010 0000)
+					0000					-- keep alive == 0
+					0000					-- client id length (0 bytes)
+			]]
+		)))
+
+		-- CONNECT: password flag set without username flag
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 							-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				12 							-- variable length == 18 bytes
+					0004 4D515454			-- protocol name length (4 bytes) and "MQTT" string
+					04						-- protocol version: 4 (v3.1.1)
+					40						-- connect flags: password=true, username=false (invalid per v3.1.1)
+					0000					-- keep alive == 0
+					0000					-- client id length (0 bytes) and its string content (empty)
+					0004 31323334			-- password length (4 bytes) and "1234" payload
+			]]
+		)))
+
 		assert.are.same(
 			{
 				type=protocol.packet_type.CONNECT,

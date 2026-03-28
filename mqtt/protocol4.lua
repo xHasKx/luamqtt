@@ -117,6 +117,7 @@ local function make_packet_connect(args)
 		assert(type(args.will.topic) == "string", "expecting will.topic to be a string")
 		payload:append(make_string(args.will.topic))
 		-- DOC: 3.1.3.3 Will Message
+		-- NOTE: the client code requires will.payload to be a string, but allow nil here for direct low-level API users
 		assert(args.will.payload == nil or type(args.will.payload) == "string", "expecting will.payload to be a string or nil")
 		payload:append(make_string(args.will.payload or ""))
 	end

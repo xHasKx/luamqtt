@@ -52,6 +52,22 @@ describe("MQTT v3.1.1 protocol: making and then parsing back all packets", funct
 			},
 		},
 		{
+			title = "CONNECT with empty will payload",
+			packet = {
+				version = mqtt.v311, -- NOTE: optional field, added only to make test work
+				type = protocol.packet_type.CONNECT,
+				id = "",
+				clean = true,
+				will = {
+					payload = "",
+					topic = "bye",
+					qos = 0,
+					retain = false,
+				},
+				keep_alive = 0,
+			},
+		},
+		{
 			title = "CONNACK",
 			packet = {
 				type = protocol.packet_type.CONNACK,

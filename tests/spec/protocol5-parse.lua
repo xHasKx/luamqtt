@@ -68,6 +68,54 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 		)
 	end)
 
+	it("connect flags: will QoS=3 rejected", function()
+		-- [MQTT-3.1.2-14] Will QoS must not be 3
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0D 										-- variable length == 13 bytes
+					0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+					05									-- protocol version: 5 (v5.0)
+					1C									-- connect flags: will=true, will_qos=3 (0x1C == 0001 1100)
+					0000								-- keep alive == 0
+					00									-- properties length (0 bytes)
+					0000								-- client id length (0 bytes)
+			]]
+		)))
+	end)
+
+	it("connect flags: will=false but will QoS non-zero rejected", function()
+		-- [MQTT-3.1.2-13] Will QoS must be 0 when Will Flag is 0
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0D 										-- variable length == 13 bytes
+					0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+					05									-- protocol version: 5 (v5.0)
+					08									-- connect flags: will=false, will_qos=1 (0x08 == 0000 1000)
+					0000								-- keep alive == 0
+					00									-- properties length (0 bytes)
+					0000								-- client id length (0 bytes)
+			]]
+		)))
+	end)
+
+	it("connect flags: will=false but will retain set rejected", function()
+		-- [MQTT-3.1.2-15] Will Retain must be 0 when Will Flag is 0
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+				0D 										-- variable length == 13 bytes
+					0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+					05									-- protocol version: 5 (v5.0)
+					20									-- connect flags: will=false, will_retain=true (0x20 == 0010 0000)
+					0000								-- keep alive == 0
+					00									-- properties length (0 bytes)
+					0000								-- client id length (0 bytes)
+			]]
+		)))
+	end)
+
 	it("connect flags: clean=true", function()
 		assert.are.same(
 			{
@@ -115,6 +163,36 @@ describe("MQTT v5.0 protocol: parsing packets: CONNECT[1]", function()
 						00									-- will message properties length (0 bytes)
 						0003 627965							-- will message topic: 3 bytes length and string "bye"
 						0003 627965							-- will message payload: 3 bytes length and bytes of string "bye"
+				]]
+			))
+		)
+	end)
+
+	it("connect flags: will=true with empty will payload", function()
+		assert.are.same(
+			{
+				type=protocol.packet_type.CONNECT,
+				version = mqtt.v50, clean = true, keep_alive = 0, id = "",
+				properties = {}, user_properties = {},
+				will = {
+					qos = 0, retain = false,
+					topic = "bye", payload = "",
+					properties = {}, user_properties = {},
+				}
+			},
+			protocol5.parse_packet(make_read_func_hex(
+				extract_hex[[
+					10 										-- packet type == 1 (CONNECT), flags == 0 (reserved)
+					15 										-- variable length == 21 bytes
+						0004 4D515454						-- protocol name length (4 bytes) and "MQTT" string
+						05									-- protocol version: 5 (v5.0)
+						06									-- connect flags: clean=true, will=true
+						0000								-- keep alive == 0
+						00									-- properties length (0 bytes)
+						0000								-- client id length (0 bytes) and its string content (empty)
+						00									-- will message properties length (0 bytes)
+						0003 627965							-- will message topic: 3 bytes length and string "bye"
+						0000								-- will message payload: 0 bytes length (empty)
 				]]
 			))
 		)

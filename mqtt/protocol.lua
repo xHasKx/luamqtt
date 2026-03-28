@@ -654,6 +654,22 @@ function protocol.parse_packet_connect_input(input, version)
 	local password_flag = (band(connect_flags, 0x40) ~= 0)
 	local username_flag = (band(connect_flags, 0x80) ~= 0)
 
+	if will then
+		-- DOC: 3.1.2.6 Will QoS - [MQTT-3.1.2-14] If the Will Flag is set to 1, the value of Will QoS can be 0 (0x00), 1 (0x01), or 2 (0x02). It MUST NOT be 3 (0x03).
+		if will_qos == 3 then
+			return false, "Will QoS must not be 3"
+		end
+	else
+		-- DOC: [MQTT-3.1.2-13] If the Will Flag is set to 0, then the Will QoS MUST be set to 0 (0x00).
+		if will_qos ~= 0 then
+			return false, "Will QoS must be 0 when Will Flag is 0"
+		end
+		-- DOC: [MQTT-3.1.2-15] If the Will Flag is set to 0, then Will Retain MUST be set to 0.
+		if will_retain then
+			return false, "Will Retain must be 0 when Will Flag is 0"
+		end
+	end
+
 	-- DOC: 3.1.2.10 Keep Alive
 	keep_alive, err = parse_uint16(read_func)
 	if not keep_alive then

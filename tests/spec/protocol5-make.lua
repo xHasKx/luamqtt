@@ -99,6 +99,41 @@ describe("MQTT v5.0 protocol: making packets: CONNECT[1]", function()
 		)
 	end)
 
+	it("CONNECT with will and empty payload", function()
+		assert.are.equal(
+			extract_hex[[
+				10						-- packet type == 1 (CONNECT), flags == 0
+				15						-- length == 0x15 == 21 bytes
+
+											-- next is 21 bytes for variable header and payload:
+
+					0004 4D515454			-- protocol name == "MQTT"
+					05						-- protocol version == 5 for MQTT v5.0
+					06						-- connect flags == 0x06: reserved=0, clean=1, will=1, will_qos=0, will_retain=0, password=0, username=0
+					0000					-- keep alive == 0
+					00						-- connect properties length (0 bytes)
+
+												-- next is payload:
+
+						0000							-- client id == "" (empty)
+						00								-- will message properties length (0 bytes)
+						0003 627965						-- will topic == "bye"
+						0000							-- will payload == "" (empty)
+			]],
+			tools.hex(tostring(protocol5.make_packet{
+				type = protocol.packet_type.CONNECT,
+				id = "",
+				clean = true,
+				will = {
+					topic = "bye",
+					payload = "",
+					qos = 0,
+					retain = false,
+				},
+			}))
+		)
+	end)
+
 	it("CONNECT with full params and full properties", function()
 		assert.are.equal(
 			extract_hex[[
