@@ -1422,11 +1422,14 @@ local function parse_packet_disconnect(ptype, flags, input)
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.14.2.2 DISCONNECT Properties
-		local ok
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		-- DOC: 3.14.2.2.1 If the Remaining Length is less than 2, a value of 0 is used
+		if input.available > 0 then
+			-- DOC: 3.14.2.2 DISCONNECT Properties
+			local ok
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet

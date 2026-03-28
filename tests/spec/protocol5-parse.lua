@@ -1437,6 +1437,25 @@ describe("MQTT v5.0 protocol: parsing packets: DISCONNECT[14]", function()
 		)
 	end)
 
+	it("with reason code only, without property length -- DOC: 3.14.2.2.1", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				E0 					-- packet type == 14 (DISCONNECT), flags == 0
+				01 					-- variable length == 1 byte
+
+					81					-- reason code == 0x81 (Malformed Packet), DOC: 3.14.2.1 Disconnect Reason Code
+										-- no property length field (Remaining Length < 2)
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.DISCONNECT, rc=0x81, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
 	it("with zero reason code, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[
