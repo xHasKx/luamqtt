@@ -505,6 +505,9 @@ end
 local function make_packet_publish(args)
 	-- check args
 	assert(type(args.topic) == "string", "expecting .topic to be a string")
+	-- DOC: It is a Protocol Error if the Topic Name is zero length and there is no Topic Alias
+	local has_topic_alias = args.properties and args.properties.topic_alias
+	assert(#args.topic > 0 or has_topic_alias, "expecting .topic to be a non-empty string when no topic_alias is set")
 	if args.payload ~= nil then
 		assert(type(args.payload) == "string", "expecting .payload to be a string")
 	end
@@ -983,6 +986,10 @@ local function parse_packet_publish(ptype, flags, input)
 	ok, err = parse_properties(ptype, read_data, input, packet)
 	if not ok then
 		return false, packet_type[ptype]..": failed to parse packet properties: "..err
+	end
+	-- DOC: It is a Protocol Error if the Topic Name is zero length and there is no Topic Alias
+	if #topic == 0 and not (packet.properties and packet.properties.topic_alias) then
+		return false, packet_type[ptype]..": empty topic is not allowed without topic_alias"
 	end
 	if input.available > 0 then
 		-- DOC: 3.3.3 PUBLISH Payload

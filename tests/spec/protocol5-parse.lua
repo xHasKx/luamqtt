@@ -692,6 +692,18 @@ describe("MQTT v5.0 protocol: parsing packets: PUBLISH[3]", function()
 			]]
 		)))
 	end)
+
+	it("PUBLISH with empty topic and no topic_alias rejected", function()
+		-- DOC: It is a Protocol Error if the Topic Name is zero length and there is no Topic Alias
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				30 					-- packet type == 3 (PUBLISH), flags == 0
+				03 					-- variable length == 3 bytes
+					0000 			-- topic length == 0 (empty topic)
+					00				-- properties length
+			]]
+		)))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: PUBACK[4]", function()

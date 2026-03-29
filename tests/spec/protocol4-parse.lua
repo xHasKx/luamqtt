@@ -390,6 +390,17 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		)))
 	end)
 
+	it("PUBLISH with empty topic rejected", function()
+		-- [MQTT-4.7.3-1] All Topic Names and Topic Filters MUST be at least one character long
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				30 					-- packet type == 3 (PUBLISH), flags == 0
+				02 					-- variable length == 2 bytes
+					0000 			-- topic length == 0 (empty topic)
+			]]
+		)))
+	end)
+
 	it("PUBACK", function()
 		assert.are.same(
 			{

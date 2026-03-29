@@ -165,6 +165,8 @@ end
 local function make_packet_publish(args)
 	-- check args
 	assert(type(args.topic) == "string", "expecting .topic to be a string")
+	-- DOC: [MQTT-4.7.3-1] All Topic Names and Topic Filters MUST be at least one character long
+	assert(#args.topic > 0, "expecting .topic to be a non-empty string")
 	if args.payload ~= nil then
 		assert(type(args.payload) == "string", "expecting .payload to be a string")
 	end
@@ -438,6 +440,10 @@ local function parse_packet_publish(ptype, flags, input)
 		return false, packet_type[ptype]..": malformed packet: not enough data to parse topic"
 	end
 	local topic = input.read_func(topic_len)
+	-- DOC: [MQTT-4.7.3-1] All Topic Names and Topic Filters MUST be at least one character long
+	if topic_len == 0 then
+		return false, packet_type[ptype]..": empty topic is not allowed"
+	end
 	-- DOC: 3.3.2.2 Packet Identifier
 	local packet_id
 	if qos > 0 then

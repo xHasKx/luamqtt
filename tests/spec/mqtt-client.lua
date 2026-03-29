@@ -577,4 +577,78 @@ describe("#copas connector", function()
 	end)
 end)
 
+describe("MQTT v5.0 topic alias", function()
+	local mqtt = require("mqtt")
+
+	it("publish with topic_alias and then with empty topic", function()
+		-- NOTE: more about flespi tokens:
+		-- https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+		local flespi_token = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"
+
+		local prefix = "luamqtt/" .. tostring(math.floor(math.random()*1e13))
+		local topic = prefix .. "/topic_alias_test"
+
+		local client = mqtt.client{
+			uri = "mqtt.flespi.io",
+			clean = true,
+			username = flespi_token,
+			version = mqtt.v50,
+		}
+
+		local errors = {}
+		local messages = {}
+		local close_reason
+
+		client:on{
+			connect = function(connack)
+				assert(connack.rc == 0, "connected with non-zero rc")
+				-- check broker supports topic aliases
+				local tam = connack.properties and connack.properties.topic_alias_maximum
+				assert(tam and tam > 0, "broker does not support topic aliases")
+
+				assert(client:subscribe{topic=topic, qos=1, callback=function()
+					-- first publish: set topic alias mapping with non-empty topic
+					assert(client:publish{
+						topic = topic,
+						payload = "msg1",
+						qos = 1,
+						properties = { topic_alias = 1 },
+					})
+				end})
+			end,
+
+			message = function(msg)
+				client:acknowledge(msg)
+				messages[#messages + 1] = msg.payload
+
+				if msg.payload == "msg1" then
+					-- second publish: use topic alias with empty topic
+					assert(client:publish{
+						topic = "",
+						payload = "msg2",
+						qos = 1,
+						properties = { topic_alias = 1 },
+					})
+				elseif msg.payload == "msg2" then
+					assert(client:disconnect())
+				end
+			end,
+
+			error = function(err)
+				errors[#errors + 1] = err
+			end,
+
+			close = function(conn)
+				close_reason = conn.close_reason
+			end,
+		}
+
+		mqtt.run_ioloop(client)
+
+		assert.are.same({}, errors)
+		assert.are.same({"msg1", "msg2"}, messages)
+		assert.are.same("connection closed by client", close_reason)
+	end)
+end)
+
 -- vim: ts=4 sts=4 sw=4 noet ft=lua
