@@ -555,8 +555,8 @@ describe("MQTT v5.0 protocol: parsing packets: PUBLISH[3]", function()
 	it("PUBLISH with minimal params, with payload and without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[
-				39 					-- packet type == 3 (PUBLISH), flags == 0, dup=1, qos=0, retain=1
-				0B 					-- variable length == 3 bytes
+				31 					-- packet type == 3 (PUBLISH), flags == 0, dup=0, qos=0, retain=1
+				0B 					-- variable length == 11 bytes
 
 					0004 74657374	-- topic name == "test"
 					00				-- properties length
@@ -567,7 +567,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBLISH[3]", function()
 		assert.is_nil(err)
 		assert.are.same(
 			{
-				type=pt.PUBLISH, dup=true, qos=0, retain=true, topic="test", payload="kuku", properties={}, user_properties={},
+				type=pt.PUBLISH, dup=false, qos=0, retain=true, topic="test", payload="kuku", properties={}, user_properties={},
 			},
 			packet
 		)
@@ -667,6 +667,30 @@ describe("MQTT v5.0 protocol: parsing packets: PUBLISH[3]", function()
 			},
 			packet
 		)
+	end)
+	it("PUBLISH with QoS=3 rejected", function()
+		-- [MQTT-3.3.1-4] A PUBLISH Packet MUST NOT have both QoS bits set to 1
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				36 					-- packet type == 3 (PUBLISH), flags == 0x6 == 0110 (dup=false, qos=3, retain=false)
+				0A 					-- variable length == 10 bytes
+					0004 74657374 	-- topic "test"
+					0001			-- packet id
+					00				-- properties length
+			]]
+		)))
+	end)
+
+	it("PUBLISH with DUP=1 and QoS=0 rejected", function()
+		-- [MQTT-3.3.1-2] DUP MUST be set to 0 for all QoS 0 messages
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				38 					-- packet type == 3 (PUBLISH), flags == 0x8 == 1000 (dup=true, qos=0, retain=false)
+				07 					-- variable length == 7 bytes
+					0004 74657374	-- topic "test"
+					00				-- properties length
+			]]
+		)))
 	end)
 end)
 

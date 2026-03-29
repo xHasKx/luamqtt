@@ -367,6 +367,29 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 		)
 	end)
 
+	it("PUBLISH with QoS=3 rejected", function()
+		-- [MQTT-3.3.1-4] A PUBLISH Packet MUST NOT have both QoS bits set to 1
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				36 					-- packet type == 3 (PUBLISH), flags == 0x6 == 0110 (dup=false, qos=3, retain=false)
+				08 					-- variable length == 8 bytes
+					0004 74657374 	-- topic "test"
+					0001			-- packet id
+			]]
+		)))
+	end)
+
+	it("PUBLISH with DUP=1 and QoS=0 rejected", function()
+		-- [MQTT-3.3.1-2] DUP MUST be set to 0 for all QoS 0 messages
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex[[
+				38 					-- packet type == 3 (PUBLISH), flags == 0x8 == 1000 (dup=true, qos=0, retain=false)
+				06 					-- variable length == 6 bytes
+					0004 74657374	-- topic "test"
+			]]
+		)))
+	end)
+
 	it("PUBACK", function()
 		assert.are.same(
 			{

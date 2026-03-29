@@ -518,6 +518,8 @@ local function make_packet_publish(args)
 	if args.dup ~= nil then
 		assert(type(args.dup) == "boolean", "expecting .dup to be a boolean")
 	end
+	-- DOC: [MQTT-3.3.1-2] DUP MUST be set to 0 for all QoS 0 messages
+	assert(not args.dup or (args.qos and args.qos > 0), "DUP must be 0 when QoS is 0")
 
 	-- DOC: 3.3.1 PUBLISH Fixed Header
 	local flags = 0
@@ -951,6 +953,14 @@ local function parse_packet_publish(ptype, flags, input)
 	local dup = (band(flags, 0x8) ~= 0)
 	-- DOC: 3.3.1.2 QoS
 	local qos = band(rshift(flags, 1), 0x3)
+	-- DOC: [MQTT-3.3.1-4] A PUBLISH Packet MUST NOT have both QoS bits set to 1
+	if qos == 3 then
+		return false, packet_type[ptype]..": QoS 3 is not allowed"
+	end
+	-- DOC: [MQTT-3.3.1-2] DUP MUST be set to 0 for all QoS 0 messages
+	if dup and qos == 0 then
+		return false, packet_type[ptype]..": DUP must be 0 when QoS is 0"
+	end
 	-- DOC: 3.3.1.3 RETAIN
 	local retain = (band(flags, 0x1) ~= 0)
 	-- DOC: 3.3.2 PUBLISH Variable Header
