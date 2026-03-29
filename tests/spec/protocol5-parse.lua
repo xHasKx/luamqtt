@@ -799,6 +799,10 @@ describe("MQTT v5.0 protocol: parsing packets: PUBACK[4]", function()
 			packet
 		)
 	end)
+
+	it("PUBACK with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[41 02 0001]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: PUBREC[5]", function()
@@ -896,6 +900,10 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREC[5]", function()
 			packet
 		)
 	end)
+
+	it("PUBREC with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[51 02 0001]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: PUBREL[6]", function()
@@ -991,6 +999,11 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREL[6]", function()
 			packet
 		)
 	end)
+
+	it("PUBREL with invalid flags rejected", function()
+		-- flags must be exactly 2 (0010), test with flags=0
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[60 02 0001]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: PUBCOMP[7]", function()
@@ -1085,6 +1098,10 @@ describe("MQTT v5.0 protocol: parsing packets: PUBCOMP[7]", function()
 			},
 			packet
 		)
+	end)
+
+	it("PUBCOMP with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[71 02 0001]])))
 	end)
 end)
 
@@ -1234,6 +1251,11 @@ describe("MQTT v5.0 protocol: parsing packets: SUBSCRIBE[8]", function()
 		assert.are.same(false, packet)
 		assert.are.same('SUBSCRIBE: failed to parse packet properties: it is a Protocol Error to include the subscription_identifiers (11) property more than once', err)
 	end)
+
+	it("SUBSCRIBE with invalid flags rejected", function()
+		-- flags must be exactly 2 (0010), test with flags=0
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[80 0A 0001 00 0004 74657374 00]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
@@ -1328,6 +1350,10 @@ describe("MQTT v5.0 protocol: parsing packets: SUBACK[9]", function()
 			packet:reason_strings()
 		)
 	end)
+
+	it("SUBACK with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[91 04 0001 00 00]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: UNSUBSCRIBE[10]", function()
@@ -1414,6 +1440,11 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBSCRIBE[10]", function()
 			},
 			packet
 		)
+	end)
+
+	it("UNSUBSCRIBE with invalid flags rejected", function()
+		-- flags must be exactly 2 (0010), test with flags=0
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[A0 09 0001 00 0004 74657374]])))
 	end)
 end)
 
@@ -1509,6 +1540,9 @@ describe("MQTT v5.0 protocol: parsing packets: UNSUBACK[11]", function()
 			packet:reason_strings()
 		)
 	end)
+	it("UNSUBACK with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[B1 04 0001 00 00]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: PINGREQ[12]", function()
@@ -1545,6 +1579,10 @@ describe("MQTT v5.0 protocol: parsing packets: PINGREQ[12]", function()
 		assert.are.same("PINGREQ: extra data in remaining length left after packet parsing", err)
 		assert.are.same(false, packet)
 	end)
+
+	it("PINGREQ with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[C1 00]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: PINGRESP[13]", function()
@@ -1567,6 +1605,10 @@ describe("MQTT v5.0 protocol: parsing packets: PINGRESP[13]", function()
 			},
 			packet
 		)
+	end)
+
+	it("PINGRESP with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[D1 00]])))
 	end)
 end)
 
@@ -1703,6 +1745,10 @@ describe("MQTT v5.0 protocol: parsing packets: DISCONNECT[14]", function()
 		)
 		assert.are.same("Malformed Packet", packet:reason_string())
 	end)
+
+	it("DISCONNECT with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[E1 00]])))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: AUTH[15]", function()
@@ -1818,6 +1864,10 @@ describe("MQTT v5.0 protocol: parsing packets: AUTH[15]", function()
 			},
 			packet
 		)
+	end)
+
+	it("AUTH with invalid flags rejected", function()
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(extract_hex[[F1 00]])))
 	end)
 end)
 
