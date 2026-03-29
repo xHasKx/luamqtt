@@ -48,6 +48,7 @@ local make_var_length = protocol.make_var_length
 local parse_var_length = protocol.parse_var_length
 local make_uint8_0_or_1 = protocol.make_uint8_0_or_1
 local make_uint16_nonzero = protocol.make_uint16_nonzero
+local make_uint32_nonzero = protocol.make_uint32_nonzero
 local make_var_length_nonzero = protocol.make_var_length_nonzero
 local parse_string = protocol.parse_string
 local parse_uint8 = protocol.parse_uint8
@@ -55,6 +56,7 @@ local parse_uint8_0_or_1 = protocol.parse_uint8_0_or_1
 local parse_uint16 = protocol.parse_uint16
 local parse_uint16_nonzero = protocol.parse_uint16_nonzero
 local parse_uint32 = protocol.parse_uint32
+local parse_uint32_nonzero = protocol.parse_uint32_nonzero
 local parse_var_length_nonzero = protocol.parse_var_length_nonzero
 local make_header = protocol.make_header
 local check_qos = protocol.check_qos
@@ -174,8 +176,8 @@ local property_pairs = {
 		make = make_string,
 		parse = parse_string, },
 	{ 0x21, "receive_maximum",
-		make = make_uint16,
-		parse = parse_uint16, },
+		make = make_uint16_nonzero,
+		parse = parse_uint16_nonzero, },
 	{ 0x22, "topic_alias_maximum",
 		make = make_uint16,
 		parse = parse_uint16, },
@@ -192,8 +194,8 @@ local property_pairs = {
 		make = function(value_) error("not implemented") end,
 		parse = function(read_func_) error("not implemented") end, },
 	{ 0x27, "maximum_packet_size",
-		make = make_uint32,
-		parse = parse_uint32, },
+		make = make_uint32_nonzero,
+		parse = parse_uint32_nonzero, },
 	{ 0x28, "wildcard_subscription_available",
 		make = make_uint8_0_or_1,
 		parse = parse_uint8_0_or_1, },

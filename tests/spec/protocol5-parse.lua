@@ -484,6 +484,34 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 			packet
 		)
 	end)
+
+	it("CONNACK with receive_maximum=0 rejected", function()
+		-- [MQTT-3.2.2-10] receive_maximum must not be 0
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				20 					-- packet type == 2 (CONNACK), flags == 0
+				06 					-- variable length == 6 bytes
+					00 				-- connect acknowledge flags
+					00 				-- connect reason code == 0x00 (Success)
+					03				-- properties length == 3 bytes
+					21 0000			-- property 0x21 == receive_maximum == 0
+			]]
+		)))
+	end)
+
+	it("CONNACK with maximum_packet_size=0 rejected", function()
+		-- [MQTT-3.2.2-15] maximum_packet_size must not be 0
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				20 					-- packet type == 2 (CONNACK), flags == 0
+				08 					-- variable length == 8 bytes
+					00 				-- connect acknowledge flags
+					00 				-- connect reason code == 0x00 (Success)
+					05				-- properties length == 5 bytes
+					27 00000000		-- property 0x27 == maximum_packet_size == 0
+			]]
+		)))
+	end)
 end)
 
 describe("MQTT v5.0 protocol: parsing packets: PUBLISH[3]", function()

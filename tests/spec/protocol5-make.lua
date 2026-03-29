@@ -307,6 +307,26 @@ describe("MQTT v5.0 protocol: making packets: CONNACK[2]", function()
 			}))
 		)
 	end)
+
+	it("CONNACK with receive_maximum=0 rejected", function()
+		assert.has_error(function()
+			protocol5.make_packet({
+				type = protocol.packet_type.CONNACK,
+				sp = false, rc = 0,
+				properties = { receive_maximum = 0 },
+			})
+		end)
+	end)
+
+	it("CONNACK with maximum_packet_size=0 rejected", function()
+		assert.has_error(function()
+			protocol5.make_packet({
+				type = protocol.packet_type.CONNACK,
+				sp = false, rc = 0,
+				properties = { maximum_packet_size = 0 },
+			})
+		end)
+	end)
 end)
 
 describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()

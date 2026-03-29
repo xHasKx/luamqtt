@@ -90,6 +90,16 @@ function protocol.make_uint32(val)
 	return str_char(rshift(val, 24), band(rshift(val, 16), 0xFF), band(rshift(val, 8), 0xFF), band(val, 0xFF))
 end
 
+--- Make bytes for 4-byte value with nonzero check
+-- @tparam number value - integer value to convert to bytes
+-- @treturn string bytes of the value
+function protocol.make_uint32_nonzero(value)
+	if value == 0 then
+		error("expecting nonzero value")
+	end
+	return protocol.make_uint32(value)
+end
+
 --- Create bytes of the UTF-8 string value according to the MQTT spec.
 -- Basically it's the same string with its length prefixed as uint16 value.
 -- For MQTT v3.1.1:	<b>1.5.3 UTF-8 encoded strings</b>,
@@ -178,7 +188,7 @@ local parse_string = protocol.parse_string
 
 --- Parse uint8 value using given read_func
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn number parser value
+-- @treturn number parsed value
 -- @return OR false and error message on failure
 function protocol.parse_uint8(read_func)
 	assert(type(read_func) == "function", "expecting read_func to be a function")
@@ -192,7 +202,7 @@ local parse_uint8 = protocol.parse_uint8
 
 --- Parse uint8 value using given read_func with only 0 or 1 value allowed
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn number parser value
+-- @treturn number parsed value
 -- @return OR false and error message on failure
 function protocol.parse_uint8_0_or_1(read_func)
 	local value, err = parse_uint8(read_func)
@@ -207,7 +217,7 @@ end
 
 --- Parse uint16 value using given read_func
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn number parser value
+-- @treturn number parsed value
 -- @return OR false and error message on failure
 function protocol.parse_uint16(read_func)
 	assert(type(read_func) == "function", "expecting read_func to be a function")
@@ -222,7 +232,7 @@ local parse_uint16 = protocol.parse_uint16
 
 --- Parse uint16 non-zero value using given read_func
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn number parser value
+-- @treturn number parsed value
 -- @return OR false and error message on failure
 function protocol.parse_uint16_nonzero(read_func)
 	local value, err = parse_uint16(read_func)
@@ -237,7 +247,7 @@ end
 
 --- Parse uint32 value using given read_func
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn number parser value
+-- @treturn number parsed value
 -- @return OR false and error message on failure
 function protocol.parse_uint32(read_func)
 	assert(type(read_func) == "function", "expecting read_func to be a function")
@@ -253,6 +263,21 @@ function protocol.parse_uint32(read_func)
 	end
 end
 
+--- Parse uint32 non-zero value using given read_func
+-- @tparam function read_func - function to read some bytes from the network layer
+-- @treturn number parsed value
+-- @return OR false and error message on failure
+function protocol.parse_uint32_nonzero(read_func)
+	local value, err = protocol.parse_uint32(read_func)
+	if not value then
+		return false, err
+	end
+	if value == 0 then
+		return false, "expecting non-zero value"
+	end
+	return value
+end
+
 -- Max multiplier of the variable length integer value
 local max_mult = 128 * 128 * 128
 
@@ -260,7 +285,7 @@ local max_mult = 128 * 128 * 128
 -- For MQTT v3.1.1:	<b>2.2.3 Remaining Length</b>,
 -- For MQTT v5.0:	<b>2.1.4 Remaining Length</b>.
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn number parser value
+-- @treturn number parsed value
 -- @return OR false and error message on failure
 function protocol.parse_var_length(read_func)
 	-- DOC[1]: 2.2.3 Remaining Length
@@ -288,7 +313,7 @@ local parse_var_length = protocol.parse_var_length
 -- For MQTT v3.1.1:	<b>2.2.3 Remaining Length</b>,
 -- For MQTT v5.0:	<b>2.1.4 Remaining Length</b>.
 -- @tparam function read_func - function to read some bytes from the network layer
--- @treturn number parser value
+-- @treturn number parsed value
 -- @return OR false and error message on failure
 function protocol.parse_var_length_nonzero(read_func)
 	local value, err = parse_var_length(read_func)
