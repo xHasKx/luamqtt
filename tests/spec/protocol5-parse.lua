@@ -1650,6 +1650,24 @@ describe("MQTT v5.0 protocol: parsing packets: AUTH[15]", function()
 		)
 	end)
 
+	it("with non-zero reason code, without Property Length", function()
+		local packet, err = protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				F0 					-- packet type == 15 (AUTH), flags == 0
+				01 					-- variable length == 1 byte
+
+					18					-- reason code == 0x18 (Continue authentication), DOC: 3.15.2.1 Authenticate Reason Code
+			]]
+		))
+		assert.is_nil(err)
+		assert.are.same(
+			{
+				type=pt.AUTH, rc=0x18, properties={}, user_properties={},
+			},
+			packet
+		)
+	end)
+
 	it("with zero reason code, without properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[

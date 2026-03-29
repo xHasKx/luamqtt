@@ -1443,18 +1443,21 @@ local function parse_packet_auth(ptype, flags, input)
 	local read_data = input.read_func
 	-- DOC: 3.15.2.1 Authenticate Reason Code
 	local packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, packet_mt)
-	if input.available > 1 then
+	if input.available > 0 then
 		-- DOC: 3.15.2 AUTH Variable Header
 		local rc, err = parse_uint8(read_data)
 		if not rc then
 			return false, packet_type[ptype]..": failed to parse Authenticate Reason Code: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.15.2.2 AUTH Properties
-		local ok
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		-- DOC: 3.15.2.2.1 If the Remaining Length is less than 2, there is no Property Length and the value of 0 is used
+		if input.available > 0 then
+			-- DOC: 3.15.2.2 AUTH Properties
+			local ok
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet
