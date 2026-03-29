@@ -110,6 +110,13 @@ function protocol.make_string(str)
 	return make_uint16(str:len())..str
 end
 
+--- Create bytes of the Binary Data value according to the MQTT spec.
+-- Wire format is the same as UTF-8 string (uint16 length prefix + bytes).
+-- For MQTT v5.0:	<b>1.5.6 Binary Data</b>.
+-- @tparam string data - binary data value to convert to bytes
+-- @treturn string bytes of the value
+protocol.make_binary_data = protocol.make_string
+
 --- Maximum integer value (268435455) that can be encoded using variable-length encoding
 protocol.max_variable_length = 268435455
 local max_variable_length = protocol.max_variable_length
@@ -185,6 +192,14 @@ function protocol.parse_string(read_func)
 	return read_func(len)
 end
 local parse_string = protocol.parse_string
+
+--- Parse Binary Data value using given read_func.
+-- Wire format is the same as UTF-8 string (uint16 length prefix + bytes).
+-- For MQTT v5.0:	<b>1.5.6 Binary Data</b>.
+-- @tparam function read_func - function to read some bytes from the network layer
+-- @treturn string parsed binary data on success
+-- @return OR false and error message on failure
+protocol.parse_binary_data = protocol.parse_string
 
 --- Parse uint8 value using given read_func
 -- @tparam function read_func - function to read some bytes from the network layer

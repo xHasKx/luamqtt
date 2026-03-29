@@ -50,7 +50,9 @@ local make_uint8_0_or_1 = protocol.make_uint8_0_or_1
 local make_uint16_nonzero = protocol.make_uint16_nonzero
 local make_uint32_nonzero = protocol.make_uint32_nonzero
 local make_var_length_nonzero = protocol.make_var_length_nonzero
+local make_binary_data = protocol.make_binary_data
 local parse_string = protocol.parse_string
+local parse_binary_data = protocol.parse_binary_data
 local parse_uint8 = protocol.parse_uint8
 local parse_uint8_0_or_1 = protocol.parse_uint8_0_or_1
 local parse_uint16 = protocol.parse_uint16
@@ -136,8 +138,8 @@ local property_pairs = {
 		make = make_string,
 		parse = parse_string, },
 	{ 0x09, "correlation_data",
-		make = make_string,
-		parse = parse_string, },
+		make = make_binary_data,
+		parse = parse_binary_data, },
 	{ 0x0B, "subscription_identifiers",
 		make = function(value) return str_char(make_var_length_nonzero(value)) end,
 		parse = parse_var_length_nonzero,
@@ -155,8 +157,8 @@ local property_pairs = {
 		make = make_string,
 		parse = parse_string, },
 	{ 0x16, "authentication_data",
-		make = make_string,
-		parse = parse_string, },
+		make = make_binary_data,
+		parse = parse_binary_data, },
 	{ 0x17, "request_problem_information",
 		make = make_uint8_0_or_1,
 		parse = parse_uint8_0_or_1, },
