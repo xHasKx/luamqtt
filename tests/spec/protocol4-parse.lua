@@ -310,6 +310,20 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			packet
 		)
 		assert.are.same("Unknown: 32", packet:reason_string())
+
+		-- CONNACK: reason_string() for success code
+		packet = protocol4.parse_packet(make_read_func_hex(extract_hex("20 02 0000")))
+		assert.are.same("Connection Accepted", packet:reason_string())
+
+		-- CONNACK: reserved bits 7-1 in Connect Acknowledge Flags set
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex("20 02 0200") -- byte1=0x02: reserved bit 1 is set
+		)))
+
+		-- CONNACK: sp=true with non-zero rc (invalid per [MQTT-3.2.2-4])
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(
+			extract_hex("20 02 0102") -- sp=true, rc=2
+		)))
 	end)
 
 	it("PUBLISH", function()

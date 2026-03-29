@@ -71,7 +71,7 @@ describe("MQTT v3.1.1 protocol: making and then parsing back all packets", funct
 			title = "CONNACK",
 			packet = {
 				type = protocol.packet_type.CONNACK,
-				sp = true, rc = 2,
+				sp = false, rc = 2,
 			},
 		},
 		{

@@ -264,18 +264,13 @@ describe("MQTT v3.1.1 protocol: making packets", function()
 		)
 	end)
 
-	it("CONNACK sp=true, rc=2", function()
-		assert.are.equal(
-			extract_hex[[
-				20 						-- packet type == 2 (CONNACK), flags == 0
-				02						-- length == 0x02 == 2 bytes
-				0102					-- variable header, session present flag == true, rc == 2
-			]],
-			tools.hex(tostring(protocol4.make_packet{
+	it("CONNACK sp=true, rc=2 failure: Session Present must be 0 when rc is non-zero", function()
+		assert.has.errors(function()
+			protocol4.make_packet{
 				type = protocol.packet_type.CONNACK,
 				sp = true, rc = 2,
-			}))
-		)
+			}
+		end)
 	end)
 
 	it("PUBLISH with full params", function()

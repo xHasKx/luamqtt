@@ -138,7 +138,9 @@ end
 local function make_packet_connack(args)
 	-- check args
 	assert(type(args.sp) == "boolean", "expecting .sp to be a boolean")
-	assert(type(args.rc) == "number", "expecting .rc to be a boolean")
+	assert(type(args.rc) == "number", "expecting .rc to be a number")
+	-- DOC: [MQTT-3.2.2-4] If a server sends a CONNACK packet containing a non zero return code it MUST set Session Present to 0
+	assert(args.rc == 0 or not args.sp, "Session Present must be 0 when return code is non-zero")
 	-- DOC: 3.2.2.1 Connect Acknowledge Flags
 	-- DOC: 3.2.2.2 Session Present
 	local byte1
@@ -397,7 +399,15 @@ local function parse_packet_connack(ptype, flags, input)
 		return false, packet_type[ptype]..": expecting data of length 2 bytes"
 	end
 	local byte1, byte2 = parse_uint8(input.read_func), parse_uint8(input.read_func)
+	-- DOC: 3.2.2.1 Connect Acknowledge Flags - bits 7-1 are reserved and MUST be set to 0
+	if band(byte1, 0xFE) ~= 0 then
+		return false, packet_type[ptype]..": reserved bits 7-1 in Connect Acknowledge Flags are set"
+	end
 	local sp = (band(byte1, 0x1) ~= 0)
+	-- DOC: [MQTT-3.2.2-4] If the return code is non-zero, Session Present MUST be 0
+	if byte2 ~= 0 and sp then
+		return false, packet_type[ptype]..": Session Present must be 0 when return code is non-zero"
+	end
 	return setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
 end
 
