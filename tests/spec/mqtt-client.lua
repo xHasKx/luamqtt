@@ -654,7 +654,7 @@ end)
 describe("MQTT v5.0 subscription identifier", function()
 	local mqtt = require("mqtt")
 
-	it("broker includes subscription identifier in delivered messages", function()
+	it("broker includes multiple subscription identifiers from overlapping subscriptions", function()
 		-- NOTE: more about flespi tokens:
 		-- https://flespi.com/kb/tokens-access-keys-to-flespi-platform
 		local flespi_token = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"
@@ -680,15 +680,24 @@ describe("MQTT v5.0 subscription identifier", function()
 				local sia = connack.properties and connack.properties.subscription_identifiers_available
 				assert(sia == nil or sia == 1, "broker does not support subscription identifiers")
 
+				-- first subscription: exact topic with id=42
 				assert(client:subscribe{
 					topic = topic,
 					qos = 1,
 					properties = { subscription_identifiers = {42} },
 					callback = function()
-						assert(client:publish{
-							topic = topic,
-							payload = "test",
+						-- second subscription: wildcard covering the same topic with id=7
+						assert(client:subscribe{
+							topic = prefix .. "/#",
 							qos = 1,
+							properties = { subscription_identifiers = {7} },
+							callback = function()
+								assert(client:publish{
+									topic = topic,
+									payload = "test",
+									qos = 1,
+								})
+							end,
 						})
 					end,
 				})
@@ -714,7 +723,9 @@ describe("MQTT v5.0 subscription identifier", function()
 		mqtt.run_ioloop(client)
 
 		assert.are.same({}, errors)
-		assert.are.same({42}, received_sub_ids)
+		-- broker should include both subscription identifiers (order may vary)
+		table.sort(received_sub_ids)
+		assert.are.same({7, 42}, received_sub_ids)
 		assert.are.same("connection closed by client", close_reason)
 	end)
 end)

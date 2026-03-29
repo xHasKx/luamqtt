@@ -447,15 +447,15 @@ describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
 		assert.are.equal(
 			extract_hex[[
 				3D						-- packet type == 3 (CONNECT), flags == 0xD: dup=1, qos=2, retain=1
-				9701					-- length == 0x9701 as variable length field == 151 bytes
+				9901					-- length == 0x9901 as variable length field == 153 bytes
 
 											-- next is 22 bytes for variable header and payload:
 
 					0008 746573742F707562	-- topic == "test/pub"
 					00DE					-- packet identifier == 0x00DE == 222
-					8001					-- properties length == 0x8001 as variable length field == 128 bytes
+					8201					-- properties length == 0x8201 as variable length field == 130 bytes
 
-											-- next is 128 bytes of properties:
+											-- next is 130 bytes of properties:
 
 					01 01					-- property 0x01 == 1 -- DOC: 3.3.2.3.2 Payload Format Indicator
 					02 00015180				-- property 0x02 == 86400 -- DOC: 3.3.2.3.3 Message Expiry Interval
@@ -463,6 +463,7 @@ describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
 					08 0004 68657265		-- property 0x08 == "here" -- DOC: 3.3.2.3.5 Response Topic
 					09 0004 736F6D65		-- property 0x09 == "some" -- DOC: 3.3.2.3.6 Correlation Data
 					0B 05					-- property 0x0B == 5 -- DOC: 3.3.2.3.8 Subscription Identifier
+					0B 2A					-- property 0x0B == 42 -- DOC: 3.3.2.3.8 Subscription Identifier
 					23 1234					-- property 0x23 == 0x1234 -- DOC: 3.3.2.3.4 Topic Alias
 					26 0005 6172726179 0006 6974656D2031	-- property 0x26 (user) == ("array", "item 1") -- DOC: 3.3.2.3.7 User Property
 					26 0005 6172726179 0006 6974656D2033	-- property 0x26 (user) == ("array", "item 3") -- DOC: 3.3.2.3.7 User Property
@@ -486,7 +487,7 @@ describe("MQTT v5.0 protocol: making packets: PUBLISH[3]", function()
 					topic_alias = 0x1234,
 					response_topic = "here",
 					correlation_data = "some",
-					subscription_identifiers = {5}, -- NOTE: that property may be included several times but only from the broker side
+					subscription_identifiers = {5, 42}, -- NOTE: that property may be included several times from the broker side
 					content_type = "you/tellme",
 				},
 				user_properties = {
@@ -935,6 +936,19 @@ describe("MQTT v5.0 protocol: making packets: SUBSCRIBE[8]", function()
 				},
 			}))
 		)
+	end)
+
+	it("SUBSCRIBE with multiple subscription_identifiers rejected", function()
+		assert.has_error(function()
+			protocol5.make_packet({
+				type = protocol.packet_type.SUBSCRIBE,
+				packet_id = 1,
+				subscriptions = {
+					{ topic = "test", qos = 0 },
+				},
+				properties = { subscription_identifiers = {42, 7} },
+			})
+		end)
 	end)
 end)
 

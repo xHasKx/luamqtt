@@ -144,7 +144,7 @@ describe("MQTT v3.1.1 protocol: making and then parsing back all packets", funct
 					topic_alias = 0x1234,
 					response_topic = "here",
 					correlation_data = "some",
-					subscription_identifiers = {5}, -- NOTE: that property may be included several times but only from the broker side
+					subscription_identifiers = {5, 42, 2048}, -- NOTE: that property may be included several times from the broker side
 					content_type = "you/tellme",
 				},
 				user_properties = {

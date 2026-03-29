@@ -345,26 +345,43 @@ local function make_properties(ptype, args)
 		-- sort props in the identifier ascending order
 		tbl_sort(order, function(a, b) return a[1] < b[1] end)
 		for _, item in ipairs(order) do
-			local prop_id, name,  value = unpack(item)
+			local prop_id, name, value = unpack(item)
 			if property_multiple[prop_id] then
 				assert(type(value) == "table", "expecting list-table for property with multiple value")
-				assert(#value == 1, "only one value for multiple-property supported")
-				value = value[1]
-			end
-			-- make property data
-			local ok, val = pcall(property_make[prop_id], value)
-			if not ok then
-				error("invalid property value: "..name.." = "..tostring(value)..": "..tostring(val))
-			end
-			local prop = combine(
-				str_char(make_var_length(prop_id)),
-				val
-			)
-			-- and append it to props
-			if type(props) == "string" then
-				props = combine(prop)
+				if allowed[prop_id] ~= true then
+					assert(#value == 1, "only one value allowed for "..name.." in this packet type")
+				end
+				for _, v in ipairs(value) do
+					local ok, val = pcall(property_make[prop_id], v)
+					if not ok then
+						error("invalid property value: "..name.." = "..tostring(v)..": "..tostring(val))
+					end
+					local prop = combine(
+						str_char(make_var_length(prop_id)),
+						val
+					)
+					if type(props) == "string" then
+						props = combine(prop)
+					else
+						props:append(prop)
+					end
+				end
 			else
-				props:append(prop)
+				-- make property data
+				local ok, val = pcall(property_make[prop_id], value)
+				if not ok then
+					error("invalid property value: "..name.." = "..tostring(value)..": "..tostring(val))
+				end
+				local prop = combine(
+					str_char(make_var_length(prop_id)),
+					val
+				)
+				-- and append it to props
+				if type(props) == "string" then
+					props = combine(prop)
+				else
+					props:append(prop)
+				end
 			end
 		end
 	end
