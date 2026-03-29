@@ -1139,7 +1139,7 @@ describe("MQTT v5.0 protocol: making packets: AUTH[15]", function()
 	it("AUTH with minimum params", function()
 		assert.are.equal(
 			extract_hex[[
-				F0						-- packet type == 0xE == 14 (AUTH), flags == 0
+				F0						-- packet type == 0xF == 15 (AUTH), flags == 0
 				00						-- length == 0x00 == 0 bytes
 			]],
 			tools.hex(tostring(protocol5.make_packet{
@@ -1152,7 +1152,7 @@ describe("MQTT v5.0 protocol: making packets: AUTH[15]", function()
 	it("AUTH with full params without properties", function()
 		assert.are.equal(
 			extract_hex[[
-				F0						-- packet type == 0xE == 14 (AUTH), flags == 0
+				F0						-- packet type == 0xF == 15 (AUTH), flags == 0
 				02						-- length == 0x02 == 2 bytes
 
 											-- next is 2 bytes of variable header:
@@ -1170,7 +1170,7 @@ describe("MQTT v5.0 protocol: making packets: AUTH[15]", function()
 	it("AUTH with full params and full properties", function()
 		assert.are.equal(
 			extract_hex[[
-				F0						-- packet type == 0xE == 14 (AUTH), flags == 0
+				F0						-- packet type == 0xF == 15 (AUTH), flags == 0
 				3E						-- length == 0x3E == 62 bytes
 
 											-- next is 62 bytes of variable header:

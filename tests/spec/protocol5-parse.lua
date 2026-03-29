@@ -808,7 +808,7 @@ describe("MQTT v5.0 protocol: parsing packets: PUBREL[6]", function()
 		)
 	end)
 
-	it("with non-zero reason code, with properties", function()
+	it("with zero reason code, with properties", function()
 		local packet, err = protocol5.parse_packet(make_read_func_hex(
 			extract_hex[[
 				62 					-- packet type == 6 (PUBREL), flags == 0x2

@@ -380,7 +380,7 @@ function protocol4.make_packet(args)
 		return combine("\208\000") -- 208 == 0xD0, type == 13, flags == 0
 	elseif ptype == packet_type.DISCONNECT then		-- 14
 		-- DOC: 3.14 DISCONNECT – Disconnect notification
-		return combine("\224\000") -- 224 == 0xD0, type == 14, flags == 0
+		return combine("\224\000") -- 224 == 0xE0, type == 14, flags == 0
 	else
 		error("unexpected protocol4 packet type to make: "..ptype)
 	end
@@ -450,7 +450,7 @@ end
 
 -- Parse PUBREC packet, DOC: 3.5 PUBREC – Publish received (QoS 2 publish received, part 1)
 local function parse_packet_pubrec(ptype, flags, input)
-	-- DOC: 3.4.1 Fixed header
+	-- DOC: 3.5.1 Fixed header
 	if flags ~= 0 then -- Reserved
 		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end

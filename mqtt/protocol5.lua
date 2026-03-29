@@ -807,7 +807,7 @@ function protocol5.make_packet(args)
 	elseif ptype == packet_type.PINGREQ then		-- 12
 		-- DOC: 3.12 PINGREQ – PING request
 		return combine("\192\000") -- 192 == 0xC0, type == 12, flags == 0
-	elseif ptype == packet_type.PINGRESP then		-- 12
+	elseif ptype == packet_type.PINGRESP then		-- 13
 		-- DOC: 3.13 PINGRESP – PING response
 		return combine("\208\000") -- 208 == 0xD0, type == 13, flags == 0
 	elseif ptype == packet_type.DISCONNECT then		-- 14
@@ -856,9 +856,7 @@ local function parse_properties(ptype, read_data, input, packet)
 			return false, "failed to parse property length: "..err
 		end
 		if not allowed[prop_id] then
-			if not allowed[prop_id] then
-				return false, "property "..tostring(properties[prop_id]).." ("..prop_id..") is not allowed for that packet type"
-			end
+			return false, "property "..tostring(properties[prop_id]).." ("..prop_id..") is not allowed for that packet type"
 		end
 		if prop_id == uprop_id then
 			-- parse name=value string pair
@@ -1333,7 +1331,7 @@ local function parse_packet_unsuback(ptype, flags, input)
 		rcs[#rcs + 1] = rc
 	end
 	if not next(rcs) then
-		return false, packet_type[ptype]..": expecting at least one reason code in"
+		return false, packet_type[ptype]..": expecting at least one reason code"
 	end
 	packet.rc = rcs
 	return packet
