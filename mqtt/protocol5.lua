@@ -485,6 +485,8 @@ local function make_packet_connack(args)
 	-- check args
 	assert(type(args.sp) == "boolean", "expecting .sp to be a boolean with Session Present flag")
 	assert(type(args.rc) == "number", "expecting .rc to be a number with Connect Reason Code")
+	-- DOC: [MQTT-3.2.2-6] If a Server sends a CONNACK packet containing a non-zero Reason Code it MUST set Session Present to 0
+	assert(args.rc == 0 or not args.sp, "Session Present must be 0 when Reason Code is non-zero")
 	-- DOC: 3.2.2 CONNACK Variable Header
 	local props = make_properties(packet_type.CONNACK, args)
 	local variable_header = combine(
@@ -929,6 +931,10 @@ local function parse_packet_connack(ptype, flags, input)
 	-- DOC: 3.2.2.2 Connect Reason Code
 	local byte1, byte2 = parse_uint8(read_data), parse_uint8(read_data)
 	local sp = (band(byte1, 0x1) ~= 0)
+	-- DOC: [MQTT-3.2.2-6] If a Server sends a CONNACK packet containing a non-zero Reason Code it MUST set Session Present to 0
+	if byte2 ~= 0 and sp then
+		return false, packet_type[ptype]..": Session Present must be 0 when Reason Code is non-zero"
+	end
 	local packet = setmetatable({type=ptype, sp=sp, rc=byte2}, connack_packet_mt)
 	-- DOC: 3.2.2.3 CONNACK Properties
 	local ok, err = parse_properties(ptype, read_data, input, packet)

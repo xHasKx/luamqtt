@@ -408,7 +408,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 			extract_hex[[
 				20 					-- packet type == 2 (CONNACK), flags == 0
 				03 					-- variable length == 3 bytes
-					01 				-- 0-th bit is sp (session present) -- DOC: 3.2.2.1 Connect Acknowledge Flags
+					00 				-- sp=false -- DOC: 3.2.2.1 Connect Acknowledge Flags
 					8A 				-- connect reason code
 					00				-- properties length
 			]]
@@ -416,7 +416,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 		assert.is_nil(err)
 		assert.are.same(
 			{
-				type=pt.CONNACK, sp=true, rc=0x8A, properties={}, user_properties={},
+				type=pt.CONNACK, sp=false, rc=0x8A, properties={}, user_properties={},
 			},
 			packet
 		)
@@ -428,7 +428,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 				20 					-- packet type == 2 (CONNACK), flags == 0
 				75 					-- variable length == 0x66 == 102 bytes
 
-					01 				-- 0-th bit is sp (session present) -- DOC: 3.2.2.1 Connect Acknowledge Flags
+					00 				-- sp=false -- DOC: 3.2.2.1 Connect Acknowledge Flags
 					82 				-- connect reason code
 
 					72				-- properties length == 0x72 == 114 bytes
@@ -456,7 +456,7 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 		assert.is_nil(err)
 		assert.are.same(
 			{
-				type=pt.CONNACK, sp=true, rc=0x82,
+				type=pt.CONNACK, sp=false, rc=0x82,
 				properties={
 					session_expiry_interval = 3600,
 					receive_maximum = 0x1234,
@@ -483,6 +483,19 @@ describe("MQTT v5.0 protocol: parsing packets: CONNACK[2]", function()
 			},
 			packet
 		)
+	end)
+
+	it("CONNACK with sp=true and non-zero rc rejected", function()
+		-- [MQTT-3.2.2-6] Session Present must be 0 when Reason Code is non-zero
+		assert.is_false(protocol5.parse_packet(make_read_func_hex(
+			extract_hex[[
+				20 					-- packet type == 2 (CONNACK), flags == 0
+				03 					-- variable length == 3 bytes
+					01 				-- Connect Acknowledge Flags, sp=true
+					82 				-- connect reason code == 0x82 (non-zero)
+					00				-- properties length == 0 bytes
+			]]
+		)))
 	end)
 
 	it("CONNACK with receive_maximum=0 rejected", function()

@@ -283,7 +283,7 @@ describe("MQTT v5.0 protocol: making packets: CONNACK[2]", function()
 				20					-- packet type == 2 (CONNACK), flags == 0
 				75					-- variable length == 117 bytes
 
-					01				-- Connect Acknowledge Flags, sp=true
+					00				-- Connect Acknowledge Flags, sp=false
 					82				-- Connect Reason Code == 0x82
 					72				-- properties length
 
@@ -308,7 +308,7 @@ describe("MQTT v5.0 protocol: making packets: CONNACK[2]", function()
 			]],
 			tools.hex(tostring(protocol5.make_packet{
 				type = protocol.packet_type.CONNACK,
-				sp = true, rc = 0x82,
+				sp = false, rc = 0x82,
 				properties={
 					session_expiry_interval = 3600,
 					receive_maximum = 0x1234,
@@ -334,6 +334,16 @@ describe("MQTT v5.0 protocol: making packets: CONNACK[2]", function()
 				},
 			}))
 		)
+	end)
+
+	it("CONNACK with sp=true and non-zero rc rejected", function()
+		-- [MQTT-3.2.2-6] Session Present must be 0 when Reason Code is non-zero
+		assert.has_error(function()
+			protocol5.make_packet({
+				type = protocol.packet_type.CONNACK,
+				sp = true, rc = 0x82,
+			})
+		end)
 	end)
 
 	it("CONNACK with receive_maximum=0 rejected", function()

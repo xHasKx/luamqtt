@@ -102,7 +102,7 @@ describe("MQTT v3.1.1 protocol: making and then parsing back all packets", funct
 			title = "CONNACK",
 			packet = {
 				type = protocol.packet_type.CONNACK,
-				sp = true, rc = 0x82,
+				sp = false, rc = 0x82,
 				properties={
 					session_expiry_interval = 3600,
 					receive_maximum = 0x1234,
