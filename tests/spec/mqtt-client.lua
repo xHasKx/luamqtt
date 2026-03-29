@@ -651,4 +651,72 @@ describe("MQTT v5.0 topic alias", function()
 	end)
 end)
 
+describe("MQTT v5.0 subscription identifier", function()
+	local mqtt = require("mqtt")
+
+	it("broker includes subscription identifier in delivered messages", function()
+		-- NOTE: more about flespi tokens:
+		-- https://flespi.com/kb/tokens-access-keys-to-flespi-platform
+		local flespi_token = "stPwSVV73Eqw5LSv0iMXbc4EguS7JyuZR9lxU5uLxI5tiNM8ToTVqNpu85pFtJv9"
+
+		local prefix = "luamqtt/" .. tostring(math.floor(math.random()*1e13))
+		local topic = prefix .. "/sub_id_test"
+
+		local client = mqtt.client{
+			uri = "mqtt.flespi.io",
+			clean = true,
+			username = flespi_token,
+			version = mqtt.v50,
+		}
+
+		local errors = {}
+		local received_sub_ids = {}
+		local close_reason
+
+		client:on{
+			connect = function(connack)
+				assert(connack.rc == 0, "connected with non-zero rc")
+				-- check broker supports subscription identifiers
+				local sia = connack.properties and connack.properties.subscription_identifiers_available
+				assert(sia == nil or sia == 1, "broker does not support subscription identifiers")
+
+				assert(client:subscribe{
+					topic = topic,
+					qos = 1,
+					properties = { subscription_identifiers = {42} },
+					callback = function()
+						assert(client:publish{
+							topic = topic,
+							payload = "test",
+							qos = 1,
+						})
+					end,
+				})
+			end,
+
+			message = function(msg)
+				client:acknowledge(msg)
+				if msg.properties and msg.properties.subscription_identifiers then
+					received_sub_ids = msg.properties.subscription_identifiers
+				end
+				assert(client:disconnect())
+			end,
+
+			error = function(err)
+				errors[#errors + 1] = err
+			end,
+
+			close = function(conn)
+				close_reason = conn.close_reason
+			end,
+		}
+
+		mqtt.run_ioloop(client)
+
+		assert.are.same({}, errors)
+		assert.are.same({42}, received_sub_ids)
+		assert.are.same("connection closed by client", close_reason)
+	end)
+end)
+
 -- vim: ts=4 sts=4 sw=4 noet ft=lua
