@@ -1725,6 +1725,7 @@ describe("MQTT v5.0 protocol: parsing packets: AUTH[15]", function()
 			},
 			packet
 		)
+		assert.are.same("Success", packet:reason_string())
 	end)
 
 	it("with non-zero reason code, without Property Length", function()
@@ -1743,6 +1744,7 @@ describe("MQTT v5.0 protocol: parsing packets: AUTH[15]", function()
 			},
 			packet
 		)
+		assert.are.same("Continue authentication", packet:reason_string())
 	end)
 
 	it("with zero reason code, without properties", function()

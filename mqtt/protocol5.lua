@@ -1431,6 +1431,29 @@ local disconnect_packet_mt = {
 disconnect_packet_mt.__index = disconnect_packet_mt
 protocol5.disconnect_packet_mt = disconnect_packet_mt
 
+-- AUTH reason codes
+-- DOC: Table 3‑11 – Authenticate Reason Code values
+local auth_rc = {
+	[0x00] = "Success",
+	[0x18] = "Continue authentication",
+	[0x19] = "Re-authenticate",
+}
+protocol5.auth_rc = auth_rc
+
+--- Parsed AUTH packet metatable
+local auth_packet_mt = {
+	__tostring = protocol.packet_tostring, -- packet-to-human-readable-string conversion metamethod using protocol.packet_tostring()
+	reason_string = function(self) -- Returns reason string for the AUTH packet according to its rc field
+		local reason_string = auth_rc[self.rc]
+		if not reason_string then
+			reason_string = "Unknown: "..self.rc
+		end
+		return reason_string
+	end,
+}
+auth_packet_mt.__index = auth_packet_mt
+protocol5.auth_packet_mt = auth_packet_mt
+
 -- Parse DISCONNECT packet, DOC: 3.14 DISCONNECT – Disconnect notification
 local function parse_packet_disconnect(ptype, flags, input)
 	-- DOC: 3.14.1 DISCONNECT Fixed Header
@@ -1468,7 +1491,7 @@ local function parse_packet_auth(ptype, flags, input)
 	end
 	local read_data = input.read_func
 	-- DOC: 3.15.2.1 Authenticate Reason Code
-	local packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, packet_mt)
+	local packet = setmetatable({type=ptype, rc=0, properties={}, user_properties={}}, auth_packet_mt)
 	if input.available > 0 then
 		-- DOC: 3.15.2 AUTH Variable Header
 		local rc, err = parse_uint8(read_data)
