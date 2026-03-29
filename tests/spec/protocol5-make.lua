@@ -224,6 +224,34 @@ describe("MQTT v5.0 protocol: making packets: CONNECT[1]", function()
 			}))
 		)
 	end)
+
+	it("CONNECT with password without username", function()
+		assert.are.equal(
+			extract_hex[[
+				10						-- packet type == 1 (CONNECT), flags == 0
+				1E						-- length == 0x1E == 30 bytes
+
+											-- next is 30 bytes for variable header and payload:
+
+					0004 4D515454			-- protocol name == "MQTT"
+					05						-- protocol version: 5 (v5.0)
+					40						-- connect flags == 0x40 (password flag set, no username)
+					0000					-- keep alive == 0
+					00						-- properties length == 0
+
+											-- payload:
+					0009 636C69656E742D6964	-- client id == "client-id"
+					0006 736563726574		-- password == "secret"
+			]],
+			tools.hex(tostring(protocol5.make_packet({
+				type = protocol.packet_type.CONNECT,
+				id = "client-id",
+				clean = false,
+				keep_alive = 0,
+				password = "secret",
+			})))
+		)
+	end)
 end)
 
 describe("MQTT v5.0 protocol: making packets: CONNACK[2]", function()

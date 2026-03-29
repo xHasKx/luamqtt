@@ -117,7 +117,6 @@ local function make_connect_flags(args)
 	-- DOC: 3.1.2.9 Password Flag
 	if args.password ~= nil then
 		assert(type(args.password) == "string", "expecting .password to be a string")
-		assert(args.username, "the .username is required to set .password")
 		byte = bor(byte, lshift(1, 6))
 	end
 	return make_uint8(byte)
@@ -471,10 +470,10 @@ local function make_packet_connect(args)
 	if args.username then
 		-- DOC: 3.1.3.5 User Name
 		payload:append(make_string(args.username))
-		if args.password then
-			-- DOC: 3.1.3.6 Password
-			payload:append(make_string(args.password))
-		end
+	end
+	if args.password then
+		-- DOC: 3.1.3.6 Password
+		payload:append(make_string(args.password))
 	end
 	-- DOC: 3.1.1 Fixed header
 	local header = make_header(packet_type.CONNECT, 0, variable_header:len() + payload:len())
