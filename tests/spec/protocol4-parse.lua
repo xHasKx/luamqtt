@@ -718,6 +718,102 @@ describe("MQTT v3.1.1 protocol: parsing packets", function()
 			))
 		)
 	end)
+
+	-- negative tests: invalid flags
+	it("PUBACK with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[41 02 0001]])))
+	end)
+	it("PUBREC with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[51 02 0001]])))
+	end)
+	it("PUBREL with invalid flags rejected", function()
+		-- flags must be exactly 2 (0010), test with flags=0
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[60 02 0001]])))
+	end)
+	it("PUBCOMP with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[71 02 0001]])))
+	end)
+	it("SUBSCRIBE with invalid flags rejected", function()
+		-- flags must be exactly 2 (0010), test with flags=0
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[80 09 0001 0004 736F6D65 00]])))
+	end)
+	it("SUBACK with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[91 03 0001 00]])))
+	end)
+	it("UNSUBSCRIBE with invalid flags rejected", function()
+		-- flags must be exactly 2 (0010), test with flags=0
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[A0 08 0001 0004 736F6D65]])))
+	end)
+	it("UNSUBACK with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[B1 02 0001]])))
+	end)
+	it("PINGREQ with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[C1 00]])))
+	end)
+	it("PINGRESP with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[D1 00]])))
+	end)
+	it("DISCONNECT with invalid flags rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[E1 00]])))
+	end)
+
+	-- negative tests: wrong remaining length
+	it("PUBACK with wrong remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[40 01 00]])))
+	end)
+	it("PUBREC with wrong remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[50 01 00]])))
+	end)
+	it("PUBREL with wrong remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[62 01 00]])))
+	end)
+	it("PUBCOMP with wrong remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[70 01 00]])))
+	end)
+	it("UNSUBACK with wrong remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[B0 01 00]])))
+	end)
+	it("PINGREQ with non-zero remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[C0 01 00]])))
+	end)
+	it("PINGRESP with non-zero remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[D0 01 00]])))
+	end)
+	it("DISCONNECT with non-zero remaining length rejected", function()
+		assert.is_false(protocol4.parse_packet(make_read_func_hex(extract_hex[[E0 01 00]])))
+	end)
+
+	-- boundary tests: max packet_id (0xFFFF)
+	it("PUBACK with max packet_id", function()
+		assert.are.same(
+			{ type=protocol.packet_type.PUBACK, packet_id=0xFFFF },
+			protocol4.parse_packet(make_read_func_hex(extract_hex[[40 02 FFFF]]))
+		)
+	end)
+	it("PUBREC with max packet_id", function()
+		assert.are.same(
+			{ type=protocol.packet_type.PUBREC, packet_id=0xFFFF },
+			protocol4.parse_packet(make_read_func_hex(extract_hex[[50 02 FFFF]]))
+		)
+	end)
+	it("PUBREL with max packet_id", function()
+		assert.are.same(
+			{ type=protocol.packet_type.PUBREL, packet_id=0xFFFF },
+			protocol4.parse_packet(make_read_func_hex(extract_hex[[62 02 FFFF]]))
+		)
+	end)
+	it("PUBCOMP with max packet_id", function()
+		assert.are.same(
+			{ type=protocol.packet_type.PUBCOMP, packet_id=0xFFFF },
+			protocol4.parse_packet(make_read_func_hex(extract_hex[[70 02 FFFF]]))
+		)
+	end)
+	it("UNSUBACK with max packet_id", function()
+		assert.are.same(
+			{ type=protocol.packet_type.UNSUBACK, packet_id=0xFFFF },
+			protocol4.parse_packet(make_read_func_hex(extract_hex[[B0 02 FFFF]]))
+		)
+	end)
 end)
 
 -- vim: ts=4 sts=4 sw=4 noet ft=lua
