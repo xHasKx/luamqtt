@@ -77,21 +77,22 @@ function tools.extract_hex(str)
 	local n = 0
 	for line in str:gmatch("[^\n]+") do
 		n = n + 1
+		local val = line
 		-- find a comment start
-		local comment_begin = line:find("--", 1, true)
+		local comment_begin = val:find("--", 1, true)
 		if comment_begin then
 			-- remove comment from the line
-			line = line:sub(1, comment_begin - 1)
+			val = val:sub(1, comment_begin - 1)
 		end
 		-- remove all whitespace from the line
-		line = line:gsub("%s", "")
+		val = val:gsub("%s", "")
 		-- check for the non-hex chars
-		local non_hex = line:find("[^0-9A-Fa-f]+")
+		local non_hex = val:find("[^0-9A-Fa-f]+")
 		if non_hex then
-			error(string.format("non-hex char '%s' at %s:%s", line:sub(non_hex, non_hex), n, non_hex))
+			error(string.format("non-hex char '%s' at %s:%s", val:sub(non_hex, non_hex), n, non_hex))
 		end
-		-- append line to concat list
-		res[#res + 1] = line
+		-- append val to concat list
+		res[#res + 1] = val
 	end
 	-- finally concat all lines onto one HEX-string
 	local hexstr = tbl_concat(res)
