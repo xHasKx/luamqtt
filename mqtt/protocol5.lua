@@ -1093,25 +1093,32 @@ local function parse_packet_pubcomp(ptype, flags, input)
 		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	local read_data = input.read_func
+
 	-- DOC: 3.7.2 PUBCOMP Variable Header
+	-- Bytes 1 & 2: Packet Identifier
 	local packet_id, err = parse_uint16(read_data)
 	if not packet_id then
 		return false, packet_type[ptype]..": failed to parse packet_id: "..err
 	end
 	local packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
+	-- If Remaining Length > 2, we have at least a Reason Code
 	if input.available > 0 then
-		-- DOC: 3.7.2.1 PUBCOMP Reason Code
+		-- DOC: 3.7.2.1 PUBCOMP Reason Code (Byte 3)
 		local rc
 		rc, err = parse_uint8(read_data)
 		if not rc then
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.7.2.2 PUBCOMP Properties
-		local ok
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+
+		-- DOC: 3.7.2.2.1 If Remaining Length > 3, we have a Property Length field (Byte 4)
+		if input.available > 0 then
+			-- DOC: 3.7.2.2 PUBCOMP Properties
+			local ok
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet
