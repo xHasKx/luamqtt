@@ -980,24 +980,31 @@ local function parse_packet_puback(ptype, flags, input)
 		return false, packet_type[ptype]..": unexpected flags value: "..flags
 	end
 	local read_data = input.read_func
+
 	-- DOC: 3.4.2 PUBACK Variable Header
+	-- Bytes 1 & 2: Packet Identifier
 	local packet_id, err = parse_uint16(read_data)
 	if not packet_id then
 		return false, packet_type[ptype]..": failed to parse packet_id: "..err
 	end
 	local packet = setmetatable({type=ptype, packet_id=packet_id, rc=0, properties={}, user_properties={}}, packet_mt)
+	-- If Remaining Length > 2, we have at least a Reason Code
 	if input.available > 0 then
-		-- DOC: 3.4.2.1 PUBACK Reason Code
+		-- DOC: 3.4.2.1 PUBACK Reason Code (Byte 3)
 		local rc, ok
 		rc, err = parse_uint8(read_data)
 		if not rc then
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.4.2.2 PUBACK Properties
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+
+		-- DOC: 3.4.2.2.1 If the Remaining Length is less than 4 there is no Property Length and the value of 0 is used
+		if input.available > 0 then
+			-- DOC: 3.4.2.2 PUBACK Properties
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet
@@ -1024,11 +1031,14 @@ local function parse_packet_pubrec(ptype, flags, input)
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.5.2.2 PUBREC Properties
-		local ok
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		-- DOC: 3.5.2.2.1 If the Remaining Length is less than 4 there is no Property Length and the value of 0 is used
+		if input.available > 0 then
+			-- DOC: 3.5.2.2 PUBREC Properties
+			local ok
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet
@@ -1055,11 +1065,14 @@ local function parse_packet_pubrel(ptype, flags, input)
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.6.2.2 PUBREL Properties
-		local ok
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		-- DOC: 3.6.2.2.1 If the Remaining Length is less than 4 there is no Property Length and the value of 0 is used
+		if input.available > 0 then
+			-- DOC: 3.6.2.2 PUBREL Properties
+			local ok
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet
@@ -1086,11 +1099,14 @@ local function parse_packet_pubcomp(ptype, flags, input)
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.7.2.2 PUBCOMP Properties
-		local ok
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		-- DOC: 3.7.2.2.1 If the Remaining Length is less than 4 there is no Property Length and the value of 0 is used
+		if input.available > 0 then
+			-- DOC: 3.7.2.2 PUBCOMP Properties
+			local ok
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet
@@ -1406,11 +1422,14 @@ local function parse_packet_disconnect(ptype, flags, input)
 			return false, packet_type[ptype]..": failed to parse rc: "..err
 		end
 		packet.rc = rc
-		-- DOC: 3.14.2.2 DISCONNECT Properties
-		local ok
-		ok, err = parse_properties(ptype, read_data, input, packet)
-		if not ok then
-			return false, packet_type[ptype]..": failed to parse packet properties: "..err
+		-- DOC: 3.14.2.2.1 If the Remaining Length is less than 2, a value of 0 is used
+		if input.available > 0 then
+			-- DOC: 3.14.2.2 DISCONNECT Properties
+			local ok
+			ok, err = parse_properties(ptype, read_data, input, packet)
+			if not ok then
+				return false, packet_type[ptype]..": failed to parse packet properties: "..err
+			end
 		end
 	end
 	return packet
