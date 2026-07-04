@@ -75,8 +75,9 @@ function tools.extract_hex(str)
 	local res = {}
 	-- iterate through lines
 	local n = 0
-	for line in str:gmatch("[^\n]+") do
-		local line = line
+	-- NOTE: in lua 5.5 the loop variable is read-only, so making a local copy to modify it below
+	for raw_line in str:gmatch("[^\n]+") do
+		local line = raw_line
 		n = n + 1
 		-- find a comment start
 		local comment_begin = line:find("--", 1, true)
