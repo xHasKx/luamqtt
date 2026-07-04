@@ -8,7 +8,7 @@ set -e
 ROOT="local/hererocks"
 mkdir -p $ROOT
 
-for ver in -l5.1 -l5.2 -l5.3 -l5.4 -j2.0 -j2.1; do
+for ver in -l5.1 -l5.2 -l5.3 -l5.4 -l5.5 -j2.0 -j2.1; do
 	env="$ROOT/v$ver"
 
 	deps=0
