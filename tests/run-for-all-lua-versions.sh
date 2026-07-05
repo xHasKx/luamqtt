@@ -8,6 +8,10 @@ set -e
 ROOT="local/hererocks"
 mkdir -p $ROOT
 
+# NOTE: bound every busted run to avoid an infinite hang when a public MQTT broker
+# accepts the connection but never completes the expected packets exchange
+BUSTED_TIMEOUT="timeout -v 120"
+
 for ver in -l5.1 -l5.2 -l5.3 -l5.4 -l5.5 -j2.0 -j2.1; do
 	env="$ROOT/v$ver"
 
@@ -85,10 +89,10 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -l5.5 -j2.0 -j2.1; do
 		echo "installing coveralls lib for $ver"
 		luarocks install luacov-coveralls
 		echo "running tests and collecting coverage for $ver"
-		busted -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' $BFLAGS tests/spec/*.lua
+		$BUSTED_TIMEOUT busted -e 'package.path="./?/init.lua;./?.lua;"..package.path;require("luacov.runner")(".luacov")' $BFLAGS tests/spec/*.lua
 	else
 		echo "running tests for $ver"
-		busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' $BFLAGS tests/spec/*.lua
+		$BUSTED_TIMEOUT busted -e 'package.path="./?/init.lua;./?.lua;"..package.path' $BFLAGS tests/spec/*.lua
 	fi
 
 done
@@ -101,6 +105,6 @@ if [ "$1" == "download" ]; then
 	luarocks install luamqtt >/dev/null
 	if git describe --exact-match --tags 2>/dev/null >/dev/null; then
 		echo "we are on tag, execute tests for $ver"
-		busted $BFLAGS tests/spec/*.lua
+		$BUSTED_TIMEOUT busted $BFLAGS tests/spec/*.lua
 	fi
 fi
