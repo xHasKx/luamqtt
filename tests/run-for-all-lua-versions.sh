@@ -20,6 +20,24 @@ for ver in -l5.1 -l5.2 -l5.3 -l5.4 -l5.5 -j2.0 -j2.1; do
 
 	source "$env/bin/activate"
 
+	# compile-check all lua files to catch version-specific compile-time errors,
+	# also in files not loaded by the tests (examples/, tools/)
+	echo "compile-checking all lua files for $ver"
+	# NOTE: mqtt/bit53.lua uses 5.3+ bitwise operators syntax and is only loaded on Lua 5.3+
+	COMPILE_EXCLUDE=""
+	case "$ver" in
+		-l5.1|-l5.2|-j*) COMPILE_EXCLUDE="-not -name bit53.lua";;
+	esac
+	if [ -x "$env/bin/luac" ]; then
+		# NOTE: -n1 as a workaround for luac 5.4 double-free crash on multiple file args
+		find . -name "*.lua" -not -path "./local/*" -not -path "./docs/*" $COMPILE_EXCLUDE -print0 | xargs -0 -n1 "$env/bin/luac" -p
+	else
+		# NOTE: LuaJIT has no luac, checking with loadfile instead
+		for f in $(find . -name "*.lua" -not -path "./local/*" -not -path "./docs/*" $COMPILE_EXCLUDE); do
+			lua -e "assert(loadfile('$f'))"
+		done
+	fi
+
 	# busted flags
 	BFLAGS=""
 
