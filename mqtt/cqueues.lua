@@ -1,4 +1,4 @@
--- DOC: http://w3.impa.br/~diego/software/luasocket/tcp.html
+-- DOC: https://25thandclement.com/~william/projects/cqueues.html
 
 -- module table
 local cq_socket = {}
@@ -28,9 +28,7 @@ function cq_socket.send(conn, data, i, j)
 		j = #data
 	end
 
-	local ok, err = conn.sock:send(data, i, j)
-	-- print("    luasocket.send:", ok, err, require("mqtt.tools").hex(data))
-	return ok, err
+	return conn.sock:send(data, i, j)
 end
 
 -- Receive given amount of data from network connection
