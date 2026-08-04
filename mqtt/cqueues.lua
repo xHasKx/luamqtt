@@ -27,7 +27,7 @@ function cq_socket.send(conn, data, i, j)
 	if not j then
 		j = #data
 	end
-	
+
 	local ok, err = conn.sock:send(data, i, j)
 	-- print("    luasocket.send:", ok, err, require("mqtt.tools").hex(data))
 	return ok, err
@@ -35,13 +35,7 @@ end
 
 -- Receive given amount of data from network connection
 function cq_socket.receive(conn, size)
-	local ok, err = conn.sock:read(size)
-	 --if ok then
-	 	--print("    cqueues.receive:", size, require("mqtt.tools").hex(ok))
-	 --elseif err ~= "timeout" then
-	 	--print("    cqueues.receive:", ok, err)
-	 --end
-	return ok, err
+	return conn.sock:read(size)
 end
 
 -- Set connection's socket to non-blocking mode and set a timeout for it
